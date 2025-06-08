@@ -1,0 +1,360 @@
+@import '../../styles/variables';
+
+/* Accounts Page Styles with Vibrant Colors */
+.accounts-page {
+  padding: 2rem;
+  min-height: 100vh;
+  background: linear-gradient(135deg, $body-bg 0%, lighten($body-bg, 2%) 100%);
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, white 0%, $gray-50 100%);
+    border-radius: $border-radius-lg;
+    box-shadow: $box-shadow;
+    border: 1px solid $border-color;
+
+    .page-title-section {
+      .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: $gray-800;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+
+        i {
+          color: $primary;
+          font-size: 2.2rem;
+        }
+      }
+
+      .page-subtitle {
+        color: $gray-600;
+        font-size: 1.1rem;
+        margin: 0;
+        font-weight: 500;
+      }
+    }
+
+    .page-actions {
+      .add-account-btn {
+        background: linear-gradient(135deg, $primary 0%, darken($primary, 10%) 100%);
+        border: none;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        box-shadow: $box-shadow;
+        transition: $transition-base;
+
+        &:hover {
+          background: linear-gradient(135deg, darken($primary, 5%) 0%, darken($primary, 15%) 100%);
+          transform: translateY(-2px);
+          box-shadow: $box-shadow-lg;
+        }
+      }
+    }
+  }
+
+  .accounts-content {
+    .accounts-table-card {
+      background: white;
+      border-radius: $border-radius-lg;
+      box-shadow: $box-shadow;
+      border: 1px solid $border-color;
+      overflow: hidden;
+
+      .accounts-table {
+        margin: 0;
+
+        thead {
+          background: linear-gradient(135deg, $gray-800 0%, $gray-900 100%);
+
+          th {
+            color: white;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 1rem;
+            border: none;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+
+            i {
+              color: $primary;
+              margin-right: 0.5rem;
+            }
+          }
+        }
+
+        tbody {
+          .account-row {
+            transition: $transition-base;
+
+            &:hover {
+              background: linear-gradient(90deg, rgba($primary, 0.03) 0%, rgba($primary, 0.01) 100%);
+              transform: translateX(2px);
+            }
+
+            td {
+              padding: 1rem;
+              vertical-align: middle;
+              border-color: $border-color;
+
+              &.account-code {
+                font-weight: 700;
+                color: $primary;
+                font-family: 'Monaco', 'Menlo', monospace;
+                font-size: 1rem;
+              }
+
+              &.account-name {
+                font-weight: 600;
+                color: $gray-800;
+              }
+
+              &.account-balance {
+                font-weight: 700;
+                font-size: 1.1rem;
+                color: $success;
+                font-family: 'Monaco', 'Menlo', monospace;
+              }
+            }
+
+            .account-type-badge {
+              font-weight: 600;
+              padding: 0.5rem 0.75rem;
+              font-size: 0.85rem;
+              border-radius: $border-radius;
+              text-transform: uppercase;
+              letter-spacing: 0.025em;
+            }
+
+            .status-badge {
+              font-weight: 600;
+              padding: 0.4rem 0.75rem;
+              border-radius: $border-radius;
+
+              i {
+                font-size: 0.9rem;
+              }
+            }
+
+            .action-buttons {
+              display: flex;
+              gap: 0.5rem;
+
+              .action-btn {
+                transition: $transition-base;
+                border-radius: $border-radius;
+                width: 2.5rem;
+                height: 2.5rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                &:hover {
+                  transform: scale(1.1);
+                }
+
+                &.btn-outline-primary:hover {
+                  background: $primary;
+                  border-color: $primary;
+                  box-shadow: 0 4px 12px rgba($primary, 0.3);
+                }
+
+                &.btn-outline-danger:hover {
+                  background: $danger;
+                  border-color: $danger;
+                  box-shadow: 0 4px 12px rgba($danger, 0.3);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      background: white;
+      border-radius: $border-radius-lg;
+      box-shadow: $box-shadow;
+      border: 2px dashed $border-color;
+      margin-top: 2rem;
+
+      .empty-state-icon {
+        font-size: 4rem;
+        color: $gray-400;
+        margin-bottom: 1.5rem;
+
+        i {
+          animation: float 3s ease-in-out infinite;
+        }
+      }
+
+      .empty-state-title {
+        color: $gray-700;
+        font-weight: 600;
+        margin-bottom: 1rem;
+      }
+
+      .empty-state-description {
+        color: $gray-600;
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, $primary 0%, darken($primary, 10%) 100%);
+        border: none;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        box-shadow: $box-shadow;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: $box-shadow-lg;
+        }
+      }
+    }
+  }
+}
+
+.accounts-page-loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  text-align: center;
+
+  .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border-width: 0.3em;
+  }
+
+  p {
+    font-size: 1.1rem;
+    font-weight: 500;
+  }
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .accounts-page {
+    padding: 1.5rem;
+
+    .page-header {
+      flex-direction: column;
+      gap: 1.5rem;
+      text-align: center;
+
+      .page-actions {
+        width: 100%;
+
+        .add-account-btn {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .accounts-page {
+    padding: 1rem;
+
+    .page-header {
+      padding: 1rem;
+
+      .page-title-section {
+        .page-title {
+          font-size: 2rem;
+          text-align: center;
+        }
+
+        .page-subtitle {
+          text-align: center;
+        }
+      }
+    }
+
+    .accounts-content {
+      .accounts-table-card {
+        .accounts-table {
+          font-size: 0.9rem;
+
+          thead th {
+            padding: 0.75rem 0.5rem;
+            font-size: 0.85rem;
+          }
+
+          tbody td {
+            padding: 0.75rem 0.5rem;
+
+            &.account-balance {
+              font-size: 1rem;
+            }
+          }
+
+          .action-buttons {
+            flex-direction: column;
+            gap: 0.25rem;
+
+            .action-btn {
+              width: 100%;
+              height: 2rem;
+            }
+          }
+        }
+      }
+
+      .empty-state {
+        padding: 2rem 1rem;
+
+        .empty-state-icon {
+          font-size: 3rem;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .accounts-page {
+    .accounts-content {
+      .accounts-table-card {
+        .table-responsive {
+          border-radius: 0;
+        }
+
+        .accounts-table {
+          thead th:nth-child(n+3) {
+            display: none;
+          }
+
+          tbody td:nth-child(n+3) {
+            display: none;
+          }
+        }
+      }
+    }
+  }
+}

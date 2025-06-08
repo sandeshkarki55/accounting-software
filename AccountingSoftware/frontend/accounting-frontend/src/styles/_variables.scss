@@ -1,0 +1,104 @@
+// Bootstrap Color Overrides - Vibrant & Clean Theme
+// Primary Colors
+$primary: #2563eb;          // Vibrant blue
+$secondary: #64748b;        // Cool gray
+$success: #10b981;          // Emerald green
+$info: #06b6d4;            // Cyan
+$warning: #f59e0b;         // Amber
+$danger: #ef4444;          // Red
+$light: #f8fafc;          // Very light gray
+$dark: #0f172a;           // Dark slate
+
+// Extended Color Palette
+$purple: #8b5cf6;          // Vibrant purple
+$pink: #ec4899;           // Hot pink
+$indigo: #6366f1;         // Indigo
+$teal: #14b8a6;           // Teal
+$orange: #f97316;         // Orange
+$lime: #84cc16;           // Lime green
+
+// Gray Scale (Cleaner grays)
+$gray-50: #f8fafc;
+$gray-100: #f1f5f9;
+$gray-200: #e2e8f0;
+$gray-300: #cbd5e1;
+$gray-400: #94a3b8;
+$gray-500: #64748b;
+$gray-600: #475569;
+$gray-700: #334155;
+$gray-800: #1e293b;
+$gray-900: #0f172a;
+
+// Background Colors
+$body-bg: $gray-50;
+$body-color: $gray-800;
+
+// Component Colors
+$border-color: $gray-200;
+$component-active-bg: $primary;
+$component-active-color: #ffffff;
+
+// Navigation Colors
+$navbar-bg: #ffffff;
+$navbar-border: $gray-200;
+$sidebar-bg: $gray-900;
+$sidebar-text: $gray-300;
+$sidebar-active: $primary;
+
+// Form Colors
+$input-border-color: $gray-300;
+$input-focus-border-color: $primary;
+$input-bg: #ffffff;
+
+// Button Colors
+$btn-border-radius: 0.5rem;
+$btn-font-weight: 500;
+
+// Card Colors
+$card-bg: #ffffff;
+$card-border-color: $gray-200;
+$card-border-radius: 0.75rem;
+$card-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+
+// Modal Colors
+$modal-backdrop-bg: rgba(15, 23, 42, 0.5);
+$modal-content-bg: #ffffff;
+$modal-content-border-color: $gray-200;
+
+// Table Colors
+$table-striped-bg: $gray-50;
+$table-hover-bg: $gray-100;
+$table-border-color: $gray-200;
+
+// Typography
+$font-family-sans-serif: 'Inter', system-ui, -apple-system, 'Segoe UI', 'Roboto', 'Ubuntu', sans-serif;
+$headings-font-weight: 600;
+$small-font-size: 0.875rem;
+
+// Spacing
+$spacer: 1rem;
+$spacers: (
+  0: 0,
+  1: $spacer * 0.25,
+  2: $spacer * 0.5,
+  3: $spacer,
+  4: $spacer * 1.5,
+  5: $spacer * 3,
+  6: $spacer * 4,
+);
+
+// Border Radius
+$border-radius: 0.5rem;
+$border-radius-sm: 0.25rem;
+$border-radius-lg: 0.75rem;
+$border-radius-xl: 1rem;
+
+// Shadows
+$box-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+$box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+$box-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+
+// Animation
+$transition-base: all 0.2s ease-in-out;
+$transition-fade: opacity 0.15s linear;
+$transition-collapse: height 0.35s ease;

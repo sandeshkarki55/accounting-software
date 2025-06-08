@@ -1,0 +1,345 @@
+import React, { useState, useEffect } from 'react';
+import { Customer, CreateCustomerDto, UpdateCustomerDto } from '../../types';
+import './CustomerModal.scss';
+
+interface CustomerModalProps {
+  show: boolean;
+  onHide: () => void;
+  onSave: (customer: CreateCustomerDto | UpdateCustomerDto) => Promise<void>;
+  customer?: Customer;
+}
+
+const CustomerModal: React.FC<CustomerModalProps> = ({ 
+  show, 
+  onHide, 
+  onSave, 
+  customer 
+}) => {
+  const [formData, setFormData] = useState({
+    customerCode: '',
+    companyName: '',
+    contactPersonName: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: '',
+    isActive: true,
+    notes: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+
+  const isEditMode = !!customer;
+
+  useEffect(() => {
+    if (customer) {
+      setFormData({
+        customerCode: customer.customerCode,
+        companyName: customer.companyName,
+        contactPersonName: customer.contactPersonName || '',
+        email: customer.email || '',
+        phone: customer.phone || '',
+        address: customer.address || '',
+        city: customer.city || '',
+        state: customer.state || '',
+        postalCode: customer.postalCode || '',
+        country: customer.country || '',
+        isActive: customer.isActive,
+        notes: customer.notes || ''
+      });
+    } else {
+      // Reset form for new customer
+      setFormData({
+        customerCode: `CUST-${Date.now()}`,
+        companyName: '',
+        contactPersonName: '',
+        email: '',
+        phone: '',
+        address: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        country: '',
+        isActive: true,
+        notes: ''
+      });
+    }
+    setErrors({});
+  }, [customer, show]);
+
+  const validateForm = (): boolean => {
+    const newErrors: {[key: string]: string} = {};
+
+    if (!formData.customerCode.trim()) {
+      newErrors.customerCode = 'Customer code is required';
+    }
+    if (!formData.companyName.trim()) {
+      newErrors.companyName = 'Company name is required';
+    }
+    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Invalid email format';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      if (isEditMode) {
+        const updateData: UpdateCustomerDto = {
+          companyName: formData.companyName,
+          contactPersonName: formData.contactPersonName || undefined,
+          email: formData.email || undefined,
+          phone: formData.phone || undefined,
+          address: formData.address || undefined,
+          city: formData.city || undefined,
+          state: formData.state || undefined,
+          postalCode: formData.postalCode || undefined,
+          country: formData.country || undefined,
+          isActive: formData.isActive,
+          notes: formData.notes || undefined
+        };
+        await onSave(updateData);
+      } else {
+        const createData: CreateCustomerDto = {
+          customerCode: formData.customerCode,
+          companyName: formData.companyName,
+          contactPersonName: formData.contactPersonName || undefined,
+          email: formData.email || undefined,
+          phone: formData.phone || undefined,
+          address: formData.address || undefined,
+          city: formData.city || undefined,
+          state: formData.state || undefined,
+          postalCode: formData.postalCode || undefined,
+          country: formData.country || undefined,
+          notes: formData.notes || undefined
+        };
+        await onSave(createData);
+      }
+    } catch (err) {
+      console.error('Error saving customer:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!show) return null;
+
+  return (
+    <div className="customer-modal-overlay">
+      <div className="customer-modal">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5 className="modal-title">
+              <i className="bi bi-person-plus me-2"></i>
+              {isEditMode ? 'Edit Customer' : 'Add New Customer'}
+            </h5>
+            <button type="button" className="btn-close" onClick={onHide}></button>
+          </div>
+          <form onSubmit={handleSubmit}>
+            <div className="modal-body">
+              <div className="row">
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label htmlFor="customerCode" className="form-label">Customer Code *</label>
+                    <input
+                      type="text"
+                      className={`form-control ${errors.customerCode ? 'is-invalid' : ''}`}
+                      id="customerCode"
+                      value={formData.customerCode}
+                      onChange={(e) => setFormData({ ...formData, customerCode: e.target.value })}
+                      disabled={isEditMode}
+                    />
+                    {errors.customerCode && <div className="invalid-feedback">{errors.customerCode}</div>}
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label htmlFor="companyName" className="form-label">Company Name *</label>
+                    <input
+                      type="text"
+                      className={`form-control ${errors.companyName ? 'is-invalid' : ''}`}
+                      id="companyName"
+                      value={formData.companyName}
+                      onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                    />
+                    {errors.companyName && <div className="invalid-feedback">{errors.companyName}</div>}
+                  </div>
+                </div>
+              </div>
+
+              <div className="row">
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label htmlFor="contactPersonName" className="form-label">Contact Person</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="contactPersonName"
+                      value={formData.contactPersonName}
+                      onChange={(e) => setFormData({ ...formData, contactPersonName: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label htmlFor="email" className="form-label">Email</label>
+                    <input
+                      type="email"
+                      className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                      id="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    />
+                    {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+                  </div>
+                </div>
+              </div>
+
+              <div className="row">
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label htmlFor="phone" className="form-label">Phone</label>
+                    <input
+                      type="tel"
+                      className="form-control"
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label htmlFor="address" className="form-label">Address</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="address"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="row">
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label htmlFor="city" className="form-label">City</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="city"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label htmlFor="state" className="form-label">State</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="state"
+                      value={formData.state}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label htmlFor="postalCode" className="form-label">Postal Code</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="postalCode"
+                      value={formData.postalCode}
+                      onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="row">
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label htmlFor="country" className="form-label">Country</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="country"
+                      value={formData.country}
+                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <div className="form-check mt-4">
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        id="isActive"
+                        checked={formData.isActive}
+                        onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                      />
+                      <label className="form-check-label" htmlFor="isActive">
+                        Active Customer
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <label htmlFor="notes" className="form-label">Notes</label>
+                <textarea
+                  className="form-control"
+                  id="notes"
+                  rows={3}
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Additional notes about the customer"
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={onHide}>
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary" disabled={loading}>
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                    {isEditMode ? 'Updating...' : 'Creating...'}
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-check-circle me-2"></i>
+                    {isEditMode ? 'Update Customer' : 'Create Customer'}
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CustomerModal;
