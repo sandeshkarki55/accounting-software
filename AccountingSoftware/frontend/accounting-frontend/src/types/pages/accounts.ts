@@ -9,6 +9,8 @@ export interface Account {
   description: string;
   parentAccountId?: number;
   parentAccountName?: string;
+  level?: number; // For tree structure display
+  subAccounts?: Account[]; // For hierarchical display
 }
 
 export interface CreateAccountDto {

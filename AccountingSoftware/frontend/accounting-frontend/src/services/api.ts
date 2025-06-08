@@ -87,6 +87,12 @@ export const accountService = {
   deleteAccount: async (id: number): Promise<void> => {
     await apiClient.delete(`/accounts/${id}`);
   },
+
+  // Get accounts in hierarchical tree structure
+  getAccountsHierarchy: async (): Promise<Account[]> => {
+    const response = await apiClient.get<Account[]>('/accounts/hierarchy');
+    return response.data;
+  },
 };
 
 // Customer service

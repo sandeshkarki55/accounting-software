@@ -3,16 +3,19 @@ import { Account, AccountType, CreateAccountDto, UpdateAccountDto } from '../../
 import { accountService } from '../../services/api';
 import AccountModal from '../../components/modals/AccountModal';
 import DeleteConfirmationModal from '../../components/modals/DeleteConfirmationModal';
+import ChartOfAccountsTree from '../../components/charts/ChartOfAccountsTree';
 
 const AccountsPage: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [hierarchyAccounts, setHierarchyAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAccountModal, setShowAccountModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | undefined>();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<Account | undefined>();
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'list' | 'tree'>('tree');
 
   useEffect(() => {
     loadAccounts();
@@ -21,9 +24,16 @@ const AccountsPage: React.FC = () => {
   const loadAccounts = async () => {
     try {
       setLoading(true);
-      const data = await accountService.getAccounts();
-      setAccounts(data);
       setError(null);
+      
+      // Load both regular accounts and hierarchy accounts
+      const [regularData, hierarchyData] = await Promise.all([
+        accountService.getAccounts(),
+        accountService.getAccountsHierarchy()
+      ]);
+      
+      setAccounts(regularData);
+      setHierarchyAccounts(hierarchyData);
     } catch (err) {
       setError('Failed to load accounts');
       console.error('Error loading accounts:', err);
@@ -108,119 +118,180 @@ const AccountsPage: React.FC = () => {
   );
 
   return (
-    <div className="container">
+    <div className="container-fluid">
       <div className="row">
         <div className="col-12">
-          <h1 className="mb-4 text-dark">Chart of Accounts</h1>
-          
-          <div className="mb-4">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h1 className="text-dark">Chart of Accounts</h1>
             <button 
               className="btn btn-primary" 
               onClick={handleAddAccount}
             >
               <i className="bi bi-plus-circle me-2"></i>
-              Add New Account
+              Add Account
             </button>
           </div>
 
-          <div className="card shadow-sm">
-            <div className="card-body p-0">
-              <div className="table-responsive">
-                <table className="table table-hover mb-0">
-                  <thead className="table-dark">
-                    <tr>
-                      <th scope="col">Account Code</th>
-                      <th scope="col">Account Name</th>
-                      <th scope="col">Type</th>
-                      <th scope="col">Balance</th>
-                      <th scope="col">Status</th>
-                      <th scope="col">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {accounts.map((account) => (
-                      <tr key={account.id}>
-                        <td className="fw-bold">{account.accountCode}</td>
-                        <td>{account.accountName}</td>
-                        <td>
-                          <span className={`badge ${
-                            account.accountType === AccountType.Asset ? 'bg-primary' :
-                            account.accountType === AccountType.Liability ? 'bg-warning' :
-                            account.accountType === AccountType.Equity ? 'bg-info' :
-                            account.accountType === AccountType.Revenue ? 'bg-success' :
-                            'bg-secondary'
-                          }`}>
-                            {getAccountTypeName(account.accountType)}
-                          </span>
-                        </td>
-                        <td className="fw-bold">${account.balance.toFixed(2)}</td>
-                        <td>
-                          <span className={`badge ${account.isActive ? 'bg-success' : 'bg-secondary'}`}>
-                            {account.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="btn-group" role="group">
-                            <button 
-                              className="btn btn-outline-primary btn-sm" 
-                              onClick={() => handleEditAccount(account)}
-                              title="Edit Account"
-                            >
-                              <i className="bi bi-pencil"></i>
-                            </button>
-                            <button 
-                              className="btn btn-outline-danger btn-sm" 
-                              onClick={() => handleDeleteAccount(account)}
-                              title="Delete Account"
-                            >
-                              <i className="bi bi-trash"></i>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {/* Tab Navigation */}
+          <ul className="nav nav-tabs mb-4" id="accountsTabs" role="tablist">
+            <li className="nav-item" role="presentation">
+              <button 
+                className={`nav-link ${activeTab === 'tree' ? 'active' : ''}`}
+                onClick={() => setActiveTab('tree')}
+                type="button"
+                style={{ 
+                  backgroundColor: activeTab === 'tree' ? '#fff' : 'transparent',
+                  borderColor: activeTab === 'tree' ? '#dee2e6 #dee2e6 #fff' : '#dee2e6',
+                  color: activeTab === 'tree' ? '#495057' : '#6c757d'
+                }}
+              >
+                <i className="bi bi-diagram-3 me-2"></i>
+                Tree View
+              </button>
+            </li>
+            <li className="nav-item" role="presentation">
+              <button 
+                className={`nav-link ${activeTab === 'list' ? 'active' : ''}`}
+                onClick={() => setActiveTab('list')}
+                type="button"
+                style={{ 
+                  backgroundColor: activeTab === 'list' ? '#fff' : 'transparent',
+                  borderColor: activeTab === 'list' ? '#dee2e6 #dee2e6 #fff' : '#dee2e6',
+                  color: activeTab === 'list' ? '#495057' : '#6c757d'
+                }}
+              >
+                <i className="bi bi-list me-2"></i>
+                List View
+              </button>
+            </li>
+          </ul>
+
+          {/* Tab Content */}
+          <div className="tab-content" id="accountsTabContent">
+            {/* Tree View */}
+            {activeTab === 'tree' && (
+              <div className="tab-pane fade show active">
+                <ChartOfAccountsTree
+                  accounts={hierarchyAccounts}
+                  onEditAccount={handleEditAccount}
+                  onDeleteAccount={handleDeleteAccount}
+                />
               </div>
-            </div>
+            )}
+
+            {/* List View */}
+            {activeTab === 'list' && (
+              <div className="tab-pane fade show active">
+                <div className="card shadow-sm">
+                  <div className="card-header bg-secondary text-white">
+                    <h5 className="mb-0">
+                      <i className="bi bi-list me-2"></i>
+                      Chart of Accounts - List View
+                    </h5>
+                  </div>
+                  <div className="card-body p-0">
+                    <div className="table-responsive">
+                      <table className="table table-hover mb-0">
+                        <thead className="table-dark">
+                          <tr>
+                            <th scope="col">Account Code</th>
+                            <th scope="col">Account Name</th>
+                            <th scope="col">Type</th>
+                            <th scope="col">Parent Account</th>
+                            <th scope="col">Balance</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {accounts.map((account) => (
+                            <tr key={account.id}>
+                              <td>
+                                <code className="bg-light px-1 rounded">{account.accountCode}</code>
+                              </td>
+                              <td className="fw-bold">{account.accountName}</td>
+                              <td>
+                                <span className={`badge ${
+                                  account.accountType === AccountType.Asset ? 'bg-primary' :
+                                  account.accountType === AccountType.Liability ? 'bg-warning text-dark' :
+                                  account.accountType === AccountType.Equity ? 'bg-info' :
+                                  account.accountType === AccountType.Revenue ? 'bg-success' :
+                                  'bg-secondary'
+                                }`}>
+                                  {getAccountTypeName(account.accountType)}
+                                </span>
+                              </td>
+                              <td>
+                                {account.parentAccountName ? (
+                                  <span className="text-muted">{account.parentAccountName}</span>
+                                ) : (
+                                  <span className="text-muted fst-italic">None</span>
+                                )}
+                              </td>
+                              <td className="text-end">
+                                <span className={`fw-bold ${account.balance >= 0 ? 'text-success' : 'text-danger'}`}>
+                                  ${Math.abs(account.balance).toLocaleString('en-US', { 
+                                    minimumFractionDigits: 2, 
+                                    maximumFractionDigits: 2 
+                                  })}
+                                </span>
+                                {account.balance < 0 && (
+                                  <small className="text-danger d-block">CR</small>
+                                )}
+                              </td>
+                              <td>
+                                <span className={`badge ${account.isActive ? 'bg-success' : 'bg-secondary'}`}>
+                                  {account.isActive ? 'Active' : 'Inactive'}
+                                </span>
+                              </td>
+                              <td>
+                                <div className="btn-group" role="group">
+                                  <button 
+                                    className="btn btn-outline-primary btn-sm" 
+                                    onClick={() => handleEditAccount(account)}
+                                    title="Edit Account"
+                                  >
+                                    <i className="bi bi-pencil"></i>
+                                  </button>
+                                  <button 
+                                    className="btn btn-outline-danger btn-sm" 
+                                    onClick={() => handleDeleteAccount(account)}
+                                    title="Delete Account"
+                                  >
+                                    <i className="bi bi-trash"></i>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {accounts.length === 0 && (
-            <div className="text-center py-5">
-              <div className="mb-3">
-                <i className="bi bi-folder-x display-1 text-muted"></i>
-              </div>
-              <h5 className="text-muted">No accounts found</h5>
-              <p className="text-muted">Create your first account to get started.</p>
-              <button 
-                className="btn btn-primary" 
-                onClick={handleAddAccount}
-              >
-                <i className="bi bi-plus-circle me-2"></i>
-                Create Account
-              </button>
-            </div>
-          )}
+          {/* Account Modal */}
+          <AccountModal
+            show={showAccountModal}
+            onHide={() => setShowAccountModal(false)}
+            onSave={handleSaveAccount}
+            account={selectedAccount}
+            accounts={accounts}
+          />
+
+          {/* Delete Confirmation Modal */}
+          <DeleteConfirmationModal
+            show={showDeleteModal}
+            onHide={() => setShowDeleteModal(false)}
+            onConfirm={handleConfirmDelete}
+            accountName={accountToDelete?.accountName || ''}
+            loading={deleteLoading}
+          />
         </div>
       </div>
-
-      {/* Account Modal for Add/Edit */}
-      <AccountModal
-        show={showAccountModal}
-        onHide={() => setShowAccountModal(false)}
-        onSave={handleSaveAccount}
-        account={selectedAccount}
-        accounts={accounts}
-      />
-
-      {/* Delete Confirmation Modal */}
-      <DeleteConfirmationModal
-        show={showDeleteModal}
-        onHide={() => setShowDeleteModal(false)}
-        onConfirm={handleConfirmDelete}
-        accountName={accountToDelete?.accountName || ''}
-        loading={deleteLoading}
-      />
     </div>
   );
 };

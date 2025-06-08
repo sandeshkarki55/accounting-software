@@ -14,6 +14,8 @@ public class AccountDto
     public string Description { get; set; } = string.Empty;
     public int? ParentAccountId { get; set; }
     public string? ParentAccountName { get; set; }
+    public int Level { get; set; } = 0; // For tree structure display
+    public List<AccountDto> SubAccounts { get; set; } = new List<AccountDto>(); // For hierarchical display
 }
 
 public class CreateAccountDto

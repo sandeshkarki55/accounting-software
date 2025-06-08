@@ -1,0 +1,121 @@
+/* Chart of Accounts Tree Styling */
+.chart-of-accounts-tree {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.chart-of-accounts-tree .account-row {
+  transition: background-color 0.2s ease-in-out;
+}
+
+.chart-of-accounts-tree .account-row:hover {
+  background-color: #f8f9fa !important;
+}
+
+.chart-of-accounts-tree .account-row.level-0 {
+  font-weight: 600;
+  border-left: 4px solid #0d6efd !important;
+}
+
+.chart-of-accounts-tree .account-row.level-1 {
+  border-left: 4px solid #6c757d !important;
+  background-color: #fafbfc;
+}
+
+.chart-of-accounts-tree .account-row.level-2 {
+  border-left: 4px solid #adb5bd !important;
+  background-color: #f8f9fa;
+}
+
+.chart-of-accounts-tree .account-row.level-3 {
+  border-left: 4px solid #dee2e6 !important;
+  background-color: #f1f3f4;
+}
+
+.chart-of-accounts-tree .tree-indicator {
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  color: #6c757d;
+}
+
+.chart-of-accounts-tree .account-name {
+  font-weight: 500;
+}
+
+.chart-of-accounts-tree .level-0 .account-name {
+  color: #0d6efd;
+  font-weight: 600;
+}
+
+.chart-of-accounts-tree .level-1 .account-name {
+  color: #495057;
+  font-weight: 500;
+}
+
+.chart-of-accounts-tree .level-2 .account-name,
+.chart-of-accounts-tree .level-3 .account-name {
+  color: #6c757d;
+  font-weight: normal;
+}
+
+/* Type header styling */
+.chart-of-accounts-tree .table-secondary td {
+  background-color: #e9ecef !important;
+  border-top: 2px solid #6c757d;
+  border-bottom: 1px solid #6c757d;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Balance styling */
+.chart-of-accounts-tree .balance-positive {
+  color: #198754 !important;
+  font-weight: 600;
+}
+
+.chart-of-accounts-tree .balance-negative {
+  color: #dc3545 !important;
+  font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .chart-of-accounts-tree .tree-indicator {
+    display: none;
+  }
+  
+  .chart-of-accounts-tree td {
+    padding: 0.5rem !important;
+    font-size: 0.875rem;
+  }
+  
+  .chart-of-accounts-tree .account-name {
+    font-size: 0.875rem;
+  }
+}
+
+/* Sticky header */
+.chart-of-accounts-tree .sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Custom scrollbar for table container */
+.chart-of-accounts-tree .table-responsive::-webkit-scrollbar {
+  height: 8px;
+}
+
+.chart-of-accounts-tree .table-responsive::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.chart-of-accounts-tree .table-responsive::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.chart-of-accounts-tree .table-responsive::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

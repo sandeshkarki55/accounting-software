@@ -30,7 +30,21 @@ public class AccountsController : ControllerBase
         }
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("hierarchy")]
+    public async Task<ActionResult<IEnumerable<AccountDto>>> GetAccountsHierarchy()
+    {
+        try
+        {
+            var accounts = await _mediator.Send(new GetAccountsHierarchyQuery());
+            return Ok(accounts);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while retrieving accounts hierarchy.", details = ex.Message });
+        }
+    }
+
+    [HttpGet("{id:int}")]
     public async Task<ActionResult<AccountDto>> GetAccount(int id)
     {
         try
@@ -68,7 +82,7 @@ public class AccountsController : ControllerBase
         }
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("{id:int}")]
     public async Task<IActionResult> UpdateAccount(int id, UpdateAccountDto updateAccountDto)
     {
         try
@@ -88,7 +102,7 @@ public class AccountsController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteAccount(int id)
     {
         try
