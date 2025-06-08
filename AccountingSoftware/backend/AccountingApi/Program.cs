@@ -4,17 +4,23 @@ using AccountingApi.Infrastructure;
 using AccountingApi.Middleware;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.Extensions.ServiceDiscovery;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add service discovery for Aspire integration
+builder.Services.AddServiceDiscovery();
 
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
-// Add Entity Framework
-builder.Services.AddDbContext<AccountingDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Add Entity Framework with Aspire SQL Server integration
+builder.AddSqlServerDbContext<AccountingDbContext>("accountingdb");
+
+// Health checks are automatically added by AddSqlServerDbContext
+// No need to manually add them again
 
 // Add MediatR - Register all handlers from the current assembly
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
@@ -23,14 +29,36 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Progr
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-// Add CORS for frontend development
+// Add CORS for frontend development with Aspire support
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReactApp", policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        // In development, allow localhost with any port (for Aspire dynamic ports)
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.SetIsOriginAllowed(origin =>
+            {
+                if (string.IsNullOrWhiteSpace(origin)) return false;
+                
+                var uri = new Uri(origin);
+                // Allow localhost with any port for development
+                return uri.Host == "localhost" || uri.Host == "127.0.0.1";
+            })
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+        }
+        else
+        {
+            // Production: Use specific origins from configuration
+            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() 
+                ?? new[] { "https://yourdomain.com" };
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        }
     });
 });
 
@@ -40,6 +68,9 @@ builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
 var app = builder.Build();
+
+// Map health checks for Aspire integration
+app.MapHealthChecks("/health");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -52,7 +83,7 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
-app.UseCors("AllowReactApp");
+app.UseCors("AllowFrontend");
 app.MapControllers();
 
 var summaries = new[]
