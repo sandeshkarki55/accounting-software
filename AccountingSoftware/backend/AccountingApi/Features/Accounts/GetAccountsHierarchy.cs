@@ -23,7 +23,6 @@ public class GetAccountsHierarchyQueryHandler : IRequestHandler<GetAccountsHiera
         // Get all accounts with their parent relationships
         var allAccounts = await _context.Accounts
             .Include(a => a.ParentAccount)
-            .Where(a => a.IsActive)
             .OrderBy(a => a.AccountType)
             .ThenBy(a => a.AccountCode)
             .ToListAsync(cancellationToken);

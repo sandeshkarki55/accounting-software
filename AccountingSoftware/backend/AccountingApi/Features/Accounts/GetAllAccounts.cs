@@ -22,7 +22,6 @@ public class GetAllAccountsQueryHandler : IRequestHandler<GetAllAccountsQuery, L
     {
         var accounts = await _context.Accounts
             .Include(a => a.ParentAccount)
-            .Where(a => a.IsActive) // Only return active accounts by default
             .OrderBy(a => a.AccountCode)
             .Select(a => new AccountDto
             {

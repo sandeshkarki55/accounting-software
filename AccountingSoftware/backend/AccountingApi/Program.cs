@@ -8,28 +8,44 @@ using Microsoft.Extensions.ServiceDiscovery;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using OpenTelemetry.Resources;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add OpenTelemetry observability for Aspire
+// Configure OpenTelemetry for Aspire integration
 builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource
+        .AddService("AccountingApi", "1.0.0")
+        .AddAttributes(new Dictionary<string, object>
+        {
+            ["service.instance.id"] = Environment.MachineName,
+            ["deployment.environment"] = builder.Environment.EnvironmentName
+        }))
     .WithMetrics(metrics =>
     {
         metrics.AddAspNetCoreInstrumentation()
-               .AddHttpClientInstrumentation();
+               .AddHttpClientInstrumentation()
+               .AddRuntimeInstrumentation()
+               .AddProcessInstrumentation()
+               .AddOtlpExporter();
     })
     .WithTracing(tracing =>
     {
         tracing.AddAspNetCoreInstrumentation()
                .AddHttpClientInstrumentation()
-               .AddEntityFrameworkCoreInstrumentation();
+               .AddEntityFrameworkCoreInstrumentation()
+               .SetSampler(new TraceIdRatioBasedSampler(1.0))
+               .AddOtlpExporter();
     });
 
-// Configure OpenTelemetry Logging
+// Enhanced logging configuration for structured logs
 builder.Logging.AddOpenTelemetry(logging =>
 {
     logging.IncludeFormattedMessage = true;
     logging.IncludeScopes = true;
+    logging.ParseStateValues = true;
+    logging.SetResourceBuilder(ResourceBuilder.CreateDefault()
+        .AddService("AccountingApi", "1.0.0"));
 });
 
 // Add service discovery for Aspire integration
@@ -141,29 +157,5 @@ app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 app.MapControllers();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
