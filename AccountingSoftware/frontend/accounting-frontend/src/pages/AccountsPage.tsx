@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Account, AccountType } from '../types';
+import { Account, AccountType, CreateAccountDto, UpdateAccountDto } from '../types';
 import { accountService } from '../services/api';
+import AccountModal from '../components/AccountModal';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 
 const AccountsPage: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAccountModal, setShowAccountModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<Account | undefined>();
+  const [accountToDelete, setAccountToDelete] = useState<Account | undefined>();
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     loadAccounts();
@@ -22,6 +29,55 @@ const AccountsPage: React.FC = () => {
       console.error('Error loading accounts:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddAccount = () => {
+    setSelectedAccount(undefined);
+    setShowAccountModal(true);
+  };
+
+  const handleEditAccount = (account: Account) => {
+    setSelectedAccount(account);
+    setShowAccountModal(true);
+  };
+
+  const handleDeleteAccount = (account: Account) => {
+    setAccountToDelete(account);
+    setShowDeleteModal(true);
+  };
+
+  const handleSaveAccount = async (accountData: CreateAccountDto | UpdateAccountDto) => {
+    try {
+      if (selectedAccount) {
+        // Update existing account
+        await accountService.updateAccount(selectedAccount.id, accountData as UpdateAccountDto);
+      } else {
+        // Create new account
+        await accountService.createAccount(accountData as CreateAccountDto);
+      }
+      await loadAccounts(); // Reload accounts to get updated data
+      setShowAccountModal(false);
+    } catch (error) {
+      console.error('Error saving account:', error);
+      throw error; // Re-throw to let the modal handle the error
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!accountToDelete) return;
+
+    try {
+      setDeleteLoading(true);
+      await accountService.deleteAccount(accountToDelete.id);
+      await loadAccounts(); // Reload accounts after deletion
+      setShowDeleteModal(false);
+      setAccountToDelete(undefined);
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      setError('Failed to delete account');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -47,6 +103,9 @@ const AccountsPage: React.FC = () => {
   if (error) return (
     <div className="alert alert-danger" role="alert">
       <strong>Error:</strong> {error}
+      <button className="btn btn-sm btn-outline-danger ms-2" onClick={loadAccounts}>
+        Try Again
+      </button>
     </div>
   );
 
@@ -59,7 +118,7 @@ const AccountsPage: React.FC = () => {
           <div className="mb-4">
             <button 
               className="btn btn-primary" 
-              onClick={() => console.log('Add account')}
+              onClick={handleAddAccount}
             >
               <i className="bi bi-plus-circle me-2"></i>
               Add New Account
@@ -106,14 +165,14 @@ const AccountsPage: React.FC = () => {
                           <div className="btn-group" role="group">
                             <button 
                               className="btn btn-outline-primary btn-sm" 
-                              onClick={() => console.log('Edit', account.id)}
+                              onClick={() => handleEditAccount(account)}
                               title="Edit Account"
                             >
                               <i className="bi bi-pencil"></i>
                             </button>
                             <button 
                               className="btn btn-outline-danger btn-sm" 
-                              onClick={() => console.log('Delete', account.id)}
+                              onClick={() => handleDeleteAccount(account)}
                               title="Delete Account"
                             >
                               <i className="bi bi-trash"></i>
@@ -137,7 +196,7 @@ const AccountsPage: React.FC = () => {
               <p className="text-muted">Create your first account to get started.</p>
               <button 
                 className="btn btn-primary" 
-                onClick={() => console.log('Add account')}
+                onClick={handleAddAccount}
               >
                 <i className="bi bi-plus-circle me-2"></i>
                 Create Account
@@ -146,6 +205,24 @@ const AccountsPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Account Modal for Add/Edit */}
+      <AccountModal
+        show={showAccountModal}
+        onHide={() => setShowAccountModal(false)}
+        onSave={handleSaveAccount}
+        account={selectedAccount}
+        accounts={accounts}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        accountName={accountToDelete?.accountName || ''}
+        loading={deleteLoading}
+      />
     </div>
   );
 };
