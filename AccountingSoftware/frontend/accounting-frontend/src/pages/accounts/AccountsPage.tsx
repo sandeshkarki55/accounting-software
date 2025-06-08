@@ -3,7 +3,6 @@ import { Account, AccountType, CreateAccountDto, UpdateAccountDto } from '../../
 import { accountService } from '../../services/api';
 import AccountModal from '../../components/modals/AccountModal';
 import DeleteConfirmationModal from '../../components/modals/DeleteConfirmationModal';
-import './AccountsPage.scss';
 
 const AccountsPage: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -91,155 +90,118 @@ const AccountsPage: React.FC = () => {
     }
   };
 
-  const getAccountTypeColorClass = (type: AccountType): string => {
-    switch (type) {
-      case AccountType.Asset: return 'bg-vibrant-primary';
-      case AccountType.Liability: return 'bg-vibrant-warning';
-      case AccountType.Equity: return 'text-bg-info';
-      case AccountType.Revenue: return 'bg-vibrant-success';
-      case AccountType.Expense: return 'text-bg-secondary';
-      default: return 'text-bg-dark';
-    }
-  };
-
   if (loading) return (
-    <div className="accounts-page-loading">
-      <div className="spinner-border text-vibrant-primary" role="status">
+    <div className="d-flex justify-content-center align-items-center" style={{minHeight: '200px'}}>
+      <div className="spinner-border text-primary" role="status">
         <span className="visually-hidden">Loading accounts...</span>
       </div>
-      <p className="mt-3 text-muted">Loading your chart of accounts...</p>
     </div>
   );
   
   if (error) return (
     <div className="alert alert-danger" role="alert">
-      <div className="d-flex align-items-center">
-        <i className="bi bi-exclamation-triangle-fill me-2"></i>
-        <div>
-          <strong>Error:</strong> {error}
-        </div>
-      </div>
-      <button className="btn btn-sm btn-outline-danger mt-2" onClick={loadAccounts}>
-        <i className="bi bi-arrow-clockwise me-1"></i>
+      <strong>Error:</strong> {error}
+      <button className="btn btn-sm btn-outline-danger ms-2" onClick={loadAccounts}>
         Try Again
       </button>
     </div>
   );
 
   return (
-    <div className="accounts-page">
-      <div className="page-header">
-        <div className="page-title-section">
-          <h1 className="page-title">
-            <i className="bi bi-list-ul me-3"></i>
-            Chart of Accounts
-          </h1>
-          <p className="page-subtitle">Manage your accounting structure and track balances</p>
-        </div>
-        
-        <div className="page-actions">
-          <button 
-            className="btn btn-primary add-account-btn" 
-            onClick={handleAddAccount}
-          >
-            <i className="bi bi-plus-circle me-2"></i>
-            Add New Account
-          </button>
-        </div>
-      </div>
-
-      <div className="accounts-content">
-        <div className="accounts-table-card">
-          <div className="table-responsive">
-            <table className="table table-hover accounts-table">
-              <thead>
-                <tr>
-                  <th scope="col">
-                    <i className="bi bi-hash me-1"></i>
-                    Account Code
-                  </th>
-                  <th scope="col">
-                    <i className="bi bi-tag me-1"></i>
-                    Account Name
-                  </th>
-                  <th scope="col">
-                    <i className="bi bi-collection me-1"></i>
-                    Type
-                  </th>
-                  <th scope="col">
-                    <i className="bi bi-currency-dollar me-1"></i>
-                    Balance
-                  </th>
-                  <th scope="col">
-                    <i className="bi bi-toggle-on me-1"></i>
-                    Status
-                  </th>
-                  <th scope="col">
-                    <i className="bi bi-gear me-1"></i>
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {accounts.map((account) => (
-                  <tr key={account.id} className="account-row">
-                    <td className="account-code">{account.accountCode}</td>
-                    <td className="account-name">{account.accountName}</td>
-                    <td>
-                      <span className={`badge account-type-badge ${getAccountTypeColorClass(account.accountType)}`}>
-                        {getAccountTypeName(account.accountType)}
-                      </span>
-                    </td>
-                    <td className="account-balance">
-                      ${account.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td>
-                      <span className={`badge status-badge ${account.isActive ? 'bg-vibrant-success' : 'bg-vibrant-danger'}`}>
-                        <i className={`bi ${account.isActive ? 'bi-check-circle' : 'bi-x-circle'} me-1`}></i>
-                        {account.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="action-buttons">
-                        <button 
-                          className="btn btn-outline-primary btn-sm action-btn" 
-                          onClick={() => handleEditAccount(account)}
-                          title="Edit Account"
-                        >
-                          <i className="bi bi-pencil"></i>
-                        </button>
-                        <button 
-                          className="btn btn-outline-danger btn-sm action-btn" 
-                          onClick={() => handleDeleteAccount(account)}
-                          title="Delete Account"
-                        >
-                          <i className="bi bi-trash"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {accounts.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-state-icon">
-              <i className="bi bi-folder-x"></i>
-            </div>
-            <h5 className="empty-state-title">No accounts found</h5>
-            <p className="empty-state-description">Create your first account to get started with your chart of accounts.</p>
+    <div className="container">
+      <div className="row">
+        <div className="col-12">
+          <h1 className="mb-4 text-dark">Chart of Accounts</h1>
+          
+          <div className="mb-4">
             <button 
               className="btn btn-primary" 
               onClick={handleAddAccount}
             >
               <i className="bi bi-plus-circle me-2"></i>
-              Create Your First Account
+              Add New Account
             </button>
           </div>
-        )}
+
+          <div className="card shadow-sm">
+            <div className="card-body p-0">
+              <div className="table-responsive">
+                <table className="table table-hover mb-0">
+                  <thead className="table-dark">
+                    <tr>
+                      <th scope="col">Account Code</th>
+                      <th scope="col">Account Name</th>
+                      <th scope="col">Type</th>
+                      <th scope="col">Balance</th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {accounts.map((account) => (
+                      <tr key={account.id}>
+                        <td className="fw-bold">{account.accountCode}</td>
+                        <td>{account.accountName}</td>
+                        <td>
+                          <span className={`badge ${
+                            account.accountType === AccountType.Asset ? 'bg-primary' :
+                            account.accountType === AccountType.Liability ? 'bg-warning' :
+                            account.accountType === AccountType.Equity ? 'bg-info' :
+                            account.accountType === AccountType.Revenue ? 'bg-success' :
+                            'bg-secondary'
+                          }`}>
+                            {getAccountTypeName(account.accountType)}
+                          </span>
+                        </td>
+                        <td className="fw-bold">${account.balance.toFixed(2)}</td>
+                        <td>
+                          <span className={`badge ${account.isActive ? 'bg-success' : 'bg-secondary'}`}>
+                            {account.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="btn-group" role="group">
+                            <button 
+                              className="btn btn-outline-primary btn-sm" 
+                              onClick={() => handleEditAccount(account)}
+                              title="Edit Account"
+                            >
+                              <i className="bi bi-pencil"></i>
+                            </button>
+                            <button 
+                              className="btn btn-outline-danger btn-sm" 
+                              onClick={() => handleDeleteAccount(account)}
+                              title="Delete Account"
+                            >
+                              <i className="bi bi-trash"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {accounts.length === 0 && (
+            <div className="text-center py-5">
+              <div className="mb-3">
+                <i className="bi bi-folder-x display-1 text-muted"></i>
+              </div>
+              <h5 className="text-muted">No accounts found</h5>
+              <p className="text-muted">Create your first account to get started.</p>
+              <button 
+                className="btn btn-primary" 
+                onClick={handleAddAccount}
+              >
+                <i className="bi bi-plus-circle me-2"></i>
+                Create Account
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Account Modal for Add/Edit */}

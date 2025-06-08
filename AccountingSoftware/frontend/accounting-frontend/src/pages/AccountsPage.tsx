@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Account, AccountType, CreateAccountDto, UpdateAccountDto } from '../types';
 import { accountService } from '../services/api';
-import AccountModal from '../components/AccountModal';
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
+import AccountModal from '../components/modals/AccountModal';
+import DeleteConfirmationModal from '../components/modals/DeleteConfirmationModal';
 
 const AccountsPage: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
