@@ -40,4 +40,18 @@ public class InvoicesController : ControllerBase
         var invoice = await _mediator.Send(new CreateInvoiceCommand(createInvoiceDto));
         return CreatedAtAction(nameof(GetInvoice), new { id = invoice.Id }, invoice);
     }
+
+    [HttpPost("{id}/mark-as-paid")]
+    public async Task<ActionResult<InvoiceDto>> MarkInvoiceAsPaid(int id, MarkInvoiceAsPaidDto markAsPaidDto)
+    {
+        try
+        {
+            var invoice = await _mediator.Send(new MarkInvoiceAsPaidCommand(id, markAsPaidDto.PaidDate, markAsPaidDto.PaymentReference));
+            return Ok(invoice);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

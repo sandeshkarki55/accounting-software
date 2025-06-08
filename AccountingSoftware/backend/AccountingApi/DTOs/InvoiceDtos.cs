@@ -87,3 +87,9 @@ public class UpdateInvoiceItemDto
     public decimal UnitPrice { get; set; }
     public int SortOrder { get; set; }
 }
+
+public class MarkInvoiceAsPaidDto
+{
+    public DateTime PaidDate { get; set; } = DateTime.Today;
+    public string? PaymentReference { get; set; }
+}

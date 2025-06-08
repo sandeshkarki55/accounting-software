@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Account, CreateAccountDto, UpdateAccountDto, Customer, CreateCustomerDto, UpdateCustomerDto, CompanyInfo, CreateCompanyInfoDto, Invoice, CreateInvoiceDto } from '../types';
+import { Account, CreateAccountDto, UpdateAccountDto, Customer, CreateCustomerDto, UpdateCustomerDto, CompanyInfo, CreateCompanyInfoDto, Invoice, CreateInvoiceDto, MarkInvoiceAsPaidDto } from '../types';
 
 // Use environment variable for API base URL, with fallback for development
 // Aspire automatically injects service URLs as environment variables
@@ -148,6 +148,12 @@ export const invoiceService = {
   // Create new invoice
   createInvoice: async (invoice: CreateInvoiceDto): Promise<Invoice> => {
     const response = await apiClient.post<Invoice>('/invoices', invoice);
+    return response.data;
+  },
+
+  // Mark invoice as paid
+  markInvoiceAsPaid: async (id: number, markAsPaidData: MarkInvoiceAsPaidDto): Promise<Invoice> => {
+    const response = await apiClient.post<Invoice>(`/invoices/${id}/mark-as-paid`, markAsPaidData);
     return response.data;
   },
 };

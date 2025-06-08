@@ -61,3 +61,8 @@ export interface CreateInvoiceDto {
   terms?: string;
   items: CreateInvoiceItemDto[];
 }
+
+export interface MarkInvoiceAsPaidDto {
+  paidDate: string;
+  paymentReference?: string;
+}

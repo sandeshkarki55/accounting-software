@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Invoice, InvoiceStatus, Customer, CompanyInfo, CreateInvoiceDto } from '../types';
+import { Invoice, InvoiceStatus, Customer, CompanyInfo, CreateInvoiceDto, MarkInvoiceAsPaidDto } from '../types';
 import { invoiceService, customerService, companyInfoService } from '../services/api';
 import InvoiceModal from '../components/InvoiceModal';
 import InvoicePrintModal from '../components/InvoicePrintModal';
+import MarkAsPaidModal from '../components/MarkAsPaidModal';
 
 const InvoicesPage: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -14,6 +15,8 @@ const InvoicesPage: React.FC = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | undefined>();
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [invoiceToPrint, setInvoiceToPrint] = useState<Invoice | undefined>();
+  const [showMarkAsPaidModal, setShowMarkAsPaidModal] = useState(false);
+  const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState<Invoice | undefined>();
 
   useEffect(() => {
     loadData();
@@ -63,6 +66,22 @@ const InvoicesPage: React.FC = () => {
   const handlePrintInvoice = (invoice: Invoice) => {
     setInvoiceToPrint(invoice);
     setShowPrintModal(true);
+  };
+
+  const handleMarkInvoiceAsPaid = (invoice: Invoice) => {
+    setSelectedInvoiceForPayment(invoice);
+    setShowMarkAsPaidModal(true);
+  };
+
+  const handleConfirmMarkAsPaid = async (invoiceData: MarkInvoiceAsPaidDto) => {
+    try {
+      await invoiceService.markInvoiceAsPaid(selectedInvoiceForPayment!.id, invoiceData);
+      await loadData();
+      setShowMarkAsPaidModal(false);
+    } catch (err) {
+      console.error('Error marking invoice as paid:', err);
+      throw err;
+    }
   };
 
   const getCustomerForInvoice = (customerId: number) => {
@@ -175,6 +194,15 @@ const InvoicesPage: React.FC = () => {
                             >
                               <i className="bi bi-printer"></i>
                             </button>
+                            {invoice.status !== InvoiceStatus.Paid && invoice.status !== InvoiceStatus.Cancelled && (
+                              <button
+                                className="btn btn-sm btn-outline-success"
+                                onClick={() => handleMarkInvoiceAsPaid(invoice)}
+                                title="Mark as Paid"
+                              >
+                                <i className="bi bi-check-circle"></i>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -221,6 +249,14 @@ const InvoicesPage: React.FC = () => {
         invoice={invoiceToPrint}
         customer={invoiceToPrint ? getCustomerForInvoice(invoiceToPrint.customerId) : undefined}
         companyInfo={invoiceToPrint ? getCompanyInfoForInvoice(invoiceToPrint.companyInfoId) : undefined}
+      />
+
+      {/* Mark As Paid Modal */}
+      <MarkAsPaidModal
+        show={showMarkAsPaidModal}
+        onHide={() => setShowMarkAsPaidModal(false)}
+        onConfirm={handleConfirmMarkAsPaid}
+        invoice={selectedInvoiceForPayment}
       />
     </div>
   );
