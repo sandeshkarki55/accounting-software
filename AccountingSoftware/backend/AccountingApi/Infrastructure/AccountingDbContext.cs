@@ -13,6 +13,10 @@ public class AccountingDbContext : DbContext
     public DbSet<Account> Accounts { get; set; }
     public DbSet<JournalEntry> JournalEntries { get; set; }
     public DbSet<JournalEntryLine> JournalEntryLines { get; set; }
+    public DbSet<Customer> Customers { get; set; }
+    public DbSet<CompanyInfo> CompanyInfos { get; set; }
+    public DbSet<Invoice> Invoices { get; set; }
+    public DbSet<InvoiceItem> InvoiceItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -22,6 +26,10 @@ public class AccountingDbContext : DbContext
         modelBuilder.ApplyConfiguration(new AccountConfiguration());
         modelBuilder.ApplyConfiguration(new JournalEntryConfiguration());
         modelBuilder.ApplyConfiguration(new JournalEntryLineConfiguration());
+        modelBuilder.ApplyConfiguration(new CustomerConfiguration());
+        modelBuilder.ApplyConfiguration(new CompanyInfoConfiguration());
+        modelBuilder.ApplyConfiguration(new InvoiceConfiguration());
+        modelBuilder.ApplyConfiguration(new InvoiceItemConfiguration());
 
         // Configure BaseEntity properties for all entities
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Account, CreateAccountDto, UpdateAccountDto } from '../types';
+import { Account, CreateAccountDto, UpdateAccountDto, Customer, CreateCustomerDto, UpdateCustomerDto, CompanyInfo, CreateCompanyInfoDto, Invoice, CreateInvoiceDto } from '../types';
 
 // Use environment variable for API base URL, with fallback for development
 // Aspire automatically injects service URLs as environment variables
@@ -86,6 +86,69 @@ export const accountService = {
   // Delete account
   deleteAccount: async (id: number): Promise<void> => {
     await apiClient.delete(`/accounts/${id}`);
+  },
+};
+
+// Customer service
+export const customerService = {
+  // Get all customers
+  getCustomers: async (): Promise<Customer[]> => {
+    const response = await apiClient.get<Customer[]>('/customers');
+    return response.data;
+  },
+
+  // Get customer by ID
+  getCustomer: async (id: number): Promise<Customer> => {
+    const response = await apiClient.get<Customer>(`/customers/${id}`);
+    return response.data;
+  },
+
+  // Create new customer
+  createCustomer: async (customer: CreateCustomerDto): Promise<Customer> => {
+    const response = await apiClient.post<Customer>('/customers', customer);
+    return response.data;
+  },
+
+  // Update customer
+  updateCustomer: async (id: number, customer: UpdateCustomerDto): Promise<Customer> => {
+    const response = await apiClient.put<Customer>(`/customers/${id}`, customer);
+    return response.data;
+  },
+};
+
+// Company Info service
+export const companyInfoService = {
+  // Get all company infos
+  getCompanyInfos: async (): Promise<CompanyInfo[]> => {
+    const response = await apiClient.get<CompanyInfo[]>('/companyinfo');
+    return response.data;
+  },
+
+  // Create new company info
+  createCompanyInfo: async (companyInfo: CreateCompanyInfoDto): Promise<CompanyInfo> => {
+    const response = await apiClient.post<CompanyInfo>('/companyinfo', companyInfo);
+    return response.data;
+  },
+};
+
+// Invoice service
+export const invoiceService = {
+  // Get all invoices
+  getInvoices: async (): Promise<Invoice[]> => {
+    const response = await apiClient.get<Invoice[]>('/invoices');
+    return response.data;
+  },
+
+  // Get invoice by ID
+  getInvoice: async (id: number): Promise<Invoice> => {
+    const response = await apiClient.get<Invoice>(`/invoices/${id}`);
+    return response.data;
+  },
+
+  // Create new invoice
+  createInvoice: async (invoice: CreateInvoiceDto): Promise<Invoice> => {
+    const response = await apiClient.post<Invoice>('/invoices', invoice);
+    return response.data;
   },
 };
 

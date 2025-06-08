@@ -20,12 +20,6 @@ body {
   text-decoration: none;
 }
 
-/* Custom card hover effects for dashboard */
-.card:hover {
-  transform: translateY(-2px);
-  transition: transform 0.2s ease-in-out;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.12) !important;
-}
 
 /* Custom table row hover enhancement */
 .table-hover tbody tr:hover {

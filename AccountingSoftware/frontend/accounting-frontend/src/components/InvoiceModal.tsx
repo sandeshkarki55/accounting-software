@@ -1,0 +1,490 @@
+import React, { useState, useEffect } from 'react';
+import { Invoice, CreateInvoiceDto, CreateInvoiceItemDto, Customer, CompanyInfo } from '../types';
+
+interface InvoiceModalProps {
+  show: boolean;
+  onHide: () => void;
+  onSave: (invoice: CreateInvoiceDto) => Promise<void>;
+  invoice?: Invoice;
+  customers: Customer[];
+  companyInfos: CompanyInfo[];
+}
+
+const InvoiceModal: React.FC<InvoiceModalProps> = ({ 
+  show, 
+  onHide, 
+  onSave, 
+  invoice, 
+  customers, 
+  companyInfos 
+}) => {
+  const [formData, setFormData] = useState({
+    invoiceNumber: '',
+    invoiceDate: new Date().toISOString().split('T')[0],
+    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+    customerId: 0,
+    companyInfoId: undefined as number | undefined,
+    description: '',
+    taxRate: 0,
+    discountAmount: 0,
+    notes: '',
+    terms: 'Payment due within 30 days'
+  });
+  
+  const [items, setItems] = useState<CreateInvoiceItemDto[]>(
+    [{ description: '', quantity: 1, unitPrice: 0, sortOrder: 0 }]
+  );
+  
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+
+  const isViewMode = !!invoice;
+
+  useEffect(() => {
+    if (invoice) {
+      setFormData({
+        invoiceNumber: invoice.invoiceNumber,
+        invoiceDate: invoice.invoiceDate.split('T')[0],
+        dueDate: invoice.dueDate.split('T')[0],
+        customerId: invoice.customerId,
+        companyInfoId: invoice.companyInfoId,
+        description: invoice.description || '',
+        taxRate: invoice.taxRate,
+        discountAmount: invoice.discountAmount,
+        notes: invoice.notes || '',
+        terms: invoice.terms || ''
+      });
+      setItems(invoice.items.map((item, index) => ({
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        sortOrder: index
+      })));
+    } else {
+      // Reset form for new invoice
+      setFormData({
+        invoiceNumber: `INV-${Date.now()}`, // Generate default invoice number
+        invoiceDate: new Date().toISOString().split('T')[0],
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        customerId: 0,
+        companyInfoId: companyInfos.find(c => c.isDefault)?.id,
+        description: '',
+        taxRate: 0,
+        discountAmount: 0,
+        notes: '',
+        terms: 'Payment due within 30 days'
+      });
+      setItems([{ description: '', quantity: 1, unitPrice: 0, sortOrder: 0 }]);
+    }
+    setErrors({});
+  }, [invoice, companyInfos]);
+
+  const validateForm = (): boolean => {
+    const newErrors: {[key: string]: string} = {};
+
+    if (!formData.invoiceNumber.trim()) {
+      newErrors.invoiceNumber = 'Invoice number is required';
+    }
+    if (!formData.invoiceDate) {
+      newErrors.invoiceDate = 'Invoice date is required';
+    }
+    if (!formData.dueDate) {
+      newErrors.dueDate = 'Due date is required';
+    }
+    if (formData.customerId === 0) {
+      newErrors.customerId = 'Customer is required';
+    }
+    if (items.length === 0 || items.every(item => !item.description.trim())) {
+      newErrors.items = 'At least one item is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleItemChange = (index: number, field: keyof CreateInvoiceItemDto, value: string | number) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setItems(newItems);
+  };
+
+  const addItem = () => {
+    setItems([...items, { description: '', quantity: 1, unitPrice: 0, sortOrder: items.length }]);
+  };
+
+  const removeItem = (index: number) => {
+    if (items.length > 1) {
+      const newItems = items.filter((_, i) => i !== index);
+      // Update sort orders
+      newItems.forEach((item, i) => item.sortOrder = i);
+      setItems(newItems);
+    }
+  };
+
+  const calculateItemAmount = (quantity: number, unitPrice: number) => {
+    return quantity * unitPrice;
+  };
+
+  const calculateSubTotal = () => {
+    return items.reduce((sum, item) => sum + calculateItemAmount(item.quantity, item.unitPrice), 0);
+  };
+
+  const calculateTaxAmount = () => {
+    return calculateSubTotal() * (formData.taxRate / 100);
+  };
+
+  const calculateTotal = () => {
+    return calculateSubTotal() + calculateTaxAmount() - formData.discountAmount;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const invoiceData: CreateInvoiceDto = {
+        ...formData,
+        items: items.filter(item => item.description.trim())
+      };
+      
+      await onSave(invoiceData);
+      onHide();
+    } catch (error) {
+      console.error('Error saving invoice:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: 'USD' 
+    }).format(amount);
+  };
+
+  if (!show) return null;
+
+  return (
+    <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <div className="modal-dialog modal-xl">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5 className="modal-title">
+              <i className="bi bi-receipt me-2"></i>
+              {isViewMode ? `Invoice ${invoice?.invoiceNumber}` : 'Create New Invoice'}
+            </h5>
+            <button type="button" className="btn-close" onClick={onHide}></button>
+          </div>
+          
+          <form onSubmit={handleSubmit}>
+            <div className="modal-body">
+              <div className="row">
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label htmlFor="invoiceNumber" className="form-label">Invoice Number *</label>
+                    <input
+                      type="text"
+                      className={`form-control ${errors.invoiceNumber ? 'is-invalid' : ''}`}
+                      id="invoiceNumber"
+                      value={formData.invoiceNumber}
+                      onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
+                      disabled={isViewMode}
+                    />
+                    {errors.invoiceNumber && <div className="invalid-feedback">{errors.invoiceNumber}</div>}
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label htmlFor="customerId" className="form-label">Customer *</label>
+                    <select
+                      className={`form-select ${errors.customerId ? 'is-invalid' : ''}`}
+                      id="customerId"
+                      value={formData.customerId}
+                      onChange={(e) => setFormData({ ...formData, customerId: parseInt(e.target.value) })}
+                      disabled={isViewMode}
+                    >
+                      <option value={0}>Select a customer...</option>
+                      {customers.map((customer) => (
+                        <option key={customer.id} value={customer.id}>
+                          {customer.companyName} ({customer.customerCode})
+                        </option>
+                      ))}
+                    </select>
+                    {errors.customerId && <div className="invalid-feedback">{errors.customerId}</div>}
+                  </div>
+                </div>
+              </div>
+
+              <div className="row">
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label htmlFor="invoiceDate" className="form-label">Invoice Date *</label>
+                    <input
+                      type="date"
+                      className={`form-control ${errors.invoiceDate ? 'is-invalid' : ''}`}
+                      id="invoiceDate"
+                      value={formData.invoiceDate}
+                      onChange={(e) => setFormData({ ...formData, invoiceDate: e.target.value })}
+                      disabled={isViewMode}
+                    />
+                    {errors.invoiceDate && <div className="invalid-feedback">{errors.invoiceDate}</div>}
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label htmlFor="dueDate" className="form-label">Due Date *</label>
+                    <input
+                      type="date"
+                      className={`form-control ${errors.dueDate ? 'is-invalid' : ''}`}
+                      id="dueDate"
+                      value={formData.dueDate}
+                      onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                      disabled={isViewMode}
+                    />
+                    {errors.dueDate && <div className="invalid-feedback">{errors.dueDate}</div>}
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label htmlFor="companyInfoId" className="form-label">Company</label>
+                    <select
+                      className="form-select"
+                      id="companyInfoId"
+                      value={formData.companyInfoId || ''}
+                      onChange={(e) => setFormData({ ...formData, companyInfoId: e.target.value ? parseInt(e.target.value) : undefined })}
+                      disabled={isViewMode}
+                    >
+                      <option value="">Use default company...</option>
+                      {companyInfos.map((company) => (
+                        <option key={company.id} value={company.id}>
+                          {company.companyName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <label htmlFor="description" className="form-label">Description</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Brief description of the invoice"
+                  disabled={isViewMode}
+                />
+              </div>
+
+              {/* Invoice Items */}
+              <div className="mb-4">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h6 className="mb-0">Invoice Items</h6>
+                  {!isViewMode && (
+                    <button type="button" className="btn btn-sm btn-outline-primary" onClick={addItem}>
+                      <i className="bi bi-plus-circle me-1"></i>
+                      Add Item
+                    </button>
+                  )}
+                </div>
+                
+                {errors.items && <div className="alert alert-danger">{errors.items}</div>}
+                
+                <div className="table-responsive">
+                  <table className="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Description</th>
+                        <th style={{width: '100px'}}>Quantity</th>
+                        <th style={{width: '120px'}}>Unit Price</th>
+                        <th style={{width: '120px'}}>Amount</th>
+                        {!isViewMode && <th style={{width: '50px'}}>Actions</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((item, index) => (
+                        <tr key={index}>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={item.description}
+                              onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                              placeholder="Item description"
+                              disabled={isViewMode}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              className="form-control form-control-sm"
+                              value={item.quantity}
+                              onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
+                              min="1"
+                              disabled={isViewMode}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              className="form-control form-control-sm"
+                              value={item.unitPrice}
+                              onChange={(e) => handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                              min="0"
+                              step="0.01"
+                              disabled={isViewMode}
+                            />
+                          </td>
+                          <td>
+                            <span className="fw-bold">
+                              {formatCurrency(calculateItemAmount(item.quantity, item.unitPrice))}
+                            </span>
+                          </td>
+                          {!isViewMode && (
+                            <td>
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-danger"
+                                onClick={() => removeItem(index)}
+                                disabled={items.length === 1}
+                              >
+                                <i className="bi bi-trash"></i>
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Invoice Totals */}
+              <div className="row">
+                <div className="col-md-8">
+                  <div className="row">
+                    <div className="col-md-6">
+                      <div className="mb-3">
+                        <label htmlFor="taxRate" className="form-label">Tax Rate (%)</label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          id="taxRate"
+                          value={formData.taxRate}
+                          onChange={(e) => setFormData({ ...formData, taxRate: parseFloat(e.target.value) || 0 })}
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          disabled={isViewMode}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <div className="mb-3">
+                        <label htmlFor="discountAmount" className="form-label">Discount Amount</label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          id="discountAmount"
+                          value={formData.discountAmount}
+                          onChange={(e) => setFormData({ ...formData, discountAmount: parseFloat(e.target.value) || 0 })}
+                          min="0"
+                          step="0.01"
+                          disabled={isViewMode}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="card bg-light">
+                    <div className="card-body">
+                      <div className="d-flex justify-content-between">
+                        <span>Subtotal:</span>
+                        <span>{formatCurrency(calculateSubTotal())}</span>
+                      </div>
+                      <div className="d-flex justify-content-between">
+                        <span>Tax ({formData.taxRate}%):</span>
+                        <span>{formatCurrency(calculateTaxAmount())}</span>
+                      </div>
+                      <div className="d-flex justify-content-between">
+                        <span>Discount:</span>
+                        <span>-{formatCurrency(formData.discountAmount)}</span>
+                      </div>
+                      <hr />
+                      <div className="d-flex justify-content-between fw-bold">
+                        <span>Total:</span>
+                        <span>{formatCurrency(calculateTotal())}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="row">
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label htmlFor="notes" className="form-label">Notes</label>
+                    <textarea
+                      className="form-control"
+                      id="notes"
+                      rows={3}
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      placeholder="Additional notes for the invoice"
+                      disabled={isViewMode}
+                    />
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label htmlFor="terms" className="form-label">Terms & Conditions</label>
+                    <textarea
+                      className="form-control"
+                      id="terms"
+                      rows={3}
+                      value={formData.terms}
+                      onChange={(e) => setFormData({ ...formData, terms: e.target.value })}
+                      placeholder="Payment terms and conditions"
+                      disabled={isViewMode}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={onHide}>
+                {isViewMode ? 'Close' : 'Cancel'}
+              </button>
+              {!isViewMode && (
+                <button type="submit" className="btn btn-primary" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      Creating Invoice...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-receipt me-2"></i>
+                      Create Invoice
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default InvoiceModal;
