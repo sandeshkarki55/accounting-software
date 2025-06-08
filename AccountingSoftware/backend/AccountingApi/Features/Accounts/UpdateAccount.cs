@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
+using AccountingApi.Mappings;
 
 namespace AccountingApi.Features.Accounts;
 
@@ -12,10 +13,12 @@ public record UpdateAccountCommand(int Id, UpdateAccountDto Account) : IRequest<
 public class UpdateAccountCommandHandler : IRequestHandler<UpdateAccountCommand, bool>
 {
     private readonly AccountingDbContext _context;
+    private readonly AccountMapper _accountMapper;
 
-    public UpdateAccountCommandHandler(AccountingDbContext context)
+    public UpdateAccountCommandHandler(AccountingDbContext context, AccountMapper accountMapper)
     {
         _context = context;
+        _accountMapper = accountMapper;
     }
 
     public async Task<bool> Handle(UpdateAccountCommand request, CancellationToken cancellationToken)
@@ -26,11 +29,8 @@ public class UpdateAccountCommandHandler : IRequestHandler<UpdateAccountCommand,
         if (account == null)
             return false;
 
-        // Update account properties
-        account.AccountName = request.Account.AccountName;
-        account.Description = request.Account.Description;
-        account.IsActive = request.Account.IsActive;
-        account.UpdatedAt = DateTime.UtcNow;
+        // Update account using mapper
+        _accountMapper.UpdateEntity(account, request.Account);
 
         await _context.SaveChangesAsync(cancellationToken);
         return true;

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
+using AccountingApi.Mappings;
 
 namespace AccountingApi.Features.Accounts;
 
@@ -13,10 +14,12 @@ public record CreateAccountCommand(CreateAccountDto Account) : IRequest<AccountD
 public class CreateAccountCommandHandler : IRequestHandler<CreateAccountCommand, AccountDto>
 {
     private readonly AccountingDbContext _context;
+    private readonly AccountMapper _accountMapper;
 
-    public CreateAccountCommandHandler(AccountingDbContext context)
+    public CreateAccountCommandHandler(AccountingDbContext context, AccountMapper accountMapper)
     {
         _context = context;
+        _accountMapper = accountMapper;
     }
 
     public async Task<AccountDto> Handle(CreateAccountCommand request, CancellationToken cancellationToken)
@@ -42,34 +45,13 @@ public class CreateAccountCommandHandler : IRequestHandler<CreateAccountCommand,
             }
         }
 
-        // Create new account entity
-        var account = new Account
-        {
-            AccountCode = request.Account.AccountCode,
-            AccountName = request.Account.AccountName,
-            AccountType = request.Account.AccountType,
-            Description = request.Account.Description,
-            ParentAccountId = request.Account.ParentAccountId,
-            Balance = 0, // New accounts start with zero balance
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+        // Create new account entity using mapper
+        var account = _accountMapper.ToEntity(request.Account);
 
         _context.Accounts.Add(account);
         await _context.SaveChangesAsync(cancellationToken);
 
-        // Return the created account as DTO
-        return new AccountDto
-        {
-            Id = account.Id,
-            AccountCode = account.AccountCode,
-            AccountName = account.AccountName,
-            AccountType = account.AccountType,
-            Balance = account.Balance,
-            IsActive = account.IsActive,
-            Description = account.Description,
-            ParentAccountId = account.ParentAccountId
-        };
+        // Return the created account as DTO using mapper
+        return _accountMapper.ToDto(account);
     }
 }

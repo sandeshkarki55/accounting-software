@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
+using AccountingApi.Mappings;
 
 namespace AccountingApi.Features.Customers;
 
@@ -12,34 +13,22 @@ public record GetCustomerByIdQuery(int Id) : IRequest<CustomerDto?>;
 public class GetCustomerByIdQueryHandler : IRequestHandler<GetCustomerByIdQuery, CustomerDto?>
 {
     private readonly AccountingDbContext _context;
+    private readonly CustomerMapper _customerMapper;
 
-    public GetCustomerByIdQueryHandler(AccountingDbContext context)
+    public GetCustomerByIdQueryHandler(AccountingDbContext context, CustomerMapper customerMapper)
     {
         _context = context;
+        _customerMapper = customerMapper;
     }
 
     public async Task<CustomerDto?> Handle(GetCustomerByIdQuery request, CancellationToken cancellationToken)
     {
         var customer = await _context.Customers
-            .Where(c => c.Id == request.Id)
-            .Select(c => new CustomerDto
-            {
-                Id = c.Id,
-                CustomerCode = c.CustomerCode,
-                CompanyName = c.CompanyName,
-                ContactPersonName = c.ContactPersonName,
-                Email = c.Email,
-                Phone = c.Phone,
-                Address = c.Address,
-                City = c.City,
-                State = c.State,
-                PostalCode = c.PostalCode,
-                Country = c.Country,
-                IsActive = c.IsActive,
-                Notes = c.Notes
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
 
-        return customer;
+        if (customer == null)
+            return null;
+
+        return _customerMapper.ToDto(customer);
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
+using AccountingApi.Mappings;
 
 namespace AccountingApi.Features.Invoices;
 
@@ -13,10 +14,12 @@ public record GetInvoiceByIdQuery(int Id) : IRequest<InvoiceDto?>;
 public class GetInvoiceByIdQueryHandler : IRequestHandler<GetInvoiceByIdQuery, InvoiceDto?>
 {
     private readonly AccountingDbContext _context;
+    private readonly InvoiceMapper _invoiceMapper;
 
-    public GetInvoiceByIdQueryHandler(AccountingDbContext context)
+    public GetInvoiceByIdQueryHandler(AccountingDbContext context, InvoiceMapper invoiceMapper)
     {
         _context = context;
+        _invoiceMapper = invoiceMapper;
     }
 
     public async Task<InvoiceDto?> Handle(GetInvoiceByIdQuery request, CancellationToken cancellationToken)
@@ -25,42 +28,11 @@ public class GetInvoiceByIdQueryHandler : IRequestHandler<GetInvoiceByIdQuery, I
             .Include(i => i.Customer)
             .Include(i => i.CompanyInfo)
             .Include(i => i.Items.OrderBy(item => item.SortOrder))
-            .Where(i => i.Id == request.Id)
-            .Select(i => new InvoiceDto
-            {
-                Id = i.Id,
-                InvoiceNumber = i.InvoiceNumber,
-                InvoiceDate = i.InvoiceDate,
-                DueDate = i.DueDate,
-                CustomerId = i.CustomerId,
-                CustomerName = i.Customer.CompanyName,
-                CompanyInfoId = i.CompanyInfoId,
-                CompanyName = i.CompanyInfo != null ? i.CompanyInfo.CompanyName : null,
-                Description = i.Description,
-                SubTotal = i.SubTotal,
-                TaxRate = i.TaxRate,
-                TaxAmount = i.TaxAmount,
-                DiscountAmount = i.DiscountAmount,
-                TotalAmount = i.TotalAmount,
-                Status = i.Status,
-                StatusName = i.Status.ToString(),
-                Notes = i.Notes,
-                Terms = i.Terms,
-                PaidDate = i.PaidDate,
-                PaymentReference = i.PaymentReference,
-                Items = i.Items.Select(item => new InvoiceItemDto
-                {
-                    Id = item.Id,
-                    InvoiceId = item.InvoiceId,
-                    Description = item.Description,
-                    Quantity = item.Quantity,
-                    UnitPrice = item.UnitPrice,
-                    Amount = item.Amount,
-                    SortOrder = item.SortOrder
-                }).ToList()
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefaultAsync(i => i.Id == request.Id, cancellationToken);
 
-        return invoice;
+        if (invoice == null)
+            return null;
+
+        return _invoiceMapper.ToDto(invoice);
     }
 }

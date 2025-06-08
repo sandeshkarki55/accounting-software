@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
+using AccountingApi.Mappings;
 
 namespace AccountingApi.Features.Accounts;
 
@@ -12,10 +13,12 @@ public record GetAccountByIdQuery(int Id) : IRequest<AccountDto?>;
 public class GetAccountByIdQueryHandler : IRequestHandler<GetAccountByIdQuery, AccountDto?>
 {
     private readonly AccountingDbContext _context;
+    private readonly AccountMapper _accountMapper;
 
-    public GetAccountByIdQueryHandler(AccountingDbContext context)
+    public GetAccountByIdQueryHandler(AccountingDbContext context, AccountMapper accountMapper)
     {
         _context = context;
+        _accountMapper = accountMapper;
     }
 
     public async Task<AccountDto?> Handle(GetAccountByIdQuery request, CancellationToken cancellationToken)
@@ -27,17 +30,6 @@ public class GetAccountByIdQueryHandler : IRequestHandler<GetAccountByIdQuery, A
         if (account == null)
             return null;
 
-        return new AccountDto
-        {
-            Id = account.Id,
-            AccountCode = account.AccountCode,
-            AccountName = account.AccountName,
-            AccountType = account.AccountType,
-            Balance = account.Balance,
-            IsActive = account.IsActive,
-            Description = account.Description,
-            ParentAccountId = account.ParentAccountId,
-            ParentAccountName = account.ParentAccount?.AccountName
-        };
+        return _accountMapper.ToDto(account);
     }
 }

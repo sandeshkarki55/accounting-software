@@ -2,6 +2,7 @@ using Scalar.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
 using AccountingApi.Middleware;
+using AccountingApi.Mappings;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.Extensions.ServiceDiscovery;
@@ -68,6 +69,9 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Progr
 // Add FluentValidation
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+// Add Mapping Services
+builder.Services.AddMappingServices();
 
 // Add CORS for frontend development with Aspire support
 builder.Services.AddCors(options =>
