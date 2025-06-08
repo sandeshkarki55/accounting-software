@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Invoice, InvoiceStatus, Customer, CompanyInfo, CreateInvoiceDto } from '../types';
 import { invoiceService, customerService, companyInfoService } from '../services/api';
 import InvoiceModal from '../components/InvoiceModal';
+import InvoicePrintModal from '../components/InvoicePrintModal';
 
 const InvoicesPage: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -11,6 +12,8 @@ const InvoicesPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | undefined>();
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [invoiceToPrint, setInvoiceToPrint] = useState<Invoice | undefined>();
 
   useEffect(() => {
     loadData();
@@ -55,6 +58,22 @@ const InvoicesPage: React.FC = () => {
       console.error('Error saving invoice:', err);
       throw err;
     }
+  };
+
+  const handlePrintInvoice = (invoice: Invoice) => {
+    setInvoiceToPrint(invoice);
+    setShowPrintModal(true);
+  };
+
+  const getCustomerForInvoice = (customerId: number) => {
+    return customers.find(customer => customer.id === customerId);
+  };
+
+  const getCompanyInfoForInvoice = (companyInfoId?: number) => {
+    if (!companyInfoId) {
+      return companyInfos.find(company => company.isDefault);
+    }
+    return companyInfos.find(company => company.id === companyInfoId);
   };
 
   const getStatusBadgeClass = (status: InvoiceStatus) => {
@@ -151,6 +170,7 @@ const InvoicesPage: React.FC = () => {
                             </button>
                             <button
                               className="btn btn-sm btn-outline-secondary"
+                              onClick={() => handlePrintInvoice(invoice)}
                               title="Print Invoice"
                             >
                               <i className="bi bi-printer"></i>
@@ -192,6 +212,15 @@ const InvoicesPage: React.FC = () => {
         invoice={selectedInvoice}
         customers={customers}
         companyInfos={companyInfos}
+      />
+
+      {/* Invoice Print Modal */}
+      <InvoicePrintModal
+        show={showPrintModal}
+        onHide={() => setShowPrintModal(false)}
+        invoice={invoiceToPrint}
+        customer={invoiceToPrint ? getCustomerForInvoice(invoiceToPrint.customerId) : undefined}
+        companyInfo={invoiceToPrint ? getCompanyInfoForInvoice(invoiceToPrint.companyInfoId) : undefined}
       />
     </div>
   );
