@@ -5,8 +5,32 @@ using AccountingApi.Middleware;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.Extensions.ServiceDiscovery;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add OpenTelemetry observability for Aspire
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics =>
+    {
+        metrics.AddAspNetCoreInstrumentation()
+               .AddHttpClientInstrumentation();
+    })
+    .WithTracing(tracing =>
+    {
+        tracing.AddAspNetCoreInstrumentation()
+               .AddHttpClientInstrumentation()
+               .AddEntityFrameworkCoreInstrumentation();
+    });
+
+// Configure OpenTelemetry Logging
+builder.Logging.AddOpenTelemetry(logging =>
+{
+    logging.IncludeFormattedMessage = true;
+    logging.IncludeScopes = true;
+});
 
 // Add service discovery for Aspire integration
 builder.Services.AddServiceDiscovery();
@@ -68,6 +92,37 @@ builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
 var app = builder.Build();
+
+// Apply database migrations automatically on startup
+// This ensures the database schema is always up to date
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AccountingDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    
+    try
+    {
+        logger.LogInformation("Applying database migrations...");
+        
+        // Ensure the database is created and apply all pending migrations
+        await context.Database.MigrateAsync();
+        
+        logger.LogInformation("Database migrations applied successfully.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "An error occurred while applying database migrations.");
+        
+        // In development, we might want to continue anyway
+        // In production, you might want to fail fast
+        if (!app.Environment.IsDevelopment())
+        {
+            throw;
+        }
+        
+        logger.LogWarning("Continuing startup despite migration errors in development environment.");
+    }
+}
 
 // Map health checks for Aspire integration
 app.MapHealthChecks("/health");
