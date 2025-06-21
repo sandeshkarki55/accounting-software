@@ -13,44 +13,8 @@ using OpenTelemetry.Resources;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure OpenTelemetry for Aspire integration
-builder.Services.AddOpenTelemetry()
-    .ConfigureResource(resource => resource
-        .AddService("AccountingApi", "1.0.0")
-        .AddAttributes(new Dictionary<string, object>
-        {
-            ["service.instance.id"] = Environment.MachineName,
-            ["deployment.environment"] = builder.Environment.EnvironmentName
-        }))
-    .WithMetrics(metrics =>
-    {
-        metrics.AddAspNetCoreInstrumentation()
-               .AddHttpClientInstrumentation()
-               .AddRuntimeInstrumentation()
-               .AddProcessInstrumentation()
-               .AddOtlpExporter();
-    })
-    .WithTracing(tracing =>
-    {
-        tracing.AddAspNetCoreInstrumentation()
-               .AddHttpClientInstrumentation()
-               .AddEntityFrameworkCoreInstrumentation()
-               .SetSampler(new TraceIdRatioBasedSampler(1.0))
-               .AddOtlpExporter();
-    });
+builder.AddServiceDefaults();
 
-// Enhanced logging configuration for structured logs
-builder.Logging.AddOpenTelemetry(logging =>
-{
-    logging.IncludeFormattedMessage = true;
-    logging.IncludeScopes = true;
-    logging.ParseStateValues = true;
-    logging.SetResourceBuilder(ResourceBuilder.CreateDefault()
-        .AddService("AccountingApi", "1.0.0"));
-});
-
-// Add service discovery for Aspire integration
-builder.Services.AddServiceDiscovery();
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -112,6 +76,8 @@ builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
 var app = builder.Build();
+
+app.MapDefaultEndpoints();
 
 // Apply database migrations automatically on startup
 // This ensures the database schema is always up to date

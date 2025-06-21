@@ -15,11 +15,13 @@ public class CreateAccountCommandHandler : IRequestHandler<CreateAccountCommand,
 {
     private readonly AccountingDbContext _context;
     private readonly AccountMapper _accountMapper;
+    private readonly ILogger<CreateAccountCommandHandler> _logger;
 
-    public CreateAccountCommandHandler(AccountingDbContext context, AccountMapper accountMapper)
+    public CreateAccountCommandHandler(AccountingDbContext context, AccountMapper accountMapper, ILogger<CreateAccountCommandHandler> logger)
     {
         _context = context;
         _accountMapper = accountMapper;
+        _logger = logger;
     }
 
     public async Task<AccountDto> Handle(CreateAccountCommand request, CancellationToken cancellationToken)
@@ -50,6 +52,8 @@ public class CreateAccountCommandHandler : IRequestHandler<CreateAccountCommand,
 
         _context.Accounts.Add(account);
         await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Account created successfully. Account Id: {accountId}", account.Id);
 
         // Return the created account as DTO using mapper
         return _accountMapper.ToDto(account);
