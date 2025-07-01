@@ -1,105 +1,30 @@
+// Import custom variables first to override Bootstrap defaults
 @import './styles/variables';
 
-/* Bootstrap 5 compatible base styles with vibrant colors */
+// Import Bootstrap with our custom variables
+@import '~bootstrap/scss/bootstrap';
+
+// Import our custom theme overrides
+@import './styles/bootswatch';
+
+// Global body styles
 body {
-  margin: 0;
   font-family: $font-family-sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: $body-bg;
+  background-color: $gray-50;
   color: $body-color;
-  line-height: 1.6;
+  overflow-x: hidden;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
-  background-color: $gray-100;
-  padding: 0.125rem 0.25rem;
-  border-radius: $border-radius-sm;
-  font-size: 0.875em;
-}
-
-/* Global utility classes */
+// Custom utility classes
 .text-vibrant-primary {
   color: $primary !important;
-}
-
-.text-vibrant-success {
-  color: $success !important;
-}
-
-.text-vibrant-warning {
-  color: $warning !important;
-}
-
-.text-vibrant-danger {
-  color: $danger !important;
 }
 
 .bg-vibrant-primary {
   background-color: $primary !important;
 }
 
-.bg-vibrant-success {
-  background-color: $success !important;
-}
-
-.bg-vibrant-warning {
-  background-color: $warning !important;
-}
-
-.bg-vibrant-danger {
-  background-color: $danger !important;
-}
-
-/* Enhanced button styles */
-.btn {
-  border-radius: $btn-border-radius;
-  font-weight: $btn-font-weight;
-  transition: $transition-base;
-  
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: $box-shadow-lg;
-  }
-}
-
-/* Enhanced card styles */
-.card {
-  border-radius: $card-border-radius;
-  border: 1px solid $card-border-color;
-  box-shadow: $card-box-shadow;
-  transition: $transition-base;
-  
-  &:hover {
-    box-shadow: $box-shadow-lg;
-  }
-}
-
-/* Enhanced form styles */
-.form-control, .form-select {
-  border-color: $input-border-color;
-  border-radius: $border-radius;
-  transition: $transition-base;
-  
-  &:focus {
-    border-color: $input-focus-border-color;
-    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
-  }
-}
-
-/* Enhanced modal styles */
-.modal-content {
-  border-radius: $border-radius-lg;
-  border: 1px solid $modal-content-border-color;
-  box-shadow: $box-shadow-lg;
-}
-
-.modal-backdrop {
-  background-color: $modal-backdrop-bg;
-}
-
-/* Smooth transitions for all interactive elements */
-a, button, .btn, .nav-link {
-  transition: $transition-base;
+.border-sketchy {
+  border: $border-width solid $gray-800 !important;
+  border-radius: $border-radius-sketchy !important;
 }

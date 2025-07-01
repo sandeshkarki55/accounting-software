@@ -1,307 +1,266 @@
+// SideNavigation.scss
 @import '../../styles/variables';
 
-/* Side Navigation Styles with Vibrant Colors */
+// Sidebar overlay for mobile
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1040;
+  cursor: pointer;
+}
+
+// Main sidebar
 .sidebar {
   position: fixed;
   top: 0;
   left: 0;
   height: 100vh;
-  background: linear-gradient(180deg, $sidebar-bg 0%, darken($sidebar-bg, 5%) 100%);
-  color: $sidebar-text;
-  z-index: 1000;
-  transition: width 0.3s ease, box-shadow 0.3s ease;
-  display: flex;
-  flex-direction: column;
+  background: $white;
+  border-right: $border-width solid $gray-800;
+  z-index: 1050;
+  transition: all 0.3s ease;
   overflow-x: hidden;
-  box-shadow: $box-shadow-lg;
-
+  overflow-y: auto;
+  
+  // Expanded state
   &.sidebar-open {
-    width: 280px;
+    width: 250px;
+    
+    @media (max-width: 991.98px) {
+      transform: translateX(0);
+    }
   }
-
+  
+  // Collapsed state
   &.sidebar-closed {
     width: 70px;
+    
+    @media (max-width: 991.98px) {
+      transform: translateX(-100%);
+    }
+  }
+  
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: $gray-100;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: $gray-400;
+    border-radius: 3px;
+    
+    &:hover {
+      background: $gray-500;
+    }
   }
 }
 
+// Sidebar header
 .sidebar-header {
   padding: 1rem;
-  border-bottom: 1px solid lighten($sidebar-bg, 10%);
-  min-height: 70px;
-  display: flex;
-  align-items: center;
-  background: linear-gradient(90deg, $sidebar-bg 0%, lighten($sidebar-bg, 3%) 100%);
+  border-bottom: 1px solid $gray-300;
+  background: $gray-50;
 }
 
 .sidebar-brand {
   display: flex;
   align-items: center;
+  color: $gray-800;
+  font-family: $headings-font-family;
   font-weight: 700;
   font-size: 1.2rem;
-  white-space: nowrap;
-  color: white;
-
+  text-decoration: none;
+  
   i {
     font-size: 1.5rem;
     color: $primary;
-    animation: brandPulse 3s ease-in-out infinite;
+    min-width: 1.5rem;
   }
-
+  
   .brand-text {
+    margin-left: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
     transition: opacity 0.3s ease;
-    background: linear-gradient(45deg, $primary, $indigo);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  }
+  
+  // When sidebar is collapsed, hide brand text
+  .sidebar-closed & .brand-text {
+    opacity: 0;
+    width: 0;
   }
 }
 
-.sidebar-closed .brand-text {
-  opacity: 0;
-}
-
+// Sidebar menu
 .sidebar-menu {
-  flex: 1;
   padding: 1rem 0;
-  overflow-y: auto;
-
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: rgba($primary, 0.3);
-    border-radius: 2px;
-
-    &:hover {
-      background: rgba($primary, 0.5);
-    }
-  }
+  flex: 1;
 }
 
-.sidebar .nav-link {
-  color: $sidebar-text;
-  padding: 0.875rem 1rem;
-  border: none;
-  border-radius: 0;
-  transition: $transition-base;
+.sidebar-menu .nav {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.sidebar-menu .nav-item {
+  margin-bottom: 0.25rem;
+}
+
+.sidebar-menu .nav-link {
   display: flex;
   align-items: center;
+  padding: 0.75rem 1rem;
+  color: $gray-700;
   text-decoration: none;
-  white-space: nowrap;
+  border-radius: 0;
+  margin: 0 0.5rem;
+  border-radius: $border-radius-sm-sketchy;
+  transition: all 0.2s ease;
   position: relative;
-  margin: 0.125rem 0.5rem;
-  border-radius: $border-radius;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    width: 3px;
-    background: $primary;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    border-radius: 0 2px 2px 0;
-  }
-
+  
   &:hover {
-    color: white;
-    background: linear-gradient(90deg, rgba($primary, 0.2) 0%, rgba($primary, 0.1) 100%);
-    transform: translateX(4px);
-    box-shadow: $box-shadow-sm;
-
-    &::before {
-      opacity: 1;
-    }
-
-    i {
-      color: $primary;
-      transform: scale(1.1);
-    }
+    background-color: $gray-100;
+    color: $gray-800;
+    transform: translateX(3px);
   }
-
+  
   &.active {
-    color: white;
-    background: linear-gradient(90deg, $primary 0%, darken($primary, 10%) 100%);
-    box-shadow: $box-shadow;
-
-    &::before {
-      opacity: 1;
-      background: white;
-    }
-
-    i {
-      color: white;
-      animation: iconBounce 0.5s ease;
-    }
-
-    .nav-text {
-      font-weight: 600;
-    }
-  }
-
-  i {
-    font-size: 1.1rem;
-    min-width: 20px;
-    transition: $transition-base;
-  }
-}
-
-.nav-text {
-  transition: opacity 0.3s ease;
-  font-weight: 500;
-  letter-spacing: 0.025em;
-}
-
-.sidebar-closed .nav-text {
-  opacity: 0;
-}
-
-.sidebar-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
-  z-index: 999;
-  animation: fadeIn 0.3s ease;
-}
-
-/* Main content adjustment */
-.main-content {
-  transition: margin-left 0.3s ease;
-
-  &.main-content-expanded {
-    margin-left: 280px;
-  }
-
-  &.main-content-collapsed {
-    margin-left: 70px;
-  }
-}
-
-/* Animations */
-@keyframes brandPulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
-
-@keyframes iconBounce {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.2);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* Enhanced nav items with specific colors */
-.sidebar .nav-link {
-  &[href="/"] i { color: $info; }
-  &[href="/accounts"] i { color: $success; }
-  &[href="/customers"] i { color: $purple; }
-  &[href="/invoices"] i { color: $warning; }
-  &[href="/journal"] i { color: $teal; }
-  &[href="/reports"] i { color: $orange; }
-
-  &:hover {
-    &[href="/"] i { color: lighten($info, 20%); }
-    &[href="/accounts"] i { color: lighten($success, 20%); }
-    &[href="/customers"] i { color: lighten($purple, 20%); }
-    &[href="/invoices"] i { color: lighten($warning, 20%); }
-    &[href="/journal"] i { color: lighten($teal, 20%); }
-    &[href="/reports"] i { color: lighten($orange, 20%); }
-  }
-
-  &.active i {
-    color: white !important;
-  }
-}
-
-/* Mobile responsiveness */
-@media (max-width: 991.98px) {
-  .sidebar {
-    &.sidebar-closed {
-      width: 0;
-      transform: translateX(-100%);
-    }
+    background-color: $primary;
+    color: $white;
+    border: $border-width solid $primary;
     
-    &.sidebar-open {
-      width: 280px;
-      transform: translateX(0);
+    &::before {
+      content: '';
+      position: absolute;
+      left: -0.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 60%;
+      background-color: $primary;
+      border-radius: 2px;
     }
   }
   
-  .main-content {
-    &.main-content-expanded,
-    &.main-content-collapsed {
-      margin-left: 0;
+  i {
+    font-size: 1.1rem;
+    min-width: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .nav-text {
+    margin-left: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: opacity 0.3s ease;
+    font-weight: 500;
+  }
+  
+  // When sidebar is collapsed, hide nav text and center icons
+  .sidebar-closed & {
+    justify-content: center;
+    margin: 0 0.25rem;
+    padding: 0.75rem 0.5rem;
+    
+    .nav-text {
+      opacity: 0;
+      width: 0;
+      margin: 0;
+    }
+    
+    &::before {
+      display: none;
     }
   }
 }
 
-/* Tooltip for collapsed sidebar */
+// Tooltip for collapsed sidebar
 .sidebar-closed .nav-link {
   position: relative;
-
+  
   &:hover::after {
-    content: attr(data-tooltip);
+    content: attr(title);
     position: absolute;
     left: 100%;
     top: 50%;
     transform: translateY(-50%);
-    background: $dark;
-    color: white;
+    background: $gray-800;
+    color: $white;
     padding: 0.5rem 0.75rem;
-    border-radius: $border-radius;
+    border-radius: $border-radius-sm;
     white-space: nowrap;
-    z-index: 1001;
+    z-index: 1060;
     margin-left: 0.5rem;
     font-size: 0.875rem;
-    box-shadow: $box-shadow-lg;
-    animation: tooltipSlideIn 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
-
+  
   &:hover::before {
     content: '';
     position: absolute;
     left: 100%;
     top: 50%;
     transform: translateY(-50%);
-    border: 6px solid transparent;
-    border-right-color: $dark;
-    z-index: 1001;
-    margin-left: -6px;
+    border: 5px solid transparent;
+    border-right-color: $gray-800;
+    z-index: 1060;
   }
 }
 
-@keyframes tooltipSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-50%) translateX(-10px);
+// Mobile specific styles
+@media (max-width: 991.98px) {
+  .sidebar {
+    width: 250px !important;
+    transform: translateX(-100%);
+    
+    &.sidebar-open {
+      transform: translateX(0);
+    }
   }
-  to {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
+  
+  .sidebar-brand .brand-text,
+  .nav-link .nav-text {
+    opacity: 1 !important;
+    width: auto !important;
   }
+}
+
+// Add some visual interest with sketchy borders
+.sidebar-menu .nav-link:not(.active) {
+  &:hover {
+    border: 1px solid transparent;
+    border-image: linear-gradient(45deg, $gray-300, transparent, $gray-300) 1;
+  }
+}
+
+// Vibrant accent colors for different menu items
+.sidebar-menu .nav-item:nth-child(1) .nav-link.active { background-color: #007bff; }
+.sidebar-menu .nav-item:nth-child(2) .nav-link.active { background-color: #28a745; }
+.sidebar-menu .nav-item:nth-child(3) .nav-link.active { background-color: #17a2b8; }
+.sidebar-menu .nav-item:nth-child(4) .nav-link.active { background-color: #ffc107; color: $gray-800; }
+.sidebar-menu .nav-item:nth-child(5) .nav-link.active { background-color: #6f42c1; }
+.sidebar-menu .nav-item:nth-child(6) .nav-link.active { background-color: #e83e8c; }
+
+// Smooth animations
+.sidebar,
+.sidebar-brand .brand-text,
+.nav-link .nav-text {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Focus states for accessibility
+.nav-link:focus {
+  outline: 2px solid $primary;
+  outline-offset: 2px;
 }

@@ -1,468 +1,28 @@
+// App.scss - Main layout styles
 @import './styles/variables';
 
-/* App Component Styles with Vibrant Colors */
 .App {
   min-height: 100vh;
-  background: linear-gradient(135deg, $body-bg 0%, lighten($body-bg, 1%) 100%);
+  background-color: $gray-50;
 }
 
+// Main content area
 .main-content {
-  transition: margin-left 0.3s ease;
+  padding-top: 60px; // Account for fixed navbar height
+  transition: all 0.3s ease;
   min-height: 100vh;
-  padding-top: 70px; // Account for top navbar height
-
-  .main-content-inner {
-    padding: 0;
-    min-height: calc(100vh - 70px);
-  }
-
+  
+  // Adjust margin based on sidebar state
   &.main-content-expanded {
-    margin-left: 280px;
+    margin-left: 250px; // Sidebar width when expanded
   }
-
+  
   &.main-content-collapsed {
-    margin-left: 70px;
+    margin-left: 70px; // Sidebar width when collapsed
   }
-}
-
-/* Dashboard Styles */
-.dashboard-page {
-  padding: 2rem;
-  background: linear-gradient(135deg, $body-bg 0%, lighten($body-bg, 2%) 100%);
-  min-height: 100vh;
-
-  .page-header {
-    margin-bottom: 2.5rem;
-    padding: 1.5rem;
-    background: linear-gradient(135deg, white 0%, $gray-50 100%);
-    border-radius: $border-radius-lg;
-    box-shadow: $box-shadow;
-    border: 1px solid $border-color;
-
-    .page-title-section {
-      .page-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: $gray-800;
-        margin-bottom: 0.5rem;
-        display: flex;
-        align-items: center;
-
-        i {
-          color: $primary;
-          font-size: 2.2rem;
-          animation: dashboardPulse 3s ease-in-out infinite;
-        }
-      }
-
-      .page-subtitle {
-        color: $gray-600;
-        font-size: 1.1rem;
-        margin: 0;
-        font-weight: 500;
-      }
-    }
-  }
-
-  .dashboard-content {
-    .financial-overview {
-      margin-bottom: 3rem;
-
-      .stat-card {
-        background: white;
-        border-radius: $border-radius-lg;
-        padding: 1.5rem;
-        box-shadow: $box-shadow;
-        border: 1px solid $border-color;
-        height: 100%;
-        transition: $transition-base;
-        position: relative;
-        overflow: hidden;
-
-        &::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 4px;
-          background: linear-gradient(90deg, transparent, $primary, transparent);
-          animation: shimmer 2s infinite;
-        }
-
-        &:hover {
-          transform: translateY(-5px);
-          box-shadow: $box-shadow-lg;
-        }
-
-        .stat-card-icon {
-          width: 60px;
-          height: 60px;
-          border-radius: $border-radius-lg;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 1rem;
-          font-size: 1.5rem;
-          color: white;
-          font-weight: bold;
-        }
-
-        .stat-card-content {
-          .stat-card-title {
-            color: $gray-600;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-          }
-
-          .stat-card-value {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0.75rem;
-            font-family: 'Monaco', 'Menlo', monospace;
-          }
-
-          .stat-card-trend {
-            display: flex;
-            align-items: center;
-            font-size: 0.85rem;
-            color: $gray-500;
-
-            i {
-              margin-right: 0.25rem;
-              font-size: 0.8rem;
-            }
-          }
-        }
-
-        // Specific card styles
-        &.stat-card-assets {
-          .stat-card-icon {
-            background: linear-gradient(135deg, $primary 0%, darken($primary, 10%) 100%);
-          }
-          .stat-card-value {
-            color: $primary;
-          }
-        }
-
-        &.stat-card-liabilities {
-          .stat-card-icon {
-            background: linear-gradient(135deg, $warning 0%, darken($warning, 10%) 100%);
-          }
-          .stat-card-value {
-            color: $warning;
-          }
-        }
-
-        &.stat-card-revenue {
-          .stat-card-icon {
-            background: linear-gradient(135deg, $success 0%, darken($success, 10%) 100%);
-          }
-          .stat-card-value {
-            color: $success;
-          }
-        }
-
-        &.stat-card-expenses {
-          .stat-card-icon {
-            background: linear-gradient(135deg, $danger 0%, darken($danger, 10%) 100%);
-          }
-          .stat-card-value {
-            color: $danger;
-          }
-        }
-      }
-    }
-
-    .quick-actions-section,
-    .recent-activity-section {
-      margin-bottom: 2.5rem;
-
-      .section-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: $gray-800;
-        margin-bottom: 1.5rem;
-        display: flex;
-        align-items: center;
-
-        i {
-          color: $primary;
-          font-size: 1.3rem;
-        }
-      }
-
-      .quick-action-card {
-        display: block;
-        background: white;
-        border-radius: $border-radius-lg;
-        padding: 2rem;
-        text-decoration: none;
-        transition: $transition-base;
-        box-shadow: $box-shadow;
-        border: 1px solid $border-color;
-        height: 100%;
-        position: relative;
-        overflow: hidden;
-
-        &::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-          transition: left 0.5s ease;
-        }
-
-        &:hover {
-          transform: translateY(-8px);
-          box-shadow: $box-shadow-lg;
-          text-decoration: none;
-
-          &::before {
-            left: 100%;
-          }
-
-          .quick-action-icon {
-            transform: scale(1.1);
-          }
-
-          .quick-action-arrow {
-            transform: translateX(5px);
-          }
-        }
-
-        .quick-action-icon {
-          width: 70px;
-          height: 70px;
-          border-radius: $border-radius-lg;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 1.5rem;
-          font-size: 2rem;
-          color: white;
-          transition: $transition-base;
-        }
-
-        .quick-action-content {
-          h5 {
-            font-weight: 700;
-            margin-bottom: 0.75rem;
-            color: $gray-800;
-          }
-
-          p {
-            color: $gray-600;
-            margin: 0;
-            font-size: 0.95rem;
-            line-height: 1.5;
-          }
-        }
-
-        .quick-action-arrow {
-          position: absolute;
-          top: 1.5rem;
-          right: 1.5rem;
-          font-size: 1.5rem;
-          transition: $transition-base;
-        }
-
-        // Specific action styles
-        &.quick-action-primary {
-          .quick-action-icon {
-            background: linear-gradient(135deg, $primary 0%, darken($primary, 10%) 100%);
-          }
-          .quick-action-arrow {
-            color: $primary;
-          }
-        }
-
-        &.quick-action-success {
-          .quick-action-icon {
-            background: linear-gradient(135deg, $success 0%, darken($success, 10%) 100%);
-          }
-          .quick-action-arrow {
-            color: $success;
-          }
-        }
-
-        &.quick-action-info {
-          .quick-action-icon {
-            background: linear-gradient(135deg, $info 0%, darken($info, 10%) 100%);
-          }
-          .quick-action-arrow {
-            color: $info;
-          }
-        }
-      }
-
-      .activity-card {
-        background: white;
-        border-radius: $border-radius-lg;
-        box-shadow: $box-shadow;
-        border: 1px solid $border-color;
-        padding: 2rem;
-
-        .empty-state {
-          text-align: center;
-          padding: 2rem;
-
-          .empty-state-icon {
-            font-size: 3.5rem;
-            color: $gray-400;
-            margin-bottom: 1.5rem;
-
-            i {
-              animation: float 3s ease-in-out infinite;
-            }
-          }
-
-          .empty-state-title {
-            color: $gray-700;
-            font-weight: 600;
-            margin-bottom: 1rem;
-          }
-
-          .empty-state-description {
-            color: $gray-600;
-            font-size: 1rem;
-            margin: 0;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-          }
-        }
-      }
-    }
-  }
-}
-
-/* Coming Soon Page Styles */
-.coming-soon-page {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - 140px);
-  padding: 2rem;
-
-  .coming-soon-content {
-    text-align: center;
-    max-width: 500px;
-    background: white;
-    border-radius: $border-radius-lg;
-    padding: 3rem;
-    box-shadow: $box-shadow-lg;
-    border: 1px solid $border-color;
-
-    .coming-soon-icon {
-      font-size: 4rem;
-      color: $primary;
-      margin-bottom: 2rem;
-
-      i {
-        animation: bounce 2s infinite;
-      }
-    }
-
-    .coming-soon-title {
-      font-size: 2rem;
-      font-weight: 700;
-      color: $gray-800;
-      margin-bottom: 1rem;
-    }
-
-    .coming-soon-description {
-      color: $gray-600;
-      font-size: 1.1rem;
-      margin-bottom: 2rem;
-      line-height: 1.6;
-    }
-
-    .coming-soon-progress {
-      margin-bottom: 2rem;
-
-      .progress {
-        height: 12px;
-        border-radius: $border-radius;
-        background-color: $gray-200;
-
-        .progress-bar {
-          border-radius: $border-radius;
-          background: linear-gradient(90deg, $primary 0%, darken($primary, 10%) 100%);
-          font-size: 0.75rem;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-        }
-      }
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, $primary 0%, darken($primary, 10%) 100%);
-      border: none;
-      padding: 0.75rem 2rem;
-      font-weight: 600;
-      box-shadow: $box-shadow;
-
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: $box-shadow-lg;
-      }
-    }
-  }
-}
-
-/* Animations */
-@keyframes dashboardPulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {
-    transform: translateY(0);
-  }
-  40% {
-    transform: translateY(-10px);
-  }
-  60% {
-    transform: translateY(-5px);
-  }
-}
-
-/* Responsive design */
-@media (max-width: 991.98px) {
-  .main-content {
+  
+  // Mobile: no left margin
+  @media (max-width: 991.98px) {
     &.main-content-expanded,
     &.main-content-collapsed {
       margin-left: 0;
@@ -470,69 +30,326 @@
   }
 }
 
-@media (max-width: 768px) {
-  .dashboard-page {
-    padding: 1rem;
+.main-content-inner {
+  padding: 1.5rem;
+  max-width: 100%;
+  
+  @media (min-width: 1200px) {
+    padding: 2rem;
+  }
+}
 
-    .page-header {
-      padding: 1rem;
+// Dashboard specific styles
+.dashboard-page {
+  .page-header {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: $white;
+    border: $border-width solid $gray-800;
+    border-radius: $border-radius-sketchy;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .page-title-section {
+    text-align: center;
+    
+    @media (min-width: 768px) {
+      text-align: left;
+    }
+  }
+  
+  .page-title {
+    color: $gray-800;
+    font-family: $headings-font-family;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    @media (min-width: 768px) {
+      justify-content: flex-start;
+    }
+    
+    i {
+      color: $primary;
+    }
+  }
+  
+  .page-subtitle {
+    color: $gray-600;
+    font-size: 1.1rem;
+    margin-bottom: 0;
+  }
+}
 
-      .page-title-section {
-        .page-title {
-          font-size: 2rem;
-          text-align: center;
-        }
+// Enhanced stat cards
+.financial-overview {
+  margin-bottom: 2rem;
+}
 
-        .page-subtitle {
-          text-align: center;
-        }
+.stat-card {
+  background: $white;
+  border: $border-width solid $gray-800;
+  border-radius: $border-radius-sketchy;
+  padding: 1.5rem;
+  height: 100%;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, $primary, $secondary);
+  }
+  
+  .stat-card-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: $border-radius-sketchy;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    color: $white;
+  }
+  
+  .stat-card-content {
+    .stat-card-title {
+      font-size: 0.9rem;
+      color: $gray-600;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .stat-card-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: $gray-800;
+      margin-bottom: 0.5rem;
+      font-family: $headings-font-family;
+    }
+    
+    .stat-card-trend {
+      display: flex;
+      align-items: center;
+      font-size: 0.85rem;
+      color: $gray-500;
+      
+      i {
+        margin-right: 0.25rem;
+        font-size: 0.8rem;
       }
     }
+  }
+  
+  // Individual card colors
+  &.stat-card-assets {
+    .stat-card-icon {
+      background: linear-gradient(135deg, #28a745, #20c997);
+    }
+    &::before {
+      background: linear-gradient(90deg, #28a745, #20c997);
+    }
+  }
+  
+  &.stat-card-liabilities {
+    .stat-card-icon {
+      background: linear-gradient(135deg, #dc3545, #e83e8c);
+    }
+    &::before {
+      background: linear-gradient(90deg, #dc3545, #e83e8c);
+    }
+  }
+  
+  &.stat-card-equity {
+    .stat-card-icon {
+      background: linear-gradient(135deg, #007bff, #6f42c1);
+    }
+    &::before {
+      background: linear-gradient(90deg, #007bff, #6f42c1);
+    }
+  }
+  
+  &.stat-card-revenue {
+    .stat-card-icon {
+      background: linear-gradient(135deg, #ffc107, #fd7e14);
+    }
+    &::before {
+      background: linear-gradient(90deg, #ffc107, #fd7e14);
+    }
+  }
+}
 
-    .dashboard-content {
-      .financial-overview {
-        .stat-card {
-          padding: 1rem;
+// Quick actions section
+.quick-actions {
+  margin-bottom: 2rem;
+  
+  .section-title {
+    color: $gray-800;
+    font-family: $headings-font-family;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    
+    i {
+      margin-right: 0.5rem;
+      color: $primary;
+    }
+  }
+  
+  .action-card {
+    background: $white;
+    border: $border-width solid $gray-800;
+    border-radius: $border-radius-sketchy;
+    padding: 1.25rem;
+    text-align: center;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      text-decoration: none;
+      color: inherit;
+    }
+    
+    i {
+      font-size: 2rem;
+      color: $primary;
+      margin-bottom: 0.75rem;
+    }
+    
+    .action-title {
+      font-weight: 600;
+      color: $gray-800;
+      margin-bottom: 0.5rem;
+    }
+    
+    .action-description {
+      font-size: 0.9rem;
+      color: $gray-600;
+      margin-bottom: 0;
+    }
+  }
+}
 
-          .stat-card-icon {
-            width: 50px;
-            height: 50px;
-            font-size: 1.2rem;
-          }
-
-          .stat-card-content {
-            .stat-card-value {
-              font-size: 1.5rem;
-            }
-          }
+// Recent activity section
+.recent-activity {
+  .section-title {
+    color: $gray-800;
+    font-family: $headings-font-family;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    
+    i {
+      margin-right: 0.5rem;
+      color: $primary;
+    }
+  }
+  
+  .activity-card {
+    background: $white;
+    border: $border-width solid $gray-800;
+    border-radius: $border-radius-sketchy;
+    padding: 1.5rem;
+  }
+  
+  .activity-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    
+    .activity-item {
+      padding: 1rem 0;
+      border-bottom: 1px solid $gray-200;
+      display: flex;
+      align-items: center;
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: $border-radius-sm-sketchy;
+        background: $gray-100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        
+        i {
+          color: $primary;
+          font-size: 1.1rem;
         }
       }
-
-      .quick-actions-section {
-        .quick-action-card {
-          padding: 1.5rem;
-
-          .quick-action-icon {
-            width: 60px;
-            height: 60px;
-            font-size: 1.5rem;
-          }
+      
+      .activity-content {
+        flex: 1;
+        
+        .activity-title {
+          font-weight: 600;
+          color: $gray-800;
+          margin-bottom: 0.25rem;
+        }
+        
+        .activity-time {
+          font-size: 0.85rem;
+          color: $gray-500;
         }
       }
     }
   }
-
-  .coming-soon-page {
-    .coming-soon-content {
-      padding: 2rem;
-
-      .coming-soon-icon {
-        font-size: 3rem;
-      }
-
-      .coming-soon-title {
-        font-size: 1.5rem;
-      }
+  
+  .view-all-link {
+    display: block;
+    text-align: center;
+    margin-top: 1rem;
+    color: $primary;
+    text-decoration: none;
+    font-weight: 600;
+    
+    &:hover {
+      text-decoration: underline;
     }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 767.98px) {
+  .main-content-inner {
+    padding: 1rem;
+  }
+  
+  .dashboard-page .page-title {
+    font-size: 2rem;
+  }
+  
+  .stat-card-value {
+    font-size: 1.5rem !important;
   }
 }

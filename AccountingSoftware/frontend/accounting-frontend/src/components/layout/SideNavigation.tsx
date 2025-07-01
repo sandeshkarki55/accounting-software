@@ -50,6 +50,7 @@ const SideNavigation: React.FC<SideNavigationProps> = ({ isOpen, onToggle }) => 
                   to={item.path}
                   className={`nav-link ${isActiveRoute(item.path) ? 'active' : ''}`}
                   onClick={() => window.innerWidth < 992 && onToggle()}
+                  title={!isOpen ? item.label : undefined}
                 >
                   <i className={`bi ${item.icon} me-2`}></i>
                   {isOpen && <span className="nav-text">{item.label}</span>}
