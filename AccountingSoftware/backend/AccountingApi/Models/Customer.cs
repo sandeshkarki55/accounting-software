@@ -17,5 +17,5 @@ public class Customer : BaseEntity
     public string Notes { get; set; } = string.Empty;
     
     // Navigation property for invoices
-    public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
+    public ICollection<Invoice> Invoices { get; set; } = [];
 }

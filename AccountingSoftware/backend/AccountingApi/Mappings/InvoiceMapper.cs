@@ -44,7 +44,7 @@ public class InvoiceMapper : IEntityMapper<Invoice, InvoiceDto, CreateInvoiceDto
             Terms = entity.Terms,
             PaidDate = entity.PaidDate,
             PaymentReference = entity.PaymentReference,
-            Items = entity.Items?.Select(_itemMapper.ToDto).ToList() ?? new List<InvoiceItemDto>()
+            Items = entity.Items?.Select(_itemMapper.ToDto).ToList() ?? []
         };
     }
 
@@ -83,7 +83,7 @@ public class InvoiceMapper : IEntityMapper<Invoice, InvoiceDto, CreateInvoiceDto
         };
 
         // Map the items
-        invoice.Items = createDto.Items?.Select(itemDto => _itemMapper.ToEntity(itemDto, invoice.Id)).ToList() ?? new List<InvoiceItem>();
+        invoice.Items = createDto.Items?.Select(itemDto => _itemMapper.ToEntity(itemDto, invoice.Id)).ToList() ?? [];
         
         // Calculate amounts
         CalculateInvoiceAmounts(invoice);
@@ -114,7 +114,7 @@ public class InvoiceMapper : IEntityMapper<Invoice, InvoiceDto, CreateInvoiceDto
 
         // Update items - this is a simplified approach, in practice you might want more sophisticated item management
         entity.Items.Clear();
-        entity.Items = updateDto.Items?.Select(itemDto => _itemMapper.ToEntityFromUpdate(itemDto, entity.Id)).ToList() ?? new List<InvoiceItem>();
+        entity.Items = updateDto.Items?.Select(itemDto => _itemMapper.ToEntityFromUpdate(itemDto, entity.Id)).ToList() ?? [];
         
         // Recalculate amounts
         CalculateInvoiceAmounts(entity);

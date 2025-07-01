@@ -25,7 +25,7 @@ public class InvoiceDto
     public string Terms { get; set; } = string.Empty;
     public DateTime? PaidDate { get; set; }
     public string? PaymentReference { get; set; }
-    public List<InvoiceItemDto> Items { get; set; } = new();
+    public List<InvoiceItemDto> Items { get; set; } = [];
 }
 
 public class InvoiceItemDto
@@ -51,7 +51,7 @@ public class CreateInvoiceDto
     public decimal DiscountAmount { get; set; }
     public string Notes { get; set; } = string.Empty;
     public string Terms { get; set; } = string.Empty;
-    public List<CreateInvoiceItemDto> Items { get; set; } = new();
+    public List<CreateInvoiceItemDto> Items { get; set; } = [];
 }
 
 public class CreateInvoiceItemDto
@@ -76,7 +76,7 @@ public class UpdateInvoiceDto
     public string Terms { get; set; } = string.Empty;
     public DateTime? PaidDate { get; set; }
     public string? PaymentReference { get; set; }
-    public List<UpdateInvoiceItemDto> Items { get; set; } = new();
+    public List<UpdateInvoiceItemDto> Items { get; set; } = [];
 }
 
 public class UpdateInvoiceItemDto

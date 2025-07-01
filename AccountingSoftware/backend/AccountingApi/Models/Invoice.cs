@@ -23,7 +23,7 @@ public class Invoice : BaseEntity
     public string? PaymentReference { get; set; }
     
     // Navigation property for invoice items
-    public ICollection<InvoiceItem> Items { get; set; } = new List<InvoiceItem>();
+    public ICollection<InvoiceItem> Items { get; set; } = [];
 }
 
 // Invoice item entity for line items on invoices

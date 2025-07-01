@@ -9,7 +9,7 @@ public class JournalEntry : BaseEntity
     public string Reference { get; set; } = string.Empty;
     public decimal TotalAmount { get; set; }
     public bool IsPosted { get; set; } = false;
-    public ICollection<JournalEntryLine> Lines { get; set; } = new List<JournalEntryLine>();
+    public ICollection<JournalEntryLine> Lines { get; set; } = [];
 }
 
 // Journal entry line items

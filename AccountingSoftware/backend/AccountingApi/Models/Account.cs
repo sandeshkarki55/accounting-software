@@ -13,11 +13,11 @@ public class Account : BaseEntity
     // Self-referencing relationship for account hierarchy
     public int? ParentAccountId { get; set; }
     public Account? ParentAccount { get; set; }
-    public ICollection<Account> SubAccounts { get; set; } = new List<Account>();
+    public ICollection<Account> SubAccounts { get; set; } = [];
     
     // Navigation property for journal entry lines (not direct journal entries)
     // This properly represents that accounts are affected by individual transaction lines
-    public ICollection<JournalEntryLine> JournalEntryLines { get; set; } = new List<JournalEntryLine>();
+    public ICollection<JournalEntryLine> JournalEntryLines { get; set; } = [];
 }
 
 // Account types enum

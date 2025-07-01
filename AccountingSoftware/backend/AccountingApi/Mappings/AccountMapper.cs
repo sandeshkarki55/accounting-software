@@ -27,7 +27,7 @@ public class AccountMapper : IEntityMapper<Account, AccountDto, CreateAccountDto
             ParentAccountId = entity.ParentAccountId,
             ParentAccountName = entity.ParentAccount?.AccountName,
             Level = CalculateLevel(entity),
-            SubAccounts = entity.SubAccounts?.Select(ToDto).ToList() ?? new List<AccountDto>()
+            SubAccounts = entity.SubAccounts?.Select(ToDto).ToList() ?? []
         };
     }
 

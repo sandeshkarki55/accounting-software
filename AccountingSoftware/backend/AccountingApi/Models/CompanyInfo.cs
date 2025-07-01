@@ -23,5 +23,5 @@ public class CompanyInfo : BaseEntity
     public bool IsDefault { get; set; } = false;
     
     // Navigation property for invoices that use this company info
-    public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
+    public ICollection<Invoice> Invoices { get; set; } = [];
 }

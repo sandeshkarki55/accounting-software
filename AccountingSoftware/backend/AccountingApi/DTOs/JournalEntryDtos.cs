@@ -10,7 +10,7 @@ public class JournalEntryDto
     public string Reference { get; set; } = string.Empty;
     public decimal TotalAmount { get; set; }
     public bool IsPosted { get; set; }
-    public List<JournalEntryLineDto> Lines { get; set; } = new();
+    public List<JournalEntryLineDto> Lines { get; set; } = [];
 }
 
 public class CreateJournalEntryDto
@@ -18,7 +18,7 @@ public class CreateJournalEntryDto
     public DateTime TransactionDate { get; set; }
     public string Description { get; set; } = string.Empty;
     public string Reference { get; set; } = string.Empty;
-    public List<CreateJournalEntryLineDto> Lines { get; set; } = new();
+    public List<CreateJournalEntryLineDto> Lines { get; set; } = [];
 }
 
 public class JournalEntryLineDto
