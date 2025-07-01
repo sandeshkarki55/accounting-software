@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
 using AccountingApi.Middleware;
 using AccountingApi.Mappings;
+using AccountingApi.Services;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.Extensions.ServiceDiscovery;
@@ -36,6 +37,9 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 // Add Mapping Services
 builder.Services.AddMappingServices();
+
+// Add Number Generation Service
+builder.Services.AddScoped<INumberGenerationService, NumberGenerationService>();
 
 // Add CORS for frontend development with Aspire support
 builder.Services.AddCors(options =>

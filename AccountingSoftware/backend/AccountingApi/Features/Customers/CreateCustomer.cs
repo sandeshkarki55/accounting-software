@@ -2,6 +2,7 @@ using MediatR;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
+using AccountingApi.Services;
 
 namespace AccountingApi.Features.Customers;
 
@@ -12,17 +13,22 @@ public record CreateCustomerCommand(CreateCustomerDto Customer) : IRequest<Custo
 public class CreateCustomerCommandHandler : IRequestHandler<CreateCustomerCommand, CustomerDto>
 {
     private readonly AccountingDbContext _context;
+    private readonly INumberGenerationService _numberGenerationService;
 
-    public CreateCustomerCommandHandler(AccountingDbContext context)
+    public CreateCustomerCommandHandler(AccountingDbContext context, INumberGenerationService numberGenerationService)
     {
         _context = context;
+        _numberGenerationService = numberGenerationService;
     }
 
     public async Task<CustomerDto> Handle(CreateCustomerCommand request, CancellationToken cancellationToken)
     {
+        // Generate customer code
+        var customerCode = await _numberGenerationService.GenerateCustomerCodeAsync();
+
         var customer = new Customer
         {
-            CustomerCode = request.Customer.CustomerCode,
+            CustomerCode = customerCode,
             CompanyName = request.Customer.CompanyName,
             ContactPersonName = request.Customer.ContactPersonName,
             Email = request.Customer.Email,

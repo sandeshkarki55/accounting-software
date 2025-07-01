@@ -22,7 +22,7 @@ public class CustomerDto
 
 public class CreateCustomerDto
 {
-    public string CustomerCode { get; set; } = string.Empty;
+    // CustomerCode will be auto-generated, so removed from create DTO
     public string CompanyName { get; set; } = string.Empty;
     public string ContactPersonName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;

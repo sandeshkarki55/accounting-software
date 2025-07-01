@@ -67,7 +67,7 @@ public class InvoiceMapper : IEntityMapper<Invoice, InvoiceDto, CreateInvoiceDto
     {
         var invoice = new Invoice
         {
-            InvoiceNumber = createDto.InvoiceNumber,
+            // InvoiceNumber will be set by the service layer using auto-generation
             InvoiceDate = createDto.InvoiceDate,
             DueDate = createDto.DueDate,
             CustomerId = createDto.CustomerId,

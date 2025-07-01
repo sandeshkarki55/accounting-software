@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
+using AccountingApi.Services;
 
 namespace AccountingApi.Features.Invoices;
 
@@ -13,14 +14,19 @@ public record CreateInvoiceCommand(CreateInvoiceDto Invoice) : IRequest<InvoiceD
 public class CreateInvoiceCommandHandler : IRequestHandler<CreateInvoiceCommand, InvoiceDto>
 {
     private readonly AccountingDbContext _context;
+    private readonly INumberGenerationService _numberGenerationService;
 
-    public CreateInvoiceCommandHandler(AccountingDbContext context)
+    public CreateInvoiceCommandHandler(AccountingDbContext context, INumberGenerationService numberGenerationService)
     {
         _context = context;
+        _numberGenerationService = numberGenerationService;
     }
 
     public async Task<InvoiceDto> Handle(CreateInvoiceCommand request, CancellationToken cancellationToken)
     {
+        // Generate invoice number
+        var invoiceNumber = await _numberGenerationService.GenerateInvoiceNumberAsync();
+
         // Calculate totals from items
         var subTotal = request.Invoice.Items.Sum(item => item.Quantity * item.UnitPrice);
         var taxAmount = subTotal * request.Invoice.TaxRate;
@@ -28,7 +34,7 @@ public class CreateInvoiceCommandHandler : IRequestHandler<CreateInvoiceCommand,
 
         var invoice = new Invoice
         {
-            InvoiceNumber = request.Invoice.InvoiceNumber,
+            InvoiceNumber = invoiceNumber,
             InvoiceDate = request.Invoice.InvoiceDate,
             DueDate = request.Invoice.DueDate,
             CustomerId = request.Invoice.CustomerId,

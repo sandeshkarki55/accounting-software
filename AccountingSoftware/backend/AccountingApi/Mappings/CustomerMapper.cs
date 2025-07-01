@@ -52,7 +52,7 @@ public class CustomerMapper : IEntityMapper<Customer, CustomerDto, CreateCustome
     {
         return new Customer
         {
-            CustomerCode = createDto.CustomerCode,
+            // CustomerCode will be set by the service layer using auto-generation
             CompanyName = createDto.CompanyName,
             ContactPersonName = createDto.ContactPersonName,
             Email = createDto.Email,

@@ -41,7 +41,7 @@ public class InvoiceItemDto
 
 public class CreateInvoiceDto
 {
-    public string InvoiceNumber { get; set; } = string.Empty;
+    // InvoiceNumber will be auto-generated, so removed from create DTO
     public DateTime InvoiceDate { get; set; }
     public DateTime DueDate { get; set; }
     public int CustomerId { get; set; }
