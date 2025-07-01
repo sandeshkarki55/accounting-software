@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
+using AccountingApi.Mappings;
 
 namespace AccountingApi.Features.CompanyInfo;
 
@@ -12,10 +13,12 @@ public record GetAllCompanyInfosQuery : IRequest<List<CompanyInfoDto>>;
 public class GetAllCompanyInfosQueryHandler : IRequestHandler<GetAllCompanyInfosQuery, List<CompanyInfoDto>>
 {
     private readonly AccountingDbContext _context;
+    private readonly CompanyInfoMapper _mapper;
 
-    public GetAllCompanyInfosQueryHandler(AccountingDbContext context)
+    public GetAllCompanyInfosQueryHandler(AccountingDbContext context, CompanyInfoMapper mapper)
     {
         _context = context;
+        _mapper = mapper;
     }
 
     public async Task<List<CompanyInfoDto>> Handle(GetAllCompanyInfosQuery request, CancellationToken cancellationToken)
@@ -23,30 +26,8 @@ public class GetAllCompanyInfosQueryHandler : IRequestHandler<GetAllCompanyInfos
         var companyInfos = await _context.CompanyInfos
             .OrderByDescending(c => c.IsDefault)
             .ThenBy(c => c.CompanyName)
-            .Select(c => new CompanyInfoDto
-            {
-                Id = c.Id,
-                CompanyName = c.CompanyName,
-                LegalName = c.LegalName,
-                TaxNumber = c.TaxNumber,
-                RegistrationNumber = c.RegistrationNumber,
-                Email = c.Email,
-                Phone = c.Phone,
-                Website = c.Website,
-                Address = c.Address,
-                City = c.City,
-                State = c.State,
-                PostalCode = c.PostalCode,
-                Country = c.Country,
-                LogoUrl = c.LogoUrl,
-                BankName = c.BankName,
-                BankAccountNumber = c.BankAccountNumber,
-                BankRoutingNumber = c.BankRoutingNumber,
-                Currency = c.Currency,
-                IsDefault = c.IsDefault
-            })
             .ToListAsync(cancellationToken);
 
-        return companyInfos;
+        return _mapper.ToDto(companyInfos).ToList();
     }
 }

@@ -135,6 +135,23 @@ export const companyInfoService = {
     const response = await apiClient.post<CompanyInfo>('/companyinfo', companyInfo);
     return response.data;
   },
+
+  // Update company info
+  updateCompanyInfo: async (id: number, companyInfo: CreateCompanyInfoDto): Promise<CompanyInfo> => {
+    const response = await apiClient.put<CompanyInfo>(`/companyinfo/${id}`, companyInfo);
+    return response.data;
+  },
+
+  // Delete company info
+  deleteCompanyInfo: async (id: number): Promise<void> => {
+    await apiClient.delete(`/companyinfo/${id}`);
+  },
+
+  // Set default company
+  setDefaultCompany: async (id: number): Promise<CompanyInfo> => {
+    const response = await apiClient.put<CompanyInfo>(`/companyinfo/${id}/set-default`);
+    return response.data;
+  },
 };
 
 // Invoice service

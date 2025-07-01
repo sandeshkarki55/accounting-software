@@ -4,6 +4,7 @@ import './App.scss';
 import AccountsPage from './pages/accounts/AccountsPage';
 import InvoicesPage from './pages/InvoicesPage';
 import CustomersPage from './pages/CustomersPage';
+import CompaniesPage from './pages/CompaniesPage';
 import SideNavigation from './components/layout/SideNavigation';
 import TopNavbar from './components/layout/TopNavbar';
 
@@ -46,6 +47,7 @@ function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/accounts" element={<AccountsPage />} />
               <Route path="/customers" element={<CustomersPage />} />
+              <Route path="/companies" element={<CompaniesPage />} />
               <Route path="/invoices" element={<InvoicesPage />} />
               <Route path="/journal" element={<ComingSoonPage title="Journal Entries" />} />
               <Route path="/reports" element={<ComingSoonPage title="Reports" />} />

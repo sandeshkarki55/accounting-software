@@ -6,7 +6,7 @@ namespace AccountingApi.Mappings;
 /// <summary>
 /// Mapper for CompanyInfo entity and related DTOs
 /// </summary>
-public class CompanyInfoMapper : IEntityMapper<CompanyInfo, CompanyInfoDto, CreateCompanyInfoDto, UpdateCompanyInfoDto>
+public class CompanyInfoMapper : IEntityMapper<CompanyInfo, CompanyInfoDto, CreateCompanyInfoDto, CreateCompanyInfoDto>
 {
     /// <summary>
     /// Maps a CompanyInfo entity to CompanyInfoDto
@@ -82,11 +82,11 @@ public class CompanyInfoMapper : IEntityMapper<CompanyInfo, CompanyInfoDto, Crea
     }
 
     /// <summary>
-    /// Updates an existing CompanyInfo entity with data from UpdateCompanyInfoDto
+    /// Updates an existing CompanyInfo entity with data from CreateCompanyInfoDto
     /// </summary>
     /// <param name="entity">The CompanyInfo entity to update</param>
-    /// <param name="updateDto">The UpdateCompanyInfoDto containing new data</param>
-    public void UpdateEntity(CompanyInfo entity, UpdateCompanyInfoDto updateDto)
+    /// <param name="updateDto">The CreateCompanyInfoDto containing new data</param>
+    public void UpdateEntity(CompanyInfo entity, CreateCompanyInfoDto updateDto)
     {
         entity.CompanyName = updateDto.CompanyName;
         entity.LegalName = updateDto.LegalName;

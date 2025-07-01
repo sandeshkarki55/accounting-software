@@ -1,0 +1,30 @@
+// Empty state styling
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  
+  .empty-state-icon {
+    font-size: 3rem;
+    color: #dee2e6;
+    margin-bottom: 1rem;
+  }
+  
+  h3 {
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+  }
+  
+  p {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+  }
+}
+
+// Modal sections
+.section-header h6 {
+  color: #495057;
+  font-weight: 600;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}

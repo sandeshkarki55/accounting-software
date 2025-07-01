@@ -14,6 +14,7 @@ const SideNavigation: React.FC<SideNavigationProps> = ({ isOpen, onToggle }) => 
     { path: '/', icon: 'bi-speedometer2', label: 'Dashboard' },
     { path: '/accounts', icon: 'bi-list-ul', label: 'Chart of Accounts' },
     { path: '/customers', icon: 'bi-people', label: 'Customers' },
+    { path: '/companies', icon: 'bi-building', label: 'Companies' },
     { path: '/invoices', icon: 'bi-receipt', label: 'Invoices' },
     { path: '/journal', icon: 'bi-journal-text', label: 'Journal Entries' },
     { path: '/reports', icon: 'bi-bar-chart', label: 'Reports' }
