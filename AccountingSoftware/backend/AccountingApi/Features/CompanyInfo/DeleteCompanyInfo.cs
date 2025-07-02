@@ -4,9 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AccountingApi.Features.CompanyInfo;
 
-public record DeleteCompanyInfoCommand(int Id) : IRequest;
+// Command to delete company info (soft delete)
+public record DeleteCompanyInfoCommand(int Id) : IRequest<bool>;
 
-public class DeleteCompanyInfoHandler : IRequestHandler<DeleteCompanyInfoCommand>
+public class DeleteCompanyInfoHandler : IRequestHandler<DeleteCompanyInfoCommand, bool>
 {
     private readonly AccountingDbContext _context;
 
@@ -15,15 +16,14 @@ public class DeleteCompanyInfoHandler : IRequestHandler<DeleteCompanyInfoCommand
         _context = context;
     }
 
-    public async Task Handle(DeleteCompanyInfoCommand request, CancellationToken cancellationToken)
+    public async Task<bool> Handle(DeleteCompanyInfoCommand request, CancellationToken cancellationToken)
     {
         var companyInfo = await _context.CompanyInfos
+            .Include(c => c.Invoices)
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
 
         if (companyInfo == null)
-        {
-            throw new KeyNotFoundException($"Company with ID {request.Id} not found");
-        }
+            return false;
 
         // Prevent deletion of default company
         if (companyInfo.IsDefault)
@@ -31,7 +31,21 @@ public class DeleteCompanyInfoHandler : IRequestHandler<DeleteCompanyInfoCommand
             throw new InvalidOperationException("Cannot delete the default company. Please set another company as default first.");
         }
 
-        _context.CompanyInfos.Remove(companyInfo);
+        // Check if company has any non-deleted invoices
+        var hasActiveInvoices = companyInfo.Invoices.Any(i => !i.IsDeleted);
+        if (hasActiveInvoices)
+        {
+            throw new InvalidOperationException("Cannot delete company that has active invoices. Please delete or archive the invoices first.");
+        }
+
+        // Perform soft delete
+        companyInfo.IsDeleted = true;
+        companyInfo.DeletedAt = DateTime.UtcNow;
+        companyInfo.DeletedBy = "System"; // TODO: Replace with actual user when authentication is implemented
+        companyInfo.UpdatedAt = DateTime.UtcNow;
+        companyInfo.UpdatedBy = "System";
+
         await _context.SaveChangesAsync(cancellationToken);
+        return true;
     }
 }

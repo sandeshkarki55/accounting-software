@@ -120,6 +120,11 @@ export const customerService = {
     const response = await apiClient.put<Customer>(`/customers/${id}`, customer);
     return response.data;
   },
+
+  // Delete customer
+  deleteCustomer: async (id: number): Promise<void> => {
+    await apiClient.delete(`/customers/${id}`);
+  },
 };
 
 // Company Info service
@@ -178,6 +183,29 @@ export const invoiceService = {
   markInvoiceAsPaid: async (id: number, markAsPaidData: MarkInvoiceAsPaidDto): Promise<Invoice> => {
     const response = await apiClient.post<Invoice>(`/invoices/${id}/mark-as-paid`, markAsPaidData);
     return response.data;
+  },
+
+  // Delete invoice
+  deleteInvoice: async (id: number): Promise<void> => {
+    await apiClient.delete(`/invoices/${id}`);
+  },
+
+  // Delete invoice item
+  deleteInvoiceItem: async (id: number): Promise<void> => {
+    await apiClient.delete(`/invoices/items/${id}`);
+  },
+};
+
+// Journal Entry service
+export const journalEntryService = {
+  // Delete journal entry
+  deleteJournalEntry: async (id: number): Promise<void> => {
+    await apiClient.delete(`/journalentries/${id}`);
+  },
+
+  // Delete journal entry line
+  deleteJournalEntryLine: async (id: number): Promise<void> => {
+    await apiClient.delete(`/journalentries/lines/${id}`);
   },
 };
 

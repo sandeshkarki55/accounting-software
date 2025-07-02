@@ -4,6 +4,7 @@ import { invoiceService, customerService, companyInfoService } from '../../servi
 import InvoiceModal from '../../components/modals/InvoiceModal';
 import InvoicePrintModal from '../../components/modals/InvoicePrintModal';
 import MarkAsPaidModal from '../../components/MarkAsPaidModal';
+import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
 
 const InvoicesPage: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -17,6 +18,9 @@ const InvoicesPage: React.FC = () => {
   const [invoiceToPrint, setInvoiceToPrint] = useState<Invoice | undefined>();
   const [showMarkAsPaidModal, setShowMarkAsPaidModal] = useState(false);
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState<Invoice | undefined>();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | undefined>();
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -81,6 +85,28 @@ const InvoicesPage: React.FC = () => {
     } catch (err) {
       console.error('Error marking invoice as paid:', err);
       throw err;
+    }
+  };
+
+  const handleDeleteInvoice = (invoice: Invoice) => {
+    setInvoiceToDelete(invoice);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!invoiceToDelete) return;
+
+    try {
+      setDeleteLoading(true);
+      await invoiceService.deleteInvoice(invoiceToDelete.id);
+      await loadData();
+      setShowDeleteModal(false);
+      setInvoiceToDelete(undefined);
+    } catch (err) {
+      setError('Failed to delete invoice');
+      console.error('Error deleting invoice:', err);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -203,6 +229,15 @@ const InvoicesPage: React.FC = () => {
                                 <i className="bi bi-check-circle"></i>
                               </button>
                             )}
+                            {invoice.status !== InvoiceStatus.Paid && (
+                              <button
+                                className="btn btn-sm btn-outline-danger"
+                                onClick={() => handleDeleteInvoice(invoice)}
+                                title="Delete Invoice"
+                              >
+                                <i className="bi bi-trash"></i>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -257,6 +292,17 @@ const InvoicesPage: React.FC = () => {
         onHide={() => setShowMarkAsPaidModal(false)}
         onConfirm={handleConfirmMarkAsPaid}
         invoice={selectedInvoiceForPayment}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <GenericDeleteConfirmationModal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        itemName={invoiceToDelete?.invoiceNumber || ''}
+        itemType="invoice"
+        loading={deleteLoading}
+        warningMessage="This will soft delete the invoice and all its items. The invoice data will be preserved but hidden from normal views."
       />
     </div>
   );

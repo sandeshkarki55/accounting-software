@@ -54,4 +54,49 @@ public class InvoicesController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteInvoice(int id)
+    {
+        try
+        {
+            var success = await _mediator.Send(new DeleteInvoiceCommand(id));
+            
+            if (!success)
+            {
+                return NotFound(new { message = $"Invoice with ID {id} not found." });
+            }
+
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while deleting the invoice.", details = ex.Message });
+        }
+    }
+
+    [HttpDelete("items/{id:int}")]
+    public async Task<IActionResult> DeleteInvoiceItem(int id)
+    {
+        try
+        {
+            var result = await _mediator.Send(new DeleteInvoiceItemCommand(id));
+            if (!result)
+                return NotFound(new { message = "Invoice item not found." });
+
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while deleting the invoice item.", details = ex.Message });
+        }
+    }
 }

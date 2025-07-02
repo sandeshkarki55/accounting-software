@@ -1,0 +1,59 @@
+using Microsoft.AspNetCore.Mvc;
+using MediatR;
+using AccountingApi.Features.JournalEntries;
+
+namespace AccountingApi.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class JournalEntriesController : ControllerBase
+{
+    private readonly IMediator _mediator;
+
+    public JournalEntriesController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteJournalEntry(int id)
+    {
+        try
+        {
+            var result = await _mediator.Send(new DeleteJournalEntryCommand(id));
+            if (!result)
+                return NotFound(new { message = "Journal entry not found." });
+
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while deleting the journal entry.", details = ex.Message });
+        }
+    }
+
+    [HttpDelete("lines/{id:int}")]
+    public async Task<IActionResult> DeleteJournalEntryLine(int id)
+    {
+        try
+        {
+            var result = await _mediator.Send(new DeleteJournalEntryLineCommand(id));
+            if (!result)
+                return NotFound(new { message = "Journal entry line not found." });
+
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while deleting the journal entry line.", details = ex.Message });
+        }
+    }
+}

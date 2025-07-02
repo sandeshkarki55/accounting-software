@@ -4,7 +4,7 @@ using AccountingApi.Infrastructure;
 
 namespace AccountingApi.Features.Accounts;
 
-// Command to delete an account
+// Command to delete an account (soft delete)
 public record DeleteAccountCommand(int Id) : IRequest<bool>;
 
 // Handler for DeleteAccountCommand
@@ -27,16 +27,16 @@ public class DeleteAccountCommandHandler : IRequestHandler<DeleteAccountCommand,
         if (account == null)
             return false;
 
-        // Business rule: Cannot delete account if it has sub-accounts
-        if (account.SubAccounts.Any())
+        // Business rule: Cannot delete account if it has non-deleted sub-accounts
+        if (account.SubAccounts.Any(sa => !sa.IsDeleted))
         {
-            throw new InvalidOperationException("Cannot delete account that has sub-accounts. Please delete or reassign sub-accounts first.");
+            throw new InvalidOperationException("Cannot delete account that has active sub-accounts. Please delete or reassign sub-accounts first.");
         }
 
         // Business rule: Cannot delete account if it has journal entry lines
-        if (account.JournalEntryLines.Any())
+        if (account.JournalEntryLines.Any(jel => !jel.IsDeleted))
         {
-            throw new InvalidOperationException("Cannot delete account that has journal entry lines. Account can only be deactivated.");
+            throw new InvalidOperationException("Cannot delete account that has active journal entry lines. Account can only be deactivated.");
         }
 
         // Business rule: Cannot delete account if it has a non-zero balance
@@ -45,7 +45,13 @@ public class DeleteAccountCommandHandler : IRequestHandler<DeleteAccountCommand,
             throw new InvalidOperationException("Cannot delete account with non-zero balance. Please adjust the balance to zero first.");
         }
 
-        _context.Accounts.Remove(account);
+        // Perform soft delete
+        account.IsDeleted = true;
+        account.DeletedAt = DateTime.UtcNow;
+        account.DeletedBy = "System"; // TODO: Replace with actual user when authentication is implemented
+        account.UpdatedAt = DateTime.UtcNow;
+        account.UpdatedBy = "System";
+
         await _context.SaveChangesAsync(cancellationToken);
         return true;
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Customer, CreateCustomerDto, UpdateCustomerDto } from '../../types';
 import { customerService } from '../../services/api';
 import CustomerModal from '../../components/modals/CustomerModal';
+import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
 
 const CustomersPage: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -9,6 +10,9 @@ const CustomersPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | undefined>();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | undefined>();
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     loadCustomers();
@@ -50,6 +54,28 @@ const CustomersPage: React.FC = () => {
     } catch (err) {
       console.error('Error saving customer:', err);
       throw err;
+    }
+  };
+
+  const handleDeleteCustomer = (customer: Customer) => {
+    setCustomerToDelete(customer);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!customerToDelete) return;
+
+    try {
+      setDeleteLoading(true);
+      await customerService.deleteCustomer(customerToDelete.id);
+      await loadCustomers();
+      setShowDeleteModal(false);
+      setCustomerToDelete(undefined);
+    } catch (err) {
+      setError('Failed to delete customer');
+      console.error('Error deleting customer:', err);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -123,6 +149,13 @@ const CustomersPage: React.FC = () => {
                             >
                               <i className="bi bi-pencil"></i>
                             </button>
+                            <button
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={() => handleDeleteCustomer(customer)}
+                              title="Delete Customer"
+                            >
+                              <i className="bi bi-trash"></i>
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -158,6 +191,17 @@ const CustomersPage: React.FC = () => {
         onHide={() => setShowCustomerModal(false)}
         onSave={handleSaveCustomer}
         customer={selectedCustomer}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <GenericDeleteConfirmationModal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        itemName={customerToDelete?.companyName || ''}
+        itemType="customer"
+        loading={deleteLoading}
+        warningMessage="This will soft delete the customer. The customer and their data will be preserved but hidden from normal views."
       />
     </div>
   );

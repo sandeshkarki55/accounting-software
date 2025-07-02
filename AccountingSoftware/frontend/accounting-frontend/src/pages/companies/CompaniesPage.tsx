@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CompanyInfo } from '../../types/customers';
 import { companyInfoService } from '../../services/api';
 import AddCompanyModal from '../../components/modals/AddCompanyModal';
+import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
 import './CompaniesPage.scss';
 
 const CompaniesPage: React.FC = () => {
@@ -11,6 +12,8 @@ const CompaniesPage: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<CompanyInfo | undefined>();
   const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [companyToDelete, setCompanyToDelete] = useState<CompanyInfo | undefined>();
 
   useEffect(() => {
     loadCompanies();
@@ -62,17 +65,22 @@ const CompaniesPage: React.FC = () => {
     setShowModal(false);
   };
 
-  const handleDeleteCompany = async (companyId: number) => {
-    if (!window.confirm('Are you sure you want to delete this company? This action cannot be undone.')) {
-      return;
-    }
+  const handleDeleteCompany = (company: CompanyInfo) => {
+    setCompanyToDelete(company);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!companyToDelete) return;
 
     try {
-      setDeleteLoading(companyId);
-      await companyInfoService.deleteCompanyInfo(companyId);
-      setCompanies(prev => prev.filter(company => company.id !== companyId));
+      setDeleteLoading(companyToDelete.id);
+      await companyInfoService.deleteCompanyInfo(companyToDelete.id);
+      setCompanies(prev => prev.filter(company => company.id !== companyToDelete.id));
+      setShowDeleteModal(false);
+      setCompanyToDelete(undefined);
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to delete company');
+      setError(err.response?.data?.message || 'Failed to delete company');
       console.error('Error deleting company:', err);
     } finally {
       setDeleteLoading(null);
@@ -206,7 +214,7 @@ const CompaniesPage: React.FC = () => {
                               )}
                               <button
                                 className="btn btn-sm btn-outline-danger"
-                                onClick={() => handleDeleteCompany(company.id)}
+                                onClick={() => handleDeleteCompany(company)}
                                 disabled={deleteLoading === company.id || company.isDefault}
                                 title={company.isDefault ? "Cannot delete default company" : "Delete Company"}
                               >
@@ -235,6 +243,17 @@ const CompaniesPage: React.FC = () => {
         onHide={() => setShowModal(false)}
         onCompanySaved={handleCompanySaved}
         company={selectedCompany}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <GenericDeleteConfirmationModal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        itemName={companyToDelete?.companyName || ''}
+        itemType="company"
+        loading={deleteLoading !== null}
+        warningMessage="This will soft delete the company. The company and its data will be preserved but hidden from normal views."
       />
     </div>
   );

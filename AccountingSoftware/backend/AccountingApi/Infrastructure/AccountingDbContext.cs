@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.Models;
 using AccountingApi.Infrastructure.Configurations;
+using System.Linq.Expressions;
 
 namespace AccountingApi.Infrastructure;
 
@@ -43,6 +44,19 @@ public class AccountingDbContext : DbContext
                 modelBuilder.Entity(entityType.ClrType)
                     .Property<DateTime>("UpdatedAt")
                     .HasDefaultValueSql("GETUTCDATE()");
+
+                // Configure IsDeleted property
+                modelBuilder.Entity(entityType.ClrType)
+                    .Property<bool>("IsDeleted")
+                    .HasDefaultValue(false);
+
+                // Add global query filter for soft delete
+                var parameter = Expression.Parameter(entityType.ClrType, "e");
+                var propertyMethodInfo = typeof(EF).GetMethod("Property")!.MakeGenericMethod(typeof(bool));
+                var isDeletedProperty = Expression.Call(propertyMethodInfo, parameter, Expression.Constant("IsDeleted"));
+                var compareExpression = Expression.MakeBinary(ExpressionType.Equal, isDeletedProperty, Expression.Constant(false));
+                var lambda = Expression.Lambda(compareExpression, parameter);
+                modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
             }
         }
     }

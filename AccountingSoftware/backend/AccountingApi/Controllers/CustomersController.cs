@@ -51,4 +51,28 @@ public class CustomersController : ControllerBase
 
         return Ok(customer);
     }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteCustomer(int id)
+    {
+        try
+        {
+            var success = await _mediator.Send(new DeleteCustomerCommand(id));
+            
+            if (!success)
+            {
+                return NotFound(new { message = $"Customer with ID {id} not found." });
+            }
+
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while deleting the customer.", details = ex.Message });
+        }
+    }
 }

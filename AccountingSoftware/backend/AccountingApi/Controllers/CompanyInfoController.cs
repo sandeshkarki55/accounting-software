@@ -38,10 +38,24 @@ public class CompanyInfoController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<ActionResult> DeleteCompanyInfo(int id)
+    public async Task<IActionResult> DeleteCompanyInfo(int id)
     {
-        await _mediator.Send(new DeleteCompanyInfoCommand(id));
-        return NoContent();
+        try
+        {
+            var result = await _mediator.Send(new DeleteCompanyInfoCommand(id));
+            if (!result)
+                return NotFound(new { message = "Company info not found." });
+
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while deleting the company info.", details = ex.Message });
+        }
     }
 
     [HttpPut("{id}/set-default")]

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Account, AccountType, CreateAccountDto, UpdateAccountDto } from '../../types';
 import { accountService } from '../../services/api';
 import AccountModal from '../../components/modals/AccountModal';
-import DeleteConfirmationModal from '../../components/modals/DeleteConfirmationModal';
+import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
 import ChartOfAccountsTree from '../../components/charts/ChartOfAccountsTree';
 
 const AccountsPage: React.FC = () => {
@@ -283,12 +283,14 @@ const AccountsPage: React.FC = () => {
           />
 
           {/* Delete Confirmation Modal */}
-          <DeleteConfirmationModal
+          <GenericDeleteConfirmationModal
             show={showDeleteModal}
             onHide={() => setShowDeleteModal(false)}
             onConfirm={handleConfirmDelete}
-            accountName={accountToDelete?.accountName || ''}
+            itemName={accountToDelete?.accountName || ''}
+            itemType="account"
             loading={deleteLoading}
+            warningMessage="This will soft delete the account. Make sure this account has no transactions and sub-accounts before deleting."
           />
         </div>
       </div>
