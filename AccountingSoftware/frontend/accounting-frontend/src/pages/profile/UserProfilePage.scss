@@ -1,0 +1,39 @@
+// Minimal custom styles - mostly using Bootstrap classes
+
+.user-profile-page {
+  .profile-header {
+    background: #007bff;
+  }
+  
+  .user-avatar-large i {
+    font-size: 4rem;
+  }
+  
+  .tab-pane {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 576px) {
+  .user-profile-page .nav-tabs .nav-link {
+    font-size: 0.85rem;
+    
+    i {
+      display: block;
+      margin-bottom: 0.25rem;
+      margin-right: 0 !important;
+    }
+  }
+}

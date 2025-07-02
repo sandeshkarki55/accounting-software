@@ -48,6 +48,13 @@ public class ChangePasswordRequestDto
     public string ConfirmNewPassword { get; set; } = string.Empty;
 }
 
+public class UpdateUserProfileDto
+{
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+}
+
 public class ApiResponseDto<T>
 {
     public bool Success { get; set; }

@@ -47,3 +47,9 @@ export interface ChangePasswordRequest {
   newPassword: string;
   confirmNewPassword: string;
 }
+
+export interface UpdateUserProfileRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+}

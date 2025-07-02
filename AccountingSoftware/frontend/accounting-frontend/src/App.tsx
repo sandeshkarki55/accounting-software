@@ -8,6 +8,7 @@ import InvoicesPage from './pages/invoices/InvoicesPage';
 import CustomersPage from './pages/customers/CustomersPage';
 import CompaniesPage from './pages/companies/CompaniesPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
+import UserProfilePage from './pages/profile/UserProfilePage';
 
 // Import layout components
 import SideNavigation from './components/layout/SideNavigation';
@@ -116,6 +117,11 @@ const AppLayout: React.FC = () => {
             <Route path="/reports" element={
               <ProtectedRoute>
                 <ComingSoonPage title="Reports" />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <UserProfilePage />
               </ProtectedRoute>
             } />
           </Routes>

@@ -6,7 +6,8 @@ import {
   User,
   ApiResponse,
   RefreshTokenRequest,
-  ChangePasswordRequest
+  ChangePasswordRequest,
+  UpdateUserProfileRequest
 } from '../types/auth';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://localhost:7120/api';
@@ -152,6 +153,25 @@ export const authService = {
       return {
         success: false,
         message: error.response?.data?.message || 'Password change failed',
+        errors: error.response?.data?.errors || ['Network error']
+      };
+    }
+  },
+
+  async updateProfile(request: UpdateUserProfileRequest): Promise<ApiResponse<User>> {
+    try {
+      const response: AxiosResponse<ApiResponse<User>> = await authApi.put('/auth/profile', request);
+      
+      if (response.data.success && response.data.data) {
+        // Update stored user data
+        localStorage.setItem('user', JSON.stringify(response.data.data));
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Profile update failed',
         errors: error.response?.data?.errors || ['Network error']
       };
     }

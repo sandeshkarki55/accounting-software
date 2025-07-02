@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import './TopNavbar.scss';
 
@@ -90,10 +91,10 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ sidebarOpen, onToggleSidebar }) =
                 </li>
                 <li><hr className="dropdown-divider" /></li>
                 <li>
-                  <a className="dropdown-item" href="#profile">
+                  <Link to="/profile" className="dropdown-item">
                     <i className="bi bi-person me-2"></i>
                     Profile Settings
-                  </a>
+                  </Link>
                 </li>
                 <li>
                   <a className="dropdown-item" href="#preferences">

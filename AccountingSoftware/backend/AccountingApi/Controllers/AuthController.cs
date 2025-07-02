@@ -143,4 +143,32 @@ public class AuthController(IMediator mediator) : ControllerBase
 
         return Ok(result);
     }
+
+    /// <summary>
+    /// Update user profile information
+    /// </summary>
+    [HttpPut("profile")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponseDto<UserInfoDto>>> UpdateProfile([FromBody] UpdateUserProfileDto request)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new ApiResponseDto<UserInfoDto>
+            {
+                Success = false,
+                Message = "User not authenticated.",
+                Errors = ["Invalid token"]
+            });
+        }
+
+        var result = await mediator.Send(new UpdateUserProfileCommand(userId, request));
+        
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
+    }
 }
