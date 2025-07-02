@@ -10,18 +10,11 @@ namespace AccountingApi.Features.Invoices;
 public record GetAllInvoicesQuery : IRequest<List<InvoiceDto>>;
 
 // Handler for GetAllInvoicesQuery
-public class GetAllInvoicesQueryHandler : IRequestHandler<GetAllInvoicesQuery, List<InvoiceDto>>
+public class GetAllInvoicesQueryHandler(AccountingDbContext context) : IRequestHandler<GetAllInvoicesQuery, List<InvoiceDto>>
 {
-    private readonly AccountingDbContext _context;
-
-    public GetAllInvoicesQueryHandler(AccountingDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<List<InvoiceDto>> Handle(GetAllInvoicesQuery request, CancellationToken cancellationToken)
     {
-        var invoices = await _context.Invoices
+        var invoices = await context.Invoices
             .Include(i => i.Customer)
             .Include(i => i.CompanyInfo)
             .Include(i => i.Items.OrderBy(item => item.SortOrder))

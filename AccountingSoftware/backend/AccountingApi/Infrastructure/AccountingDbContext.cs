@@ -6,12 +6,8 @@ using System.Linq.Expressions;
 
 namespace AccountingApi.Infrastructure;
 
-public class AccountingDbContext : IdentityDbContext<ApplicationUser>
+public class AccountingDbContext(DbContextOptions<AccountingDbContext> options) : IdentityDbContext<ApplicationUser>(options)
 {
-    public AccountingDbContext(DbContextOptions<AccountingDbContext> options) : base(options)
-    {
-    }
-
     public DbSet<Account> Accounts { get; set; }
     public DbSet<JournalEntry> JournalEntries { get; set; }
     public DbSet<JournalEntryLine> JournalEntryLines { get; set; }

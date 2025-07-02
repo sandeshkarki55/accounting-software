@@ -8,18 +8,11 @@ namespace AccountingApi.Features.JournalEntries;
 public record DeleteJournalEntryLineCommand(int Id) : IRequest<bool>;
 
 // Handler for DeleteJournalEntryLineCommand
-public class DeleteJournalEntryLineCommandHandler : IRequestHandler<DeleteJournalEntryLineCommand, bool>
+public class DeleteJournalEntryLineCommandHandler(AccountingDbContext context) : IRequestHandler<DeleteJournalEntryLineCommand, bool>
 {
-    private readonly AccountingDbContext _context;
-
-    public DeleteJournalEntryLineCommandHandler(AccountingDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<bool> Handle(DeleteJournalEntryLineCommand request, CancellationToken cancellationToken)
     {
-        var journalEntryLine = await _context.JournalEntryLines
+        var journalEntryLine = await context.JournalEntryLines
             .Include(jel => jel.JournalEntry)
             .FirstOrDefaultAsync(jel => jel.Id == request.Id, cancellationToken);
 
@@ -33,7 +26,7 @@ public class DeleteJournalEntryLineCommandHandler : IRequestHandler<DeleteJourna
         }
 
         // Business rule: Must maintain balanced journal entry
-        var remainingLines = await _context.JournalEntryLines
+        var remainingLines = await context.JournalEntryLines
             .Where(jel => jel.JournalEntryId == journalEntryLine.JournalEntryId && 
                          jel.Id != request.Id && 
                          !jel.IsDeleted)
@@ -66,7 +59,7 @@ public class DeleteJournalEntryLineCommandHandler : IRequestHandler<DeleteJourna
         journalEntry.UpdatedAt = DateTime.UtcNow;
         journalEntry.UpdatedBy = "System";
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

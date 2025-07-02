@@ -9,19 +9,12 @@ namespace AccountingApi.Features.Accounts;
 public record GetAccountsHierarchyQuery : IRequest<List<AccountDto>>;
 
 // Handler for GetAccountsHierarchyQuery
-public class GetAccountsHierarchyQueryHandler : IRequestHandler<GetAccountsHierarchyQuery, List<AccountDto>>
+public class GetAccountsHierarchyQueryHandler(AccountingDbContext context) : IRequestHandler<GetAccountsHierarchyQuery, List<AccountDto>>
 {
-    private readonly AccountingDbContext _context;
-
-    public GetAccountsHierarchyQueryHandler(AccountingDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<List<AccountDto>> Handle(GetAccountsHierarchyQuery request, CancellationToken cancellationToken)
     {
         // Get all accounts with their parent relationships
-        var allAccounts = await _context.Accounts
+        var allAccounts = await context.Accounts
             .Include(a => a.ParentAccount)
             .OrderBy(a => a.AccountType)
             .ThenBy(a => a.AccountCode)

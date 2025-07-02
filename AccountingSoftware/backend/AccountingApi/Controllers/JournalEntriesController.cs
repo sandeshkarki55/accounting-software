@@ -6,21 +6,14 @@ namespace AccountingApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class JournalEntriesController : ControllerBase
+public class JournalEntriesController(IMediator mediator) : ControllerBase
 {
-    private readonly IMediator _mediator;
-
-    public JournalEntriesController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteJournalEntry(int id)
     {
         try
         {
-            var result = await _mediator.Send(new DeleteJournalEntryCommand(id));
+            var result = await mediator.Send(new DeleteJournalEntryCommand(id));
             if (!result)
                 return NotFound(new { message = "Journal entry not found." });
 
@@ -41,7 +34,7 @@ public class JournalEntriesController : ControllerBase
     {
         try
         {
-            var result = await _mediator.Send(new DeleteJournalEntryLineCommand(id));
+            var result = await mediator.Send(new DeleteJournalEntryLineCommand(id));
             if (!result)
                 return NotFound(new { message = "Journal entry line not found." });
 

@@ -10,18 +10,11 @@ namespace AccountingApi.Features.Invoices;
 public record MarkInvoiceAsPaidCommand(int InvoiceId, DateTime PaidDate, string? PaymentReference = null) : IRequest<InvoiceDto>;
 
 // Handler for MarkInvoiceAsPaidCommand
-public class MarkInvoiceAsPaidCommandHandler : IRequestHandler<MarkInvoiceAsPaidCommand, InvoiceDto>
+public class MarkInvoiceAsPaidCommandHandler(AccountingDbContext context) : IRequestHandler<MarkInvoiceAsPaidCommand, InvoiceDto>
 {
-    private readonly AccountingDbContext _context;
-
-    public MarkInvoiceAsPaidCommandHandler(AccountingDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<InvoiceDto> Handle(MarkInvoiceAsPaidCommand request, CancellationToken cancellationToken)
     {
-        var invoice = await _context.Invoices
+        var invoice = await context.Invoices
             .Include(i => i.Customer)
             .Include(i => i.CompanyInfo)
             .Include(i => i.Items.OrderBy(item => item.SortOrder))
@@ -43,7 +36,7 @@ public class MarkInvoiceAsPaidCommandHandler : IRequestHandler<MarkInvoiceAsPaid
         invoice.UpdatedAt = DateTime.UtcNow;
         invoice.UpdatedBy = "System"; // TODO: Replace with actual user when authentication is implemented
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
 
         // Return updated invoice DTO
         return new InvoiceDto

@@ -11,23 +11,12 @@ namespace AccountingApi.Features.Accounts;
 public record CreateAccountCommand(CreateAccountDto Account) : IRequest<AccountDto>;
 
 // Handler for CreateAccountCommand
-public class CreateAccountCommandHandler : IRequestHandler<CreateAccountCommand, AccountDto>
+public class CreateAccountCommandHandler(AccountingDbContext context, AccountMapper accountMapper, ILogger<CreateAccountCommandHandler> logger) : IRequestHandler<CreateAccountCommand, AccountDto>
 {
-    private readonly AccountingDbContext _context;
-    private readonly AccountMapper _accountMapper;
-    private readonly ILogger<CreateAccountCommandHandler> _logger;
-
-    public CreateAccountCommandHandler(AccountingDbContext context, AccountMapper accountMapper, ILogger<CreateAccountCommandHandler> logger)
-    {
-        _context = context;
-        _accountMapper = accountMapper;
-        _logger = logger;
-    }
-
     public async Task<AccountDto> Handle(CreateAccountCommand request, CancellationToken cancellationToken)
     {
         // Validate account code uniqueness
-        var existingAccount = await _context.Accounts
+        var existingAccount = await context.Accounts
             .FirstOrDefaultAsync(a => a.AccountCode == request.Account.AccountCode, cancellationToken);
 
         if (existingAccount != null)
@@ -38,7 +27,7 @@ public class CreateAccountCommandHandler : IRequestHandler<CreateAccountCommand,
         // Validate parent account exists if specified
         if (request.Account.ParentAccountId.HasValue)
         {
-            var parentExists = await _context.Accounts
+            var parentExists = await context.Accounts
                 .AnyAsync(a => a.Id == request.Account.ParentAccountId.Value, cancellationToken);
 
             if (!parentExists)
@@ -48,14 +37,14 @@ public class CreateAccountCommandHandler : IRequestHandler<CreateAccountCommand,
         }
 
         // Create new account entity using mapper
-        var account = _accountMapper.ToEntity(request.Account);
+        var account = accountMapper.ToEntity(request.Account);
 
-        _context.Accounts.Add(account);
-        await _context.SaveChangesAsync(cancellationToken);
+        context.Accounts.Add(account);
+        await context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Account created successfully. Account Id: {accountId}", account.Id);
+        logger.LogInformation("Account created successfully. Account Id: {accountId}", account.Id);
 
         // Return the created account as DTO using mapper
-        return _accountMapper.ToDto(account);
+        return accountMapper.ToDto(account);
     }
 }

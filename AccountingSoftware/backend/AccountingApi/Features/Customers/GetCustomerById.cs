@@ -10,25 +10,16 @@ namespace AccountingApi.Features.Customers;
 public record GetCustomerByIdQuery(int Id) : IRequest<CustomerDto?>;
 
 // Handler for GetCustomerByIdQuery
-public class GetCustomerByIdQueryHandler : IRequestHandler<GetCustomerByIdQuery, CustomerDto?>
+public class GetCustomerByIdQueryHandler(AccountingDbContext context, CustomerMapper customerMapper) : IRequestHandler<GetCustomerByIdQuery, CustomerDto?>
 {
-    private readonly AccountingDbContext _context;
-    private readonly CustomerMapper _customerMapper;
-
-    public GetCustomerByIdQueryHandler(AccountingDbContext context, CustomerMapper customerMapper)
-    {
-        _context = context;
-        _customerMapper = customerMapper;
-    }
-
     public async Task<CustomerDto?> Handle(GetCustomerByIdQuery request, CancellationToken cancellationToken)
     {
-        var customer = await _context.Customers
+        var customer = await context.Customers
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
 
         if (customer == null)
             return null;
 
-        return _customerMapper.ToDto(customer);
+        return customerMapper.ToDto(customer);
     }
 }

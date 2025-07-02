@@ -9,23 +9,14 @@ namespace AccountingApi.Features.Authentication;
 public record RegisterCommand(RegisterRequestDto RegisterRequest) : IRequest<ApiResponseDto<UserInfoDto>>;
 
 // Handler for RegisterCommand
-public class RegisterHandler : IRequestHandler<RegisterCommand, ApiResponseDto<UserInfoDto>>
+public class RegisterHandler(
+    UserManager<ApplicationUser> userManager,
+    ILogger<RegisterHandler> logger) : IRequestHandler<RegisterCommand, ApiResponseDto<UserInfoDto>>
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly ILogger<RegisterHandler> _logger;
-
-    public RegisterHandler(
-        UserManager<ApplicationUser> userManager,
-        ILogger<RegisterHandler> logger)
-    {
-        _userManager = userManager;
-        _logger = logger;
-    }
-
     public async Task<ApiResponseDto<UserInfoDto>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         // Check if user already exists
-        var existingUser = await _userManager.FindByEmailAsync(request.RegisterRequest.Email);
+        var existingUser = await userManager.FindByEmailAsync(request.RegisterRequest.Email);
         if (existingUser != null)
         {
             return new ApiResponseDto<UserInfoDto>
@@ -47,7 +38,7 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, ApiResponseDto<U
             IsActive = true
         };
 
-        var result = await _userManager.CreateAsync(user, request.RegisterRequest.Password);
+        var result = await userManager.CreateAsync(user, request.RegisterRequest.Password);
         
         if (!result.Succeeded)
         {
@@ -60,7 +51,7 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, ApiResponseDto<U
         }
 
         // Assign default role
-        await _userManager.AddToRoleAsync(user, "User");
+        await userManager.AddToRoleAsync(user, "User");
 
         var userInfo = new UserInfoDto
         {
@@ -72,7 +63,7 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, ApiResponseDto<U
             Roles = ["User"]
         };
 
-        _logger.LogInformation("User {Email} registered successfully", request.RegisterRequest.Email);
+        logger.LogInformation("User {Email} registered successfully", request.RegisterRequest.Email);
 
         return new ApiResponseDto<UserInfoDto>
         {

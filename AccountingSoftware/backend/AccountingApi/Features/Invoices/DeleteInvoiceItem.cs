@@ -9,18 +9,11 @@ namespace AccountingApi.Features.Invoices;
 public record DeleteInvoiceItemCommand(int Id) : IRequest<bool>;
 
 // Handler for DeleteInvoiceItemCommand
-public class DeleteInvoiceItemCommandHandler : IRequestHandler<DeleteInvoiceItemCommand, bool>
+public class DeleteInvoiceItemCommandHandler(AccountingDbContext context) : IRequestHandler<DeleteInvoiceItemCommand, bool>
 {
-    private readonly AccountingDbContext _context;
-
-    public DeleteInvoiceItemCommandHandler(AccountingDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<bool> Handle(DeleteInvoiceItemCommand request, CancellationToken cancellationToken)
     {
-        var invoiceItem = await _context.InvoiceItems
+        var invoiceItem = await context.InvoiceItems
             .Include(ii => ii.Invoice)
             .FirstOrDefaultAsync(ii => ii.Id == request.Id, cancellationToken);
 
@@ -34,7 +27,7 @@ public class DeleteInvoiceItemCommandHandler : IRequestHandler<DeleteInvoiceItem
         }
 
         // Business rule: Must have at least one item on an invoice
-        var remainingItems = await _context.InvoiceItems
+        var remainingItems = await context.InvoiceItems
             .Where(ii => ii.InvoiceId == invoiceItem.InvoiceId && 
                         ii.Id != request.Id && 
                         !ii.IsDeleted)
@@ -54,7 +47,7 @@ public class DeleteInvoiceItemCommandHandler : IRequestHandler<DeleteInvoiceItem
 
         // Update invoice totals
         var invoice = invoiceItem.Invoice;
-        var activeItems = await _context.InvoiceItems
+        var activeItems = await context.InvoiceItems
             .Where(ii => ii.InvoiceId == invoice.Id && !ii.IsDeleted && ii.Id != request.Id)
             .ToListAsync(cancellationToken);
 
@@ -65,7 +58,7 @@ public class DeleteInvoiceItemCommandHandler : IRequestHandler<DeleteInvoiceItem
         invoice.UpdatedAt = DateTime.UtcNow;
         invoice.UpdatedBy = "System";
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

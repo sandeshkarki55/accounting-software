@@ -7,26 +7,19 @@ namespace AccountingApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class InvoicesController : ControllerBase
+public class InvoicesController(IMediator mediator) : ControllerBase
 {
-    private readonly IMediator _mediator;
-
-    public InvoicesController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
     [HttpGet]
     public async Task<ActionResult<IEnumerable<InvoiceDto>>> GetInvoices()
     {
-        var invoices = await _mediator.Send(new GetAllInvoicesQuery());
+        var invoices = await mediator.Send(new GetAllInvoicesQuery());
         return Ok(invoices);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<InvoiceDto>> GetInvoice(int id)
     {
-        var invoice = await _mediator.Send(new GetInvoiceByIdQuery(id));
+        var invoice = await mediator.Send(new GetInvoiceByIdQuery(id));
         
         if (invoice == null)
             return NotFound();
@@ -37,7 +30,7 @@ public class InvoicesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<InvoiceDto>> CreateInvoice(CreateInvoiceDto createInvoiceDto)
     {
-        var invoice = await _mediator.Send(new CreateInvoiceCommand(createInvoiceDto));
+        var invoice = await mediator.Send(new CreateInvoiceCommand(createInvoiceDto));
         return CreatedAtAction(nameof(GetInvoice), new { id = invoice.Id }, invoice);
     }
 
@@ -46,7 +39,7 @@ public class InvoicesController : ControllerBase
     {
         try
         {
-            var invoice = await _mediator.Send(new MarkInvoiceAsPaidCommand(id, markAsPaidDto.PaidDate, markAsPaidDto.PaymentReference));
+            var invoice = await mediator.Send(new MarkInvoiceAsPaidCommand(id, markAsPaidDto.PaidDate, markAsPaidDto.PaymentReference));
             return Ok(invoice);
         }
         catch (InvalidOperationException ex)
@@ -60,7 +53,7 @@ public class InvoicesController : ControllerBase
     {
         try
         {
-            var success = await _mediator.Send(new DeleteInvoiceCommand(id));
+            var success = await mediator.Send(new DeleteInvoiceCommand(id));
             
             if (!success)
             {
@@ -84,7 +77,7 @@ public class InvoicesController : ControllerBase
     {
         try
         {
-            var result = await _mediator.Send(new DeleteInvoiceItemCommand(id));
+            var result = await mediator.Send(new DeleteInvoiceItemCommand(id));
             if (!result)
                 return NotFound(new { message = "Invoice item not found." });
 

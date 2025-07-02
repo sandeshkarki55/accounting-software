@@ -7,26 +7,19 @@ namespace AccountingApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CustomersController : ControllerBase
+public class CustomersController(IMediator mediator) : ControllerBase
 {
-    private readonly IMediator _mediator;
-
-    public CustomersController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomers()
     {
-        var customers = await _mediator.Send(new GetAllCustomersQuery());
+        var customers = await mediator.Send(new GetAllCustomersQuery());
         return Ok(customers);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<CustomerDto>> GetCustomer(int id)
     {
-        var customer = await _mediator.Send(new GetCustomerByIdQuery(id));
+        var customer = await mediator.Send(new GetCustomerByIdQuery(id));
         
         if (customer == null)
             return NotFound();
@@ -37,14 +30,14 @@ public class CustomersController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<CustomerDto>> CreateCustomer(CreateCustomerDto createCustomerDto)
     {
-        var customer = await _mediator.Send(new CreateCustomerCommand(createCustomerDto));
+        var customer = await mediator.Send(new CreateCustomerCommand(createCustomerDto));
         return CreatedAtAction(nameof(GetCustomer), new { id = customer.Id }, customer);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateCustomer(int id, UpdateCustomerDto updateCustomerDto)
     {
-        var customer = await _mediator.Send(new UpdateCustomerCommand(id, updateCustomerDto));
+        var customer = await mediator.Send(new UpdateCustomerCommand(id, updateCustomerDto));
         
         if (customer == null)
             return NotFound();
@@ -57,7 +50,7 @@ public class CustomersController : ControllerBase
     {
         try
         {
-            var success = await _mediator.Send(new DeleteCustomerCommand(id));
+            var success = await mediator.Send(new DeleteCustomerCommand(id));
             
             if (!success)
             {

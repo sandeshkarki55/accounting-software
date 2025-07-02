@@ -8,18 +8,11 @@ namespace AccountingApi.Features.Customers;
 public record DeleteCustomerCommand(int Id) : IRequest<bool>;
 
 // Handler for DeleteCustomerCommand
-public class DeleteCustomerCommandHandler : IRequestHandler<DeleteCustomerCommand, bool>
+public class DeleteCustomerCommandHandler(AccountingDbContext context) : IRequestHandler<DeleteCustomerCommand, bool>
 {
-    private readonly AccountingDbContext _context;
-
-    public DeleteCustomerCommandHandler(AccountingDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<bool> Handle(DeleteCustomerCommand request, CancellationToken cancellationToken)
     {
-        var customer = await _context.Customers
+        var customer = await context.Customers
             .Include(c => c.Invoices)
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
 
@@ -40,7 +33,7 @@ public class DeleteCustomerCommandHandler : IRequestHandler<DeleteCustomerComman
         customer.UpdatedAt = DateTime.UtcNow;
         customer.UpdatedBy = "System";
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

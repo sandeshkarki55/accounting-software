@@ -8,18 +8,11 @@ namespace AccountingApi.Features.JournalEntries;
 public record DeleteJournalEntryCommand(int Id) : IRequest<bool>;
 
 // Handler for DeleteJournalEntryCommand
-public class DeleteJournalEntryCommandHandler : IRequestHandler<DeleteJournalEntryCommand, bool>
+public class DeleteJournalEntryCommandHandler(AccountingDbContext context) : IRequestHandler<DeleteJournalEntryCommand, bool>
 {
-    private readonly AccountingDbContext _context;
-
-    public DeleteJournalEntryCommandHandler(AccountingDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<bool> Handle(DeleteJournalEntryCommand request, CancellationToken cancellationToken)
     {
-        var journalEntry = await _context.JournalEntries
+        var journalEntry = await context.JournalEntries
             .Include(je => je.Lines)
             .FirstOrDefaultAsync(je => je.Id == request.Id, cancellationToken);
 
@@ -49,7 +42,7 @@ public class DeleteJournalEntryCommandHandler : IRequestHandler<DeleteJournalEnt
             line.UpdatedBy = "System";
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

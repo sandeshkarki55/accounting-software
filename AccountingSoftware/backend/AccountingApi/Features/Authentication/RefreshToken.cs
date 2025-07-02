@@ -11,25 +11,14 @@ namespace AccountingApi.Features.Authentication;
 public record RefreshTokenCommand(RefreshTokenRequestDto RefreshTokenRequest) : IRequest<ApiResponseDto<LoginResponseDto>>;
 
 // Handler for RefreshToken
-public class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, ApiResponseDto<LoginResponseDto>>
+public class RefreshTokenHandler(
+    UserManager<ApplicationUser> userManager,
+    IJwtService jwtService,
+    ILogger<RefreshTokenHandler> logger) : IRequestHandler<RefreshTokenCommand, ApiResponseDto<LoginResponseDto>>
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IJwtService _jwtService;
-    private readonly ILogger<RefreshTokenHandler> _logger;
-
-    public RefreshTokenHandler(
-        UserManager<ApplicationUser> userManager,
-        IJwtService jwtService,
-        ILogger<RefreshTokenHandler> logger)
-    {
-        _userManager = userManager;
-        _jwtService = jwtService;
-        _logger = logger;
-    }
-
     public async Task<ApiResponseDto<LoginResponseDto>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
-        var principal = _jwtService.GetPrincipalFromExpiredToken(request.RefreshTokenRequest.AccessToken);
+        var principal = jwtService.GetPrincipalFromExpiredToken(request.RefreshTokenRequest.AccessToken);
         if (principal == null)
         {
             return new ApiResponseDto<LoginResponseDto>
@@ -51,7 +40,7 @@ public class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, ApiRespo
             };
         }
 
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await userManager.FindByIdAsync(userId);
         if (user == null || user.RefreshToken != request.RefreshTokenRequest.RefreshToken || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
         {
             return new ApiResponseDto<LoginResponseDto>
@@ -63,13 +52,13 @@ public class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, ApiRespo
         }
 
         // Generate new tokens
-        var newAccessToken = await _jwtService.GenerateAccessTokenAsync(user);
-        var newRefreshToken = _jwtService.GenerateRefreshToken();
+        var newAccessToken = await jwtService.GenerateAccessTokenAsync(user);
+        var newRefreshToken = jwtService.GenerateRefreshToken();
         
         // Save new refresh token
-        await _jwtService.SaveRefreshTokenAsync(user, newRefreshToken);
+        await jwtService.SaveRefreshTokenAsync(user, newRefreshToken);
 
-        var userRoles = await _userManager.GetRolesAsync(user);
+        var userRoles = await userManager.GetRolesAsync(user);
 
         var response = new LoginResponseDto
         {
@@ -87,7 +76,7 @@ public class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, ApiRespo
             }
         };
 
-        _logger.LogInformation("Token refreshed successfully for user {UserId}", userId);
+        logger.LogInformation("Token refreshed successfully for user {UserId}", userId);
 
         return new ApiResponseDto<LoginResponseDto>
         {

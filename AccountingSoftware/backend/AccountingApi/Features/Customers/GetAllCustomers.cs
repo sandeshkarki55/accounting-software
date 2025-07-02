@@ -9,18 +9,11 @@ namespace AccountingApi.Features.Customers;
 public record GetAllCustomersQuery : IRequest<List<CustomerDto>>;
 
 // Handler for GetAllCustomersQuery
-public class GetAllCustomersQueryHandler : IRequestHandler<GetAllCustomersQuery, List<CustomerDto>>
+public class GetAllCustomersQueryHandler(AccountingDbContext context) : IRequestHandler<GetAllCustomersQuery, List<CustomerDto>>
 {
-    private readonly AccountingDbContext _context;
-
-    public GetAllCustomersQueryHandler(AccountingDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<List<CustomerDto>> Handle(GetAllCustomersQuery request, CancellationToken cancellationToken)
     {
-        var customers = await _context.Customers
+        var customers = await context.Customers
             .Where(c => c.IsActive)
             .OrderBy(c => c.CompanyName)
             .Select(c => new CustomerDto

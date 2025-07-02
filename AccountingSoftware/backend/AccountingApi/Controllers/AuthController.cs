@@ -9,16 +9,8 @@ namespace AccountingApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController(IMediator mediator, ILogger<AuthController> logger) : ControllerBase
 {
-    private readonly IMediator _mediator;
-    private readonly ILogger<AuthController> _logger;
-
-    public AuthController(IMediator mediator, ILogger<AuthController> logger)
-    {
-        _mediator = mediator;
-        _logger = logger;
-    }
 
     /// <summary>
     /// Authenticate user and return JWT tokens
@@ -26,7 +18,7 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<ApiResponseDto<LoginResponseDto>>> Login([FromBody] LoginRequestDto request)
     {
-        var result = await _mediator.Send(new LoginCommand(request));
+        var result = await mediator.Send(new LoginCommand(request));
         
         if (!result.Success)
         {
@@ -42,7 +34,7 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<ActionResult<ApiResponseDto<UserInfoDto>>> Register([FromBody] RegisterRequestDto request)
     {
-        var result = await _mediator.Send(new RegisterCommand(request));
+        var result = await mediator.Send(new RegisterCommand(request));
         
         if (!result.Success)
         {
@@ -58,7 +50,7 @@ public class AuthController : ControllerBase
     [HttpPost("refresh-token")]
     public async Task<ActionResult<ApiResponseDto<LoginResponseDto>>> RefreshToken([FromBody] RefreshTokenRequestDto request)
     {
-        var result = await _mediator.Send(new RefreshTokenCommand(request));
+        var result = await mediator.Send(new RefreshTokenCommand(request));
         
         if (!result.Success)
         {
@@ -86,7 +78,7 @@ public class AuthController : ControllerBase
             });
         }
 
-        var result = await _mediator.Send(new ChangePasswordCommand(userId, request));
+        var result = await mediator.Send(new ChangePasswordCommand(userId, request));
         
         if (!result.Success)
         {
@@ -114,7 +106,7 @@ public class AuthController : ControllerBase
             });
         }
 
-        var result = await _mediator.Send(new LogoutCommand(userId));
+        var result = await mediator.Send(new LogoutCommand(userId));
         
         if (!result.Success)
         {
@@ -142,7 +134,7 @@ public class AuthController : ControllerBase
             });
         }
 
-        var result = await _mediator.Send(new GetCurrentUserQuery(userId));
+        var result = await mediator.Send(new GetCurrentUserQuery(userId));
         
         if (!result.Success)
         {

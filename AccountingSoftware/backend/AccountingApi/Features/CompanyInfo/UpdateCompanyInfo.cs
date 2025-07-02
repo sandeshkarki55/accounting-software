@@ -8,20 +8,11 @@ namespace AccountingApi.Features.CompanyInfo;
 
 public record UpdateCompanyInfoCommand(int Id, CreateCompanyInfoDto CompanyInfo) : IRequest<CompanyInfoDto>;
 
-public class UpdateCompanyInfoHandler : IRequestHandler<UpdateCompanyInfoCommand, CompanyInfoDto>
+public class UpdateCompanyInfoHandler(AccountingDbContext context, CompanyInfoMapper mapper) : IRequestHandler<UpdateCompanyInfoCommand, CompanyInfoDto>
 {
-    private readonly AccountingDbContext _context;
-    private readonly CompanyInfoMapper _mapper;
-
-    public UpdateCompanyInfoHandler(AccountingDbContext context, CompanyInfoMapper mapper)
-    {
-        _context = context;
-        _mapper = mapper;
-    }
-
     public async Task<CompanyInfoDto> Handle(UpdateCompanyInfoCommand request, CancellationToken cancellationToken)
     {
-        var companyInfo = await _context.CompanyInfos
+        var companyInfo = await context.CompanyInfos
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
 
         if (companyInfo == null)
@@ -33,7 +24,7 @@ public class UpdateCompanyInfoHandler : IRequestHandler<UpdateCompanyInfoCommand
         if (request.CompanyInfo.IsDefault && !companyInfo.IsDefault)
         {
             // Set all other companies to not default
-            var otherCompanies = await _context.CompanyInfos
+            var otherCompanies = await context.CompanyInfos
                 .Where(c => c.Id != request.Id && c.IsDefault)
                 .ToListAsync(cancellationToken);
 
@@ -44,10 +35,10 @@ public class UpdateCompanyInfoHandler : IRequestHandler<UpdateCompanyInfoCommand
         }
 
         // Update the entity using the mapper
-        _mapper.UpdateEntity(companyInfo, request.CompanyInfo);
+        mapper.UpdateEntity(companyInfo, request.CompanyInfo);
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
 
-        return _mapper.ToDto(companyInfo);
+        return mapper.ToDto(companyInfo);
     }
 }

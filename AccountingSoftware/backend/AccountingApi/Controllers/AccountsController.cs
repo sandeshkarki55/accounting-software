@@ -7,21 +7,14 @@ namespace AccountingApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AccountsController : ControllerBase
+public class AccountsController(IMediator mediator) : ControllerBase
 {
-    private readonly IMediator _mediator;
-
-    public AccountsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
     [HttpGet]
     public async Task<ActionResult<IEnumerable<AccountDto>>> GetAccounts()
     {
         try
         {
-            var accounts = await _mediator.Send(new GetAllAccountsQuery());
+            var accounts = await mediator.Send(new GetAllAccountsQuery());
             return Ok(accounts);
         }
         catch (Exception ex)
@@ -35,7 +28,7 @@ public class AccountsController : ControllerBase
     {
         try
         {
-            var accounts = await _mediator.Send(new GetAccountsHierarchyQuery());
+            var accounts = await mediator.Send(new GetAccountsHierarchyQuery());
             return Ok(accounts);
         }
         catch (Exception ex)
@@ -49,7 +42,7 @@ public class AccountsController : ControllerBase
     {
         try
         {
-            var account = await _mediator.Send(new GetAccountByIdQuery(id));
+            var account = await mediator.Send(new GetAccountByIdQuery(id));
             
             if (account == null)
             {
@@ -69,7 +62,7 @@ public class AccountsController : ControllerBase
     {
         try
         {
-            var account = await _mediator.Send(new CreateAccountCommand(createAccountDto));
+            var account = await mediator.Send(new CreateAccountCommand(createAccountDto));
             return CreatedAtAction(nameof(GetAccount), new { id = account.Id }, account);
         }
         catch (InvalidOperationException ex)
@@ -87,7 +80,7 @@ public class AccountsController : ControllerBase
     {
         try
         {
-            var success = await _mediator.Send(new UpdateAccountCommand(id, updateAccountDto));
+            var success = await mediator.Send(new UpdateAccountCommand(id, updateAccountDto));
             
             if (!success)
             {
@@ -107,7 +100,7 @@ public class AccountsController : ControllerBase
     {
         try
         {
-            var success = await _mediator.Send(new DeleteAccountCommand(id));
+            var success = await mediator.Send(new DeleteAccountCommand(id));
             
             if (!success)
             {

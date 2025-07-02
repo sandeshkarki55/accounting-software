@@ -16,31 +16,20 @@ public interface IJwtService
     Task<bool> SaveRefreshTokenAsync(ApplicationUser user, string refreshToken);
 }
 
-public class JwtService : IJwtService
+public class JwtService(
+    IConfiguration configuration,
+    UserManager<ApplicationUser> userManager,
+    ILogger<JwtService> logger) : IJwtService
 {
-    private readonly IConfiguration _configuration;
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly ILogger<JwtService> _logger;
-
-    public JwtService(
-        IConfiguration configuration,
-        UserManager<ApplicationUser> userManager,
-        ILogger<JwtService> logger)
-    {
-        _configuration = configuration;
-        _userManager = userManager;
-        _logger = logger;
-    }
-
     public async Task<string> GenerateAccessTokenAsync(ApplicationUser user)
     {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
+        var jwtSettings = configuration.GetSection("JwtSettings");
         var key = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"] ?? "YourSecretKeyHere123456789");
         var issuer = jwtSettings["Issuer"] ?? "AccountingApi";
         var audience = jwtSettings["Audience"] ?? "AccountingClient";
         var expirationMinutes = int.Parse(jwtSettings["ExpirationMinutes"] ?? "60");
 
-        var userRoles = await _userManager.GetRolesAsync(user);
+        var userRoles = await userManager.GetRolesAsync(user);
 
         var claims = new List<Claim>
         {
@@ -85,7 +74,7 @@ public class JwtService : IJwtService
 
     public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
     {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
+        var jwtSettings = configuration.GetSection("JwtSettings");
         var key = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"] ?? "YourSecretKeyHere123456789");
 
         var tokenValidationParameters = new TokenValidationParameters
@@ -113,7 +102,7 @@ public class JwtService : IJwtService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error validating expired token");
+            logger.LogError(ex, "Error validating expired token");
             return null;
         }
     }
@@ -126,12 +115,12 @@ public class JwtService : IJwtService
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7); // Refresh token valid for 7 days
             user.UpdatedAt = DateTime.UtcNow;
 
-            var result = await _userManager.UpdateAsync(user);
+            var result = await userManager.UpdateAsync(user);
             return result.Succeeded;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving refresh token for user {UserId}", user.Id);
+            logger.LogError(ex, "Error saving refresh token for user {UserId}", user.Id);
             return false;
         }
     }

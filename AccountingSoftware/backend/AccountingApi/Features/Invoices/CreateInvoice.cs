@@ -11,21 +11,12 @@ namespace AccountingApi.Features.Invoices;
 public record CreateInvoiceCommand(CreateInvoiceDto Invoice) : IRequest<InvoiceDto>;
 
 // Handler for CreateInvoiceCommand
-public class CreateInvoiceCommandHandler : IRequestHandler<CreateInvoiceCommand, InvoiceDto>
+public class CreateInvoiceCommandHandler(AccountingDbContext context, INumberGenerationService numberGenerationService) : IRequestHandler<CreateInvoiceCommand, InvoiceDto>
 {
-    private readonly AccountingDbContext _context;
-    private readonly INumberGenerationService _numberGenerationService;
-
-    public CreateInvoiceCommandHandler(AccountingDbContext context, INumberGenerationService numberGenerationService)
-    {
-        _context = context;
-        _numberGenerationService = numberGenerationService;
-    }
-
     public async Task<InvoiceDto> Handle(CreateInvoiceCommand request, CancellationToken cancellationToken)
     {
         // Generate invoice number
-        var invoiceNumber = await _numberGenerationService.GenerateInvoiceNumberAsync();
+        var invoiceNumber = await numberGenerationService.GenerateInvoiceNumberAsync();
 
         // Calculate totals from items
         var subTotal = request.Invoice.Items.Sum(item => item.Quantity * item.UnitPrice);
@@ -67,11 +58,11 @@ public class CreateInvoiceCommandHandler : IRequestHandler<CreateInvoiceCommand,
             invoice.Items.Add(item);
         }
 
-        _context.Invoices.Add(invoice);
-        await _context.SaveChangesAsync(cancellationToken);
+        context.Invoices.Add(invoice);
+        await context.SaveChangesAsync(cancellationToken);
 
         // Load the created invoice with related data
-        var createdInvoice = await _context.Invoices
+        var createdInvoice = await context.Invoices
             .Include(i => i.Customer)
             .Include(i => i.CompanyInfo)
             .Include(i => i.Items.OrderBy(item => item.SortOrder))

@@ -4,26 +4,17 @@ using System.Text.Json;
 
 namespace AccountingApi.Middleware;
 
-public class GlobalExceptionHandlingMiddleware
+public class GlobalExceptionHandlingMiddleware(RequestDelegate next, ILogger<GlobalExceptionHandlingMiddleware> logger)
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<GlobalExceptionHandlingMiddleware> _logger;
-
-    public GlobalExceptionHandlingMiddleware(RequestDelegate next, ILogger<GlobalExceptionHandlingMiddleware> logger)
-    {
-        _next = next;
-        _logger = logger;
-    }
-
     public async Task InvokeAsync(HttpContext context)
     {
         try
         {
-            await _next(context);
+            await next(context);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An unhandled exception occurred while processing the request");
+            logger.LogError(ex, "An unhandled exception occurred while processing the request");
             await HandleExceptionAsync(context, ex);
         }
     }

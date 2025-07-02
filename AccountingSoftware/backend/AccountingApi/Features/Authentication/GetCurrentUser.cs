@@ -9,25 +9,16 @@ namespace AccountingApi.Features.Authentication;
 public record GetCurrentUserQuery(string UserId) : IRequest<ApiResponseDto<UserInfoDto>>;
 
 // Handler for GetCurrentUser
-public class GetCurrentUserHandler : IRequestHandler<GetCurrentUserQuery, ApiResponseDto<UserInfoDto>>
+public class GetCurrentUserHandler(
+    UserManager<ApplicationUser> userManager,
+    ILogger<GetCurrentUserHandler> logger) : IRequestHandler<GetCurrentUserQuery, ApiResponseDto<UserInfoDto>>
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly ILogger<GetCurrentUserHandler> _logger;
-
-    public GetCurrentUserHandler(
-        UserManager<ApplicationUser> userManager,
-        ILogger<GetCurrentUserHandler> logger)
-    {
-        _userManager = userManager;
-        _logger = logger;
-    }
-
     public async Task<ApiResponseDto<UserInfoDto>> Handle(GetCurrentUserQuery request, CancellationToken cancellationToken)
     {
-        var user = await _userManager.FindByIdAsync(request.UserId);
+        var user = await userManager.FindByIdAsync(request.UserId);
         if (user == null)
         {
-            _logger.LogWarning("User with ID {UserId} not found", request.UserId);
+            logger.LogWarning("User with ID {UserId} not found", request.UserId);
             return new ApiResponseDto<UserInfoDto>
             {
                 Success = false,
@@ -36,7 +27,7 @@ public class GetCurrentUserHandler : IRequestHandler<GetCurrentUserQuery, ApiRes
             };
         }
 
-        var roles = await _userManager.GetRolesAsync(user);
+        var roles = await userManager.GetRolesAsync(user);
 
         var userInfo = new UserInfoDto
         {

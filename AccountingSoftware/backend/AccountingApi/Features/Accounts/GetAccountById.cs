@@ -10,26 +10,17 @@ namespace AccountingApi.Features.Accounts;
 public record GetAccountByIdQuery(int Id) : IRequest<AccountDto?>;
 
 // Handler for GetAccountByIdQuery
-public class GetAccountByIdQueryHandler : IRequestHandler<GetAccountByIdQuery, AccountDto?>
+public class GetAccountByIdQueryHandler(AccountingDbContext context, AccountMapper accountMapper) : IRequestHandler<GetAccountByIdQuery, AccountDto?>
 {
-    private readonly AccountingDbContext _context;
-    private readonly AccountMapper _accountMapper;
-
-    public GetAccountByIdQueryHandler(AccountingDbContext context, AccountMapper accountMapper)
-    {
-        _context = context;
-        _accountMapper = accountMapper;
-    }
-
     public async Task<AccountDto?> Handle(GetAccountByIdQuery request, CancellationToken cancellationToken)
     {
-        var account = await _context.Accounts
+        var account = await context.Accounts
             .Include(a => a.ParentAccount)
             .FirstOrDefaultAsync(a => a.Id == request.Id, cancellationToken);
 
         if (account == null)
             return null;
 
-        return _accountMapper.ToDto(account);
+        return accountMapper.ToDto(account);
     }
 }

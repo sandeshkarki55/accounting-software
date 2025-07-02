@@ -9,22 +9,13 @@ namespace AccountingApi.Features.Authentication;
 public record ChangePasswordCommand(string UserId, ChangePasswordRequestDto ChangePasswordRequest) : IRequest<ApiResponseDto<string>>;
 
 // Handler for ChangePassword
-public class ChangePasswordHandler : IRequestHandler<ChangePasswordCommand, ApiResponseDto<string>>
+public class ChangePasswordHandler(
+    UserManager<ApplicationUser> userManager,
+    ILogger<ChangePasswordHandler> logger) : IRequestHandler<ChangePasswordCommand, ApiResponseDto<string>>
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly ILogger<ChangePasswordHandler> _logger;
-
-    public ChangePasswordHandler(
-        UserManager<ApplicationUser> userManager,
-        ILogger<ChangePasswordHandler> logger)
-    {
-        _userManager = userManager;
-        _logger = logger;
-    }
-
     public async Task<ApiResponseDto<string>> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
     {
-        var user = await _userManager.FindByIdAsync(request.UserId);
+        var user = await userManager.FindByIdAsync(request.UserId);
         if (user == null)
         {
             return new ApiResponseDto<string>
@@ -35,7 +26,7 @@ public class ChangePasswordHandler : IRequestHandler<ChangePasswordCommand, ApiR
             };
         }
 
-        var result = await _userManager.ChangePasswordAsync(user, request.ChangePasswordRequest.CurrentPassword, request.ChangePasswordRequest.NewPassword);
+        var result = await userManager.ChangePasswordAsync(user, request.ChangePasswordRequest.CurrentPassword, request.ChangePasswordRequest.NewPassword);
         
         if (!result.Succeeded)
         {
@@ -47,7 +38,7 @@ public class ChangePasswordHandler : IRequestHandler<ChangePasswordCommand, ApiR
             };
         }
 
-        _logger.LogInformation("Password changed successfully for user {UserId}", request.UserId);
+        logger.LogInformation("Password changed successfully for user {UserId}", request.UserId);
 
         return new ApiResponseDto<string>
         {

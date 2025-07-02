@@ -9,18 +9,11 @@ namespace AccountingApi.Features.Customers;
 public record UpdateCustomerCommand(int Id, UpdateCustomerDto Customer) : IRequest<CustomerDto?>;
 
 // Handler for UpdateCustomerCommand
-public class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustomerCommand, CustomerDto?>
+public class UpdateCustomerCommandHandler(AccountingDbContext context) : IRequestHandler<UpdateCustomerCommand, CustomerDto?>
 {
-    private readonly AccountingDbContext _context;
-
-    public UpdateCustomerCommandHandler(AccountingDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<CustomerDto?> Handle(UpdateCustomerCommand request, CancellationToken cancellationToken)
     {
-        var customer = await _context.Customers
+        var customer = await context.Customers
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
 
         if (customer == null)
@@ -40,7 +33,7 @@ public class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustomerComman
         customer.UpdatedAt = DateTime.UtcNow;
         customer.UpdatedBy = "System"; // TODO: Replace with actual user when authentication is implemented
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
 
         return new CustomerDto
         {

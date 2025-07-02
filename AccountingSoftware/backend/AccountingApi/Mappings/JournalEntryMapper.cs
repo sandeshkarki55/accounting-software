@@ -6,14 +6,8 @@ namespace AccountingApi.Mappings;
 /// <summary>
 /// Mapper for JournalEntry entity and related DTOs
 /// </summary>
-public class JournalEntryMapper : IEntityMapper<JournalEntry, JournalEntryDto, CreateJournalEntryDto, object>
+public class JournalEntryMapper(JournalEntryLineMapper lineMapper) : IEntityMapper<JournalEntry, JournalEntryDto, CreateJournalEntryDto, object>
 {
-    private readonly JournalEntryLineMapper _lineMapper;
-
-    public JournalEntryMapper(JournalEntryLineMapper lineMapper)
-    {
-        _lineMapper = lineMapper;
-    }
 
     /// <summary>
     /// Maps a JournalEntry entity to JournalEntryDto
@@ -31,7 +25,7 @@ public class JournalEntryMapper : IEntityMapper<JournalEntry, JournalEntryDto, C
             Reference = entity.Reference,
             TotalAmount = entity.TotalAmount,
             IsPosted = entity.IsPosted,
-            Lines = entity.Lines?.Select(_lineMapper.ToDto).ToList() ?? []
+            Lines = entity.Lines?.Select(lineMapper.ToDto).ToList() ?? []
         };
     }
 
@@ -63,7 +57,7 @@ public class JournalEntryMapper : IEntityMapper<JournalEntry, JournalEntryDto, C
         };
 
         // Map the lines
-        entry.Lines = createDto.Lines?.Select(lineDto => _lineMapper.ToEntity(lineDto, entry.Id)).ToList() ?? [];
+        entry.Lines = createDto.Lines?.Select(lineDto => lineMapper.ToEntity(lineDto, entry.Id)).ToList() ?? [];
         
         // Calculate total amount
         entry.TotalAmount = entry.Lines.Sum(l => Math.Max(l.DebitAmount, l.CreditAmount));

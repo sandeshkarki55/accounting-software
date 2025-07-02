@@ -8,18 +8,11 @@ namespace AccountingApi.Features.Accounts;
 public record DeleteAccountCommand(int Id) : IRequest<bool>;
 
 // Handler for DeleteAccountCommand
-public class DeleteAccountCommandHandler : IRequestHandler<DeleteAccountCommand, bool>
+public class DeleteAccountCommandHandler(AccountingDbContext context) : IRequestHandler<DeleteAccountCommand, bool>
 {
-    private readonly AccountingDbContext _context;
-
-    public DeleteAccountCommandHandler(AccountingDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<bool> Handle(DeleteAccountCommand request, CancellationToken cancellationToken)
     {
-        var account = await _context.Accounts
+        var account = await context.Accounts
             .Include(a => a.SubAccounts)
             .Include(a => a.JournalEntryLines) // Updated to use correct navigation property
             .FirstOrDefaultAsync(a => a.Id == request.Id, cancellationToken);
@@ -52,7 +45,7 @@ public class DeleteAccountCommandHandler : IRequestHandler<DeleteAccountCommand,
         account.UpdatedAt = DateTime.UtcNow;
         account.UpdatedBy = "System";
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

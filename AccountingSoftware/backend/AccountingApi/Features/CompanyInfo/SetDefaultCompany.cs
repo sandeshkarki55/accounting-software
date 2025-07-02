@@ -8,20 +8,11 @@ namespace AccountingApi.Features.CompanyInfo;
 
 public record SetDefaultCompanyCommand(int Id) : IRequest<CompanyInfoDto>;
 
-public class SetDefaultCompanyHandler : IRequestHandler<SetDefaultCompanyCommand, CompanyInfoDto>
+public class SetDefaultCompanyHandler(AccountingDbContext context, CompanyInfoMapper mapper) : IRequestHandler<SetDefaultCompanyCommand, CompanyInfoDto>
 {
-    private readonly AccountingDbContext _context;
-    private readonly CompanyInfoMapper _mapper;
-
-    public SetDefaultCompanyHandler(AccountingDbContext context, CompanyInfoMapper mapper)
-    {
-        _context = context;
-        _mapper = mapper;
-    }
-
     public async Task<CompanyInfoDto> Handle(SetDefaultCompanyCommand request, CancellationToken cancellationToken)
     {
-        var companyInfo = await _context.CompanyInfos
+        var companyInfo = await context.CompanyInfos
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
 
         if (companyInfo == null)
@@ -30,7 +21,7 @@ public class SetDefaultCompanyHandler : IRequestHandler<SetDefaultCompanyCommand
         }
 
         // Set all other companies to not default
-        var otherCompanies = await _context.CompanyInfos
+        var otherCompanies = await context.CompanyInfos
             .Where(c => c.Id != request.Id && c.IsDefault)
             .ToListAsync(cancellationToken);
 
@@ -42,8 +33,8 @@ public class SetDefaultCompanyHandler : IRequestHandler<SetDefaultCompanyCommand
         // Set this company as default
         companyInfo.IsDefault = true;
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
 
-        return _mapper.ToDto(companyInfo);
+        return mapper.ToDto(companyInfo);
     }
 }

@@ -7,18 +7,11 @@ namespace AccountingApi.Features.CompanyInfo;
 // Command to delete company info (soft delete)
 public record DeleteCompanyInfoCommand(int Id) : IRequest<bool>;
 
-public class DeleteCompanyInfoHandler : IRequestHandler<DeleteCompanyInfoCommand, bool>
+public class DeleteCompanyInfoHandler(AccountingDbContext context) : IRequestHandler<DeleteCompanyInfoCommand, bool>
 {
-    private readonly AccountingDbContext _context;
-
-    public DeleteCompanyInfoHandler(AccountingDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<bool> Handle(DeleteCompanyInfoCommand request, CancellationToken cancellationToken)
     {
-        var companyInfo = await _context.CompanyInfos
+        var companyInfo = await context.CompanyInfos
             .Include(c => c.Invoices)
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
 
@@ -45,7 +38,7 @@ public class DeleteCompanyInfoHandler : IRequestHandler<DeleteCompanyInfoCommand
         companyInfo.UpdatedAt = DateTime.UtcNow;
         companyInfo.UpdatedBy = "System";
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

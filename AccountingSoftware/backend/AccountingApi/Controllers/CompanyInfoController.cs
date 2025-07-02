@@ -7,33 +7,26 @@ namespace AccountingApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CompanyInfoController : ControllerBase
+public class CompanyInfoController(IMediator mediator) : ControllerBase
 {
-    private readonly IMediator _mediator;
-
-    public CompanyInfoController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CompanyInfoDto>>> GetCompanyInfos()
     {
-        var companyInfos = await _mediator.Send(new GetAllCompanyInfosQuery());
+        var companyInfos = await mediator.Send(new GetAllCompanyInfosQuery());
         return Ok(companyInfos);
     }
 
     [HttpPost]
     public async Task<ActionResult<CompanyInfoDto>> CreateCompanyInfo(CreateCompanyInfoDto createCompanyInfoDto)
     {
-        var companyInfo = await _mediator.Send(new CreateCompanyInfoCommand(createCompanyInfoDto));
+        var companyInfo = await mediator.Send(new CreateCompanyInfoCommand(createCompanyInfoDto));
         return CreatedAtAction(nameof(GetCompanyInfos), new { id = companyInfo.Id }, companyInfo);
     }
 
     [HttpPut("{id}")]
     public async Task<ActionResult<CompanyInfoDto>> UpdateCompanyInfo(int id, CreateCompanyInfoDto updateCompanyInfoDto)
     {
-        var companyInfo = await _mediator.Send(new UpdateCompanyInfoCommand(id, updateCompanyInfoDto));
+        var companyInfo = await mediator.Send(new UpdateCompanyInfoCommand(id, updateCompanyInfoDto));
         return Ok(companyInfo);
     }
 
@@ -42,7 +35,7 @@ public class CompanyInfoController : ControllerBase
     {
         try
         {
-            var result = await _mediator.Send(new DeleteCompanyInfoCommand(id));
+            var result = await mediator.Send(new DeleteCompanyInfoCommand(id));
             if (!result)
                 return NotFound(new { message = "Company info not found." });
 
@@ -61,7 +54,7 @@ public class CompanyInfoController : ControllerBase
     [HttpPut("{id}/set-default")]
     public async Task<ActionResult<CompanyInfoDto>> SetDefaultCompany(int id)
     {
-        var companyInfo = await _mediator.Send(new SetDefaultCompanyCommand(id));
+        var companyInfo = await mediator.Send(new SetDefaultCompanyCommand(id));
         return Ok(companyInfo);
     }
 }

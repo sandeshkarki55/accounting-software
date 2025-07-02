@@ -10,29 +10,20 @@ namespace AccountingApi.Features.Accounts;
 public record UpdateAccountCommand(int Id, UpdateAccountDto Account) : IRequest<bool>;
 
 // Handler for UpdateAccountCommand
-public class UpdateAccountCommandHandler : IRequestHandler<UpdateAccountCommand, bool>
+public class UpdateAccountCommandHandler(AccountingDbContext context, AccountMapper accountMapper) : IRequestHandler<UpdateAccountCommand, bool>
 {
-    private readonly AccountingDbContext _context;
-    private readonly AccountMapper _accountMapper;
-
-    public UpdateAccountCommandHandler(AccountingDbContext context, AccountMapper accountMapper)
-    {
-        _context = context;
-        _accountMapper = accountMapper;
-    }
-
     public async Task<bool> Handle(UpdateAccountCommand request, CancellationToken cancellationToken)
     {
-        var account = await _context.Accounts
+        var account = await context.Accounts
             .FirstOrDefaultAsync(a => a.Id == request.Id, cancellationToken);
 
         if (account == null)
             return false;
 
         // Update account using mapper
-        _accountMapper.UpdateEntity(account, request.Account);
+        accountMapper.UpdateEntity(account, request.Account);
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

@@ -10,21 +10,12 @@ namespace AccountingApi.Features.Customers;
 public record CreateCustomerCommand(CreateCustomerDto Customer) : IRequest<CustomerDto>;
 
 // Handler for CreateCustomerCommand
-public class CreateCustomerCommandHandler : IRequestHandler<CreateCustomerCommand, CustomerDto>
+public class CreateCustomerCommandHandler(AccountingDbContext context, INumberGenerationService numberGenerationService) : IRequestHandler<CreateCustomerCommand, CustomerDto>
 {
-    private readonly AccountingDbContext _context;
-    private readonly INumberGenerationService _numberGenerationService;
-
-    public CreateCustomerCommandHandler(AccountingDbContext context, INumberGenerationService numberGenerationService)
-    {
-        _context = context;
-        _numberGenerationService = numberGenerationService;
-    }
-
     public async Task<CustomerDto> Handle(CreateCustomerCommand request, CancellationToken cancellationToken)
     {
         // Generate customer code
-        var customerCode = await _numberGenerationService.GenerateCustomerCodeAsync();
+        var customerCode = await numberGenerationService.GenerateCustomerCodeAsync();
 
         var customer = new Customer
         {
@@ -43,8 +34,8 @@ public class CreateCustomerCommandHandler : IRequestHandler<CreateCustomerComman
             UpdatedBy = "System"
         };
 
-        _context.Customers.Add(customer);
-        await _context.SaveChangesAsync(cancellationToken);
+        context.Customers.Add(customer);
+        await context.SaveChangesAsync(cancellationToken);
 
         return new CustomerDto
         {

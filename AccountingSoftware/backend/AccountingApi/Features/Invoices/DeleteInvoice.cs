@@ -9,18 +9,11 @@ namespace AccountingApi.Features.Invoices;
 public record DeleteInvoiceCommand(int Id) : IRequest<bool>;
 
 // Handler for DeleteInvoiceCommand
-public class DeleteInvoiceCommandHandler : IRequestHandler<DeleteInvoiceCommand, bool>
+public class DeleteInvoiceCommandHandler(AccountingDbContext context) : IRequestHandler<DeleteInvoiceCommand, bool>
 {
-    private readonly AccountingDbContext _context;
-
-    public DeleteInvoiceCommandHandler(AccountingDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<bool> Handle(DeleteInvoiceCommand request, CancellationToken cancellationToken)
     {
-        var invoice = await _context.Invoices
+        var invoice = await context.Invoices
             .Include(i => i.Items)
             .FirstOrDefaultAsync(i => i.Id == request.Id, cancellationToken);
 
@@ -50,7 +43,7 @@ public class DeleteInvoiceCommandHandler : IRequestHandler<DeleteInvoiceCommand,
             item.UpdatedBy = "System";
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
         return true;
     }
 }
