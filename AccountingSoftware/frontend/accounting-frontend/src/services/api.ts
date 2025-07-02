@@ -38,9 +38,15 @@ const apiClient = axios.create({
   timeout: 10000,
 });
 
-// Add request interceptor for debugging
+// Add request interceptor for authentication and debugging
 apiClient.interceptors.request.use(
   (config) => {
+    // Add Bearer token to requests
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     console.log(`API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
     return config;
   },
@@ -50,10 +56,48 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Add response interceptor for error handling
+// Add response interceptor for error handling and token refresh
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Handle 401 errors (unauthorized) with token refresh
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        const accessToken = localStorage.getItem('accessToken');
+
+        if (refreshToken && accessToken) {
+          // Create a separate axios instance for token refresh to avoid infinite loops
+          const refreshResponse = await axios.post(`${API_BASE_URL}/auth/refresh-token`, {
+            accessToken,
+            refreshToken,
+          }, {
+            headers: { 'Content-Type': 'application/json' }
+          });
+
+          if (refreshResponse.data.success) {
+            const { accessToken: newAccessToken, refreshToken: newRefreshToken } = refreshResponse.data.data;
+            localStorage.setItem('accessToken', newAccessToken);
+            localStorage.setItem('refreshToken', newRefreshToken);
+
+            // Retry the original request with new token
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            return apiClient(originalRequest);
+          }
+        }
+      } catch (refreshError) {
+        // Refresh failed, clear auth and redirect to login
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+    }
+
     console.error('API Response Error:', error.response?.data || error.message);
     return Promise.reject(error);
   }

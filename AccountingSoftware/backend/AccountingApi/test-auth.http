@@ -17,3 +17,15 @@ Content-Type: application/json
   "firstName": "Test",
   "lastName": "User"
 }
+
+### Test Authenticated Endpoint - Get Accounts (Replace YOUR_JWT_TOKEN with actual token from login)
+GET http://localhost:5067/api/accounts
+Authorization: Bearer YOUR_JWT_TOKEN
+
+### Test Authenticated Endpoint - Get Customers (Replace YOUR_JWT_TOKEN with actual token from login)
+GET http://localhost:5067/api/customers
+Authorization: Bearer YOUR_JWT_TOKEN
+
+### Test Authenticated Endpoint - Get Company Info (Replace YOUR_JWT_TOKEN with actual token from login)
+GET http://localhost:5067/api/companyinfo
+Authorization: Bearer YOUR_JWT_TOKEN

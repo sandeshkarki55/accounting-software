@@ -9,7 +9,7 @@ namespace AccountingApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(IMediator mediator, ILogger<AuthController> logger) : ControllerBase
+public class AuthController(IMediator mediator) : ControllerBase
 {
 
     /// <summary>
