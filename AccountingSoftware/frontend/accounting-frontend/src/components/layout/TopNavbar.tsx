@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAuth } from '../auth/AuthContext';
 import './TopNavbar.scss';
 
 interface TopNavbarProps {
@@ -7,6 +8,18 @@ interface TopNavbarProps {
 }
 
 const TopNavbar: React.FC<TopNavbarProps> = ({ sidebarOpen, onToggleSidebar }) => {
+  const { user, logout } = useAuth();
+
+  const handleLogout = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      await logout();
+      // Navigation to login will be handled by the auth context
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   return (
     <nav className={`top-navbar ${sidebarOpen ? 'top-navbar-expanded' : 'top-navbar-collapsed'}`}>
       <div className="top-navbar-content">
@@ -57,8 +70,10 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ sidebarOpen, onToggleSidebar }) =
                   <i className="bi bi-person-circle"></i>
                 </div>
                 <div className="user-details d-none d-sm-block">
-                  <span className="user-name">John Doe</span>
-                  <small className="user-role text-muted">Administrator</small>
+                  <span className="user-name">{user?.fullName || 'User'}</span>
+                  <small className="user-role text-muted">
+                    {user?.roles?.join(', ') || 'User'}
+                  </small>
                 </div>
               </button>
               <ul className="dropdown-menu dropdown-menu-end">
@@ -67,8 +82,8 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ sidebarOpen, onToggleSidebar }) =
                     <div className="d-flex align-items-center">
                       <i className="bi bi-person-circle me-2"></i>
                       <div>
-                        <div>John Doe</div>
-                        <small className="text-muted">john.doe@company.com</small>
+                        <div>{user?.fullName || 'User'}</div>
+                        <small className="text-muted">{user?.email || ''}</small>
                       </div>
                     </div>
                   </h6>
@@ -94,10 +109,14 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ sidebarOpen, onToggleSidebar }) =
                 </li>
                 <li><hr className="dropdown-divider" /></li>
                 <li>
-                  <a className="dropdown-item text-danger" href="#logout">
+                  <button 
+                    className="dropdown-item text-danger" 
+                    onClick={handleLogout}
+                    style={{ border: 'none', background: 'none', width: '100%', textAlign: 'left' }}
+                  >
                     <i className="bi bi-box-arrow-right me-2"></i>
                     Sign Out
-                  </a>
+                  </button>
                 </li>
               </ul>
             </div>

@@ -1,0 +1,19 @@
+### Test Login
+POST http://localhost:5067/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@accounting.com",
+  "password": "Admin123!"
+}
+
+### Test Register
+POST http://localhost:5067/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "password": "Test123!",
+  "firstName": "Test",
+  "lastName": "User"
+}

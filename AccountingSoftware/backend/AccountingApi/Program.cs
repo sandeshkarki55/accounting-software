@@ -1,9 +1,15 @@
 using Scalar.AspNetCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using AccountingApi.Infrastructure;
+using AccountingApi.Infrastructure.Seeds;
 using AccountingApi.Middleware;
 using AccountingApi.Mappings;
 using AccountingApi.Services;
+using AccountingApi.Models;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.Extensions.ServiceDiscovery;
@@ -25,6 +31,81 @@ builder.Services.AddOpenApi();
 // Add Entity Framework with Aspire SQL Server integration
 builder.AddSqlServerDbContext<AccountingDbContext>("accountingdb");
 
+// Configure Identity
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    // Password settings
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequiredLength = 8;
+    options.Password.RequiredUniqueChars = 1;
+
+    // Lockout settings
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.AllowedForNewUsers = true;
+
+    // User settings
+    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+    options.User.RequireUniqueEmail = true;
+
+    // Sign in settings
+    options.SignIn.RequireConfirmedEmail = false;
+    options.SignIn.RequireConfirmedPhoneNumber = false;
+})
+.AddEntityFrameworkStores<AccountingDbContext>()
+.AddDefaultTokenProviders();
+
+// Configure JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secretKey = jwtSettings["SecretKey"] ?? "YourSecretKeyHere123456789MustBe32CharactersOrMore!";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.SaveToken = true;
+    options.RequireHttpsMetadata = false; // Set to true in production
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+        ClockSkew = TimeSpan.Zero
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            context.Response.StatusCode = 401;
+            context.Response.ContentType = "application/json";
+            var result = System.Text.Json.JsonSerializer.Serialize(new { message = "Authentication failed." });
+            return context.Response.WriteAsync(result);
+        },
+        OnChallenge = context =>
+        {
+            context.HandleResponse();
+            context.Response.StatusCode = 401;
+            context.Response.ContentType = "application/json";
+            var result = System.Text.Json.JsonSerializer.Serialize(new { message = "You are not authorized." });
+            return context.Response.WriteAsync(result);
+        }
+    };
+});
+
+builder.Services.AddAuthorization();
+
 // Health checks are automatically added by AddSqlServerDbContext
 // No need to manually add them again
 
@@ -40,6 +121,9 @@ builder.Services.AddMappingServices();
 
 // Add Number Generation Service
 builder.Services.AddScoped<INumberGenerationService, NumberGenerationService>();
+
+// Add Authentication Services
+builder.Services.AddScoped<IJwtService, JwtService>();
 
 // Add CORS for frontend development with Aspire support
 builder.Services.AddCors(options =>
@@ -88,6 +172,8 @@ app.MapDefaultEndpoints();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AccountingDbContext>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     
     try
@@ -98,10 +184,15 @@ using (var scope = app.Services.CreateScope())
         await context.Database.MigrateAsync();
         
         logger.LogInformation("Database migrations applied successfully.");
+
+        // Seed roles and default admin user
+        logger.LogInformation("Seeding roles and default users...");
+        await RoleSeeder.SeedRolesAsync(roleManager, userManager);
+        logger.LogInformation("Roles and users seeded successfully.");
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "An error occurred while applying database migrations.");
+        logger.LogError(ex, "An error occurred while applying database migrations or seeding data.");
         
         // In development, we might want to continue anyway
         // In production, you might want to fail fast
@@ -129,6 +220,11 @@ app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
+
+// Add Authentication and Authorization middleware
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
 
 

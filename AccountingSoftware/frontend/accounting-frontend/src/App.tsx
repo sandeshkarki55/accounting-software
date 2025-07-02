@@ -1,64 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.scss';
+
+// Import pages
 import AccountsPage from './pages/accounts/AccountsPage';
 import InvoicesPage from './pages/invoices/InvoicesPage';
 import CustomersPage from './pages/customers/CustomersPage';
 import CompaniesPage from './pages/companies/CompaniesPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
+
+// Import layout components
 import SideNavigation from './components/layout/SideNavigation';
 import TopNavbar from './components/layout/TopNavbar';
 
-function App() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-
-  // Handle responsive behavior
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 992) {
-        setSidebarOpen(false);
-      } else {
-        setSidebarOpen(true);
-      }
-    };
-
-    // Set initial state
-    handleResize();
-
-    // Add event listener
-    window.addEventListener('resize', handleResize);
-
-    // Cleanup
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
-  return (
-    <Router>
-      <div className="App">
-        <SideNavigation isOpen={sidebarOpen} onToggle={toggleSidebar} />
-        <TopNavbar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
-
-        <main className={`main-content ${sidebarOpen ? 'main-content-expanded' : 'main-content-collapsed'}`}>
-          <div className="main-content-inner">
-            <Routes>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/accounts" element={<AccountsPage />} />
-              <Route path="/customers" element={<CustomersPage />} />
-              <Route path="/companies" element={<CompaniesPage />} />
-              <Route path="/invoices" element={<InvoicesPage />} />
-              <Route path="/journal" element={<ComingSoonPage title="Journal Entries" />} />
-              <Route path="/reports" element={<ComingSoonPage title="Reports" />} />
-            </Routes>
-          </div>
-        </main>
-      </div>
-    </Router>
-  );
-}
+// Import auth components
+import { AuthProvider } from './components/auth/AuthContext';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import LoginPage from './components/auth/LoginPage';
+import RegisterPage from './components/auth/RegisterPage';
 
 // Coming Soon component for incomplete pages
 const ComingSoonPage: React.FC<{ title: string }> = ({ title }) => {
@@ -87,5 +46,100 @@ const ComingSoonPage: React.FC<{ title: string }> = ({ title }) => {
     </div>
   );
 };
+
+// Main app layout component
+const AppLayout: React.FC = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Handle responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 992) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+
+    // Set initial state
+    handleResize();
+
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  return (
+    <div className="App">
+      <SideNavigation isOpen={sidebarOpen} onToggle={toggleSidebar} />
+      <TopNavbar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
+
+      <main className={`main-content ${sidebarOpen ? 'main-content-expanded' : 'main-content-collapsed'}`}>
+        <div className="main-content-inner">
+          <Routes>
+            <Route path="/" element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/accounts" element={
+              <ProtectedRoute>
+                <AccountsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/customers" element={
+              <ProtectedRoute>
+                <CustomersPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/companies" element={
+              <ProtectedRoute>
+                <CompaniesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/invoices" element={
+              <ProtectedRoute>
+                <InvoicesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/journal" element={
+              <ProtectedRoute>
+                <ComingSoonPage title="Journal Entries" />
+              </ProtectedRoute>
+            } />
+            <Route path="/reports" element={
+              <ProtectedRoute>
+                <ComingSoonPage title="Reports" />
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          
+          {/* Protected routes */}
+          <Route path="/*" element={<AppLayout />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
+  );
+}
 
 export default App;

@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using AccountingApi.Models;
 using AccountingApi.Infrastructure.Configurations;
 using System.Linq.Expressions;
 
 namespace AccountingApi.Infrastructure;
 
-public class AccountingDbContext : DbContext
+public class AccountingDbContext : IdentityDbContext<ApplicationUser>
 {
     public AccountingDbContext(DbContextOptions<AccountingDbContext> options) : base(options)
     {
