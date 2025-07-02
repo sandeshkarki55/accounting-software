@@ -1,5 +1,5 @@
 import React from 'react';
-import { Invoice, CompanyInfo, Customer } from '../types';
+import { Invoice, CompanyInfo, Customer } from '../../types';
 import './InvoicePrintView.css';
 
 interface InvoicePrintViewProps {

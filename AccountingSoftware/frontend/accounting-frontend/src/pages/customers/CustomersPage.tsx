@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Customer, CreateCustomerDto, UpdateCustomerDto } from '../types';
-import { customerService } from '../services/api';
-import CustomerModal from '../components/modals/CustomerModal';
+import { Customer, CreateCustomerDto, UpdateCustomerDto } from '../../types';
+import { customerService } from '../../services/api';
+import CustomerModal from '../../components/modals/CustomerModal';
 
 const CustomersPage: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);

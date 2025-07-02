@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.scss';
 import AccountsPage from './pages/accounts/AccountsPage';
-import InvoicesPage from './pages/InvoicesPage';
-import CustomersPage from './pages/CustomersPage';
-import CompaniesPage from './pages/CompaniesPage';
-import DashboardPage from './pages/DashboardPage';
+import InvoicesPage from './pages/invoices/InvoicesPage';
+import CustomersPage from './pages/customers/CustomersPage';
+import CompaniesPage from './pages/companies/CompaniesPage';
+import DashboardPage from './pages/dashboard/DashboardPage';
 import SideNavigation from './components/layout/SideNavigation';
 import TopNavbar from './components/layout/TopNavbar';
 

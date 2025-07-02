@@ -1,7 +1,7 @@
 // Re-export all types from organized structure
-export * from './pages/accounts';
-export * from './pages/customers';
-export * from './pages/invoices';
+export * from './accounts';
+export * from './customers';
+export * from './invoices';
 
 // Component-related types (if any specific component types are needed)
 export interface ModalProps {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CompanyInfo, CreateCompanyInfoDto } from '../types/pages/customers';
-import { companyInfoService } from '../services/api';
+import { CompanyInfo, CreateCompanyInfoDto } from '../../types/customers';
+import { companyInfoService } from '../../services/api';
 
 interface AddCompanyModalProps {
   show: boolean;

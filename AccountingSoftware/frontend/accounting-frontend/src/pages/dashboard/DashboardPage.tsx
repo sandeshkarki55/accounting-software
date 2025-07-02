@@ -14,8 +14,8 @@ import {
   Filler
 } from 'chart.js';
 import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
-import { Invoice, InvoiceStatus, Customer, Account } from '../types';
-import { invoiceService, customerService, accountService } from '../services/api';
+import { Invoice, InvoiceStatus, Customer, Account } from '../../types';
+import { invoiceService, customerService, accountService } from '../../services/api';
 import './DashboardPage.scss';
 
 // Register Chart.js components

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { CompanyInfo } from '../types/pages/customers';
-import { companyInfoService } from '../services/api';
-import AddCompanyModal from '../components/AddCompanyModal';
+import { CompanyInfo } from '../../types/customers';
+import { companyInfoService } from '../../services/api';
+import AddCompanyModal from '../../components/modals/AddCompanyModal';
 import './CompaniesPage.scss';
 
 const CompaniesPage: React.FC = () => {

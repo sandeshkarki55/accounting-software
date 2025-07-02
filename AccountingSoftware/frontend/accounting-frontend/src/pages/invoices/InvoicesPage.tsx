@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Invoice, InvoiceStatus, Customer, CompanyInfo, CreateInvoiceDto, MarkInvoiceAsPaidDto } from '../types';
-import { invoiceService, customerService, companyInfoService } from '../services/api';
-import InvoiceModal from '../components/InvoiceModal';
-import InvoicePrintModal from '../components/InvoicePrintModal';
-import MarkAsPaidModal from '../components/MarkAsPaidModal';
+import { Invoice, InvoiceStatus, Customer, CompanyInfo, CreateInvoiceDto, MarkInvoiceAsPaidDto } from '../../types';
+import { invoiceService, customerService, companyInfoService } from '../../services/api';
+import InvoiceModal from '../../components/modals/InvoiceModal';
+import InvoicePrintModal from '../../components/modals/InvoicePrintModal';
+import MarkAsPaidModal from '../../components/MarkAsPaidModal';
 
 const InvoicesPage: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);

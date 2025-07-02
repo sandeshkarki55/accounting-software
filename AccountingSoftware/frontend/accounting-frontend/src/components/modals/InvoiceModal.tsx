@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Invoice, CreateInvoiceDto, CreateInvoiceItemDto, Customer, CompanyInfo } from '../types';
+import { Invoice, CreateInvoiceDto, CreateInvoiceItemDto, Customer, CompanyInfo } from '../../types';
 
 interface InvoiceModalProps {
   show: boolean;
