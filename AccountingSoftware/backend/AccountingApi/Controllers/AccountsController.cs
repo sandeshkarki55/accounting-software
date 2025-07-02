@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using MediatR;
 using AccountingApi.DTOs;
 using AccountingApi.Features.Accounts;
+using AccountingApi.Constants;
 
 namespace AccountingApi.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
-public class AccountsController(IMediator mediator) : ControllerBase
+public class AccountsController(IMediator mediator) : BaseController
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<AccountDto>>> GetAccounts()
@@ -57,7 +57,11 @@ public class AccountsController(IMediator mediator) : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Create a new account. Only users with Admin, Manager, or Accountant roles can create accounts.
+    /// </summary>
     [HttpPost]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.Manager},{Roles.Accountant}")]
     public async Task<ActionResult<AccountDto>> CreateAccount(CreateAccountDto createAccountDto)
     {
         try
@@ -75,7 +79,11 @@ public class AccountsController(IMediator mediator) : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Update an existing account. Only users with Admin or Manager roles can update accounts.
+    /// </summary>
     [HttpPut("{id:int}")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.Manager}")]
     public async Task<IActionResult> UpdateAccount(int id, UpdateAccountDto updateAccountDto)
     {
         try

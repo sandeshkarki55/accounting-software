@@ -4,9 +4,7 @@ using AccountingApi.Features.JournalEntries;
 
 namespace AccountingApi.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
-public class JournalEntriesController(IMediator mediator) : ControllerBase
+public class JournalEntriesController(IMediator mediator) : BaseController
 {
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteJournalEntry(int id)

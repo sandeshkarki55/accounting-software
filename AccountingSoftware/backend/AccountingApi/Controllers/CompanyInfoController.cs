@@ -5,9 +5,7 @@ using AccountingApi.Features.CompanyInfo;
 
 namespace AccountingApi.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
-public class CompanyInfoController(IMediator mediator) : ControllerBase
+public class CompanyInfoController(IMediator mediator) : BaseController
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CompanyInfoDto>>> GetCompanyInfos()

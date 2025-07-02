@@ -5,9 +5,7 @@ using AccountingApi.Features.Invoices;
 
 namespace AccountingApi.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
-public class InvoicesController(IMediator mediator) : ControllerBase
+public class InvoicesController(IMediator mediator) : BaseController
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<InvoiceDto>>> GetInvoices()
