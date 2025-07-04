@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Account, AccountType } from '../../types';
-import './ChartOfAccountsTree.css';
+import './ChartOfAccountsTree.scss';
 
 interface ChartOfAccountsTreeProps {
   accounts: Account[];
@@ -13,6 +13,41 @@ const ChartOfAccountsTree: React.FC<ChartOfAccountsTreeProps> = ({
   onEditAccount,
   onDeleteAccount
 }) => {
+  const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set(['Asset', 'Liability', 'Equity', 'Revenue', 'Expense']));
+  const [expandedAccounts, setExpandedAccounts] = useState<Set<number>>(new Set());
+
+  const toggleTypeExpansion = (typeName: string) => {
+    const newExpanded = new Set(expandedTypes);
+    if (newExpanded.has(typeName)) {
+      newExpanded.delete(typeName);
+    } else {
+      newExpanded.add(typeName);
+    }
+    setExpandedTypes(newExpanded);
+  };
+
+  const toggleAccountExpansion = (accountId: number) => {
+    const newExpanded = new Set(expandedAccounts);
+    if (newExpanded.has(accountId)) {
+      newExpanded.delete(accountId);
+    } else {
+      newExpanded.add(accountId);
+    }
+    setExpandedAccounts(newExpanded);
+  };
+
+  const hasVisibleChildren = (account: Account, typeAccounts: Account[]): boolean => {
+    return typeAccounts.some(a => a.parentAccountId === account.id);
+  };
+
+  const isAccountVisible = (account: Account, typeAccounts: Account[]): boolean => {
+    if (!account.parentAccountId) return true;
+    
+    const parent = typeAccounts.find(a => a.id === account.parentAccountId);
+    if (!parent) return true;
+    
+    return expandedAccounts.has(parent.id) && isAccountVisible(parent, typeAccounts);
+  };
   const getAccountTypeName = (type: AccountType): string => {
     switch (type) {
       case AccountType.Asset: return 'Asset';
@@ -98,25 +133,44 @@ const ChartOfAccountsTree: React.FC<ChartOfAccountsTreeProps> = ({
                   {/* Type Header Row */}
                   <tr className="table-secondary">
                     <td colSpan={6}>
+                      <button
+                        className={`type-header-toggle ${expandedTypes.has(typeName) ? '' : 'collapsed'}`}
+                        onClick={() => toggleTypeExpansion(typeName)}
+                        aria-label={`${expandedTypes.has(typeName) ? 'Collapse' : 'Expand'} ${typeName} accounts`}
+                      >
+                        <i className="bi bi-chevron-down"></i>
+                      </button>
                       <strong className="fs-6 text-uppercase">
                         <i className="bi bi-folder me-2"></i>
-                        {typeName} Accounts
+                        {typeName} Accounts ({typeAccounts.length})
                       </strong>
                     </td>
                   </tr>
                   
                   {/* Account Rows */}
-                  {typeAccounts.map((account, index) => {
-                    const hasChildren = account.subAccounts && account.subAccounts.length > 0;
+                  {expandedTypes.has(typeName) && typeAccounts.map((account) => {
+                    const hasChildren = hasVisibleChildren(account, typeAccounts);
+                    const isVisible = isAccountVisible(account, typeAccounts);
+                    const isExpanded = expandedAccounts.has(account.id);
+                    
+                    if (!isVisible) return null;
                     
                     return (
                       <tr 
                         key={account.id} 
-                        className={`account-row level-${account.level || 0}`}
+                        className={`account-row level-${account.level || 0} ${!isExpanded && hasChildren ? 'collapsed' : ''}`}
                         style={{ borderLeft: account.level && account.level > 0 ? '3px solid #e9ecef' : 'none' }}
                       >
                         <td style={getIndentationStyle(account.level || 0)}>
-                          {getTreeIndicator(account.level || 0, !!hasChildren)}
+                          {getTreeIndicator(account.level || 0, hasChildren)}
+                          <button
+                            className={`expand-toggle ${!hasChildren ? 'no-children' : ''}`}
+                            onClick={() => hasChildren && toggleAccountExpansion(account.id)}
+                            aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${account.accountName}`}
+                            disabled={!hasChildren}
+                          >
+                            <i className="bi bi-chevron-down"></i>
+                          </button>
                           <span className={`account-name ${(account.level || 0) > 0 ? 'text-muted' : 'fw-bold'}`}>
                             {account.accountName}
                           </span>

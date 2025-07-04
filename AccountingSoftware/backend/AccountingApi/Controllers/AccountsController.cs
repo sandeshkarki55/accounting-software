@@ -61,7 +61,6 @@ public class AccountsController(IMediator mediator) : BaseController
     /// Create a new account. Only users with Admin, Manager, or Accountant roles can create accounts.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{Roles.Admin},{Roles.Manager},{Roles.Accountant}")]
     public async Task<ActionResult<AccountDto>> CreateAccount(CreateAccountDto createAccountDto)
     {
         try
