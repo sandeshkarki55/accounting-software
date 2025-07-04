@@ -9,6 +9,7 @@ import {
   ChangePasswordRequest,
   UpdateUserProfileRequest
 } from '../types/auth';
+import { TokenService } from './tokenService';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://localhost:7120/api';
 
@@ -23,55 +24,13 @@ const authApi = axios.create({
 // Request interceptor to add auth token
 authApi.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
+    const token = TokenService.getAccessToken();
+    if (token && !TokenService.isTokenExpired(token)) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
   (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor to handle token refresh
-authApi.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        const accessToken = localStorage.getItem('accessToken');
-
-        if (refreshToken && accessToken) {
-          const response = await authApi.post('/auth/refresh-token', {
-            accessToken,
-            refreshToken,
-          });
-
-          if (response.data.success) {
-            const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data.data;
-            localStorage.setItem('accessToken', newAccessToken);
-            localStorage.setItem('refreshToken', newRefreshToken);
-
-            // Retry the original request with new token
-            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-            return authApi(originalRequest);
-          }
-        }
-      } catch (refreshError) {
-        // Refresh failed, redirect to login
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-      }
-    }
-
     return Promise.reject(error);
   }
 );
@@ -83,9 +42,7 @@ export const authService = {
       
       if (response.data.success && response.data.data) {
         const { accessToken, refreshToken, user } = response.data.data;
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        localStorage.setItem('user', JSON.stringify(user));
+        TokenService.storeAuthData(accessToken, refreshToken, user);
       }
       
       return response.data;
@@ -130,9 +87,7 @@ export const authService = {
       
       if (response.data.success && response.data.data) {
         const { accessToken, refreshToken, user } = response.data.data;
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        localStorage.setItem('user', JSON.stringify(user));
+        TokenService.storeAuthData(accessToken, refreshToken, user);
       }
       
       return response.data;
@@ -182,16 +137,12 @@ export const authService = {
       const response: AxiosResponse<ApiResponse<string>> = await authApi.post('/auth/logout');
       
       // Clear local storage regardless of response
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
+      TokenService.clearAuthData();
       
       return response.data;
     } catch (error: any) {
       // Clear local storage even if the request fails
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
+      TokenService.clearAuthData();
       
       return {
         success: false,
@@ -202,9 +153,11 @@ export const authService = {
   },
 
   isAuthenticated(): boolean {
-    const token = localStorage.getItem('accessToken');
-    const user = localStorage.getItem('user');
-    return !!(token && user);
+    return TokenService.isAuthenticated();
+  },
+
+  isAuthenticatedAndNotExpiringSoon(): boolean {
+    return TokenService.isAuthenticatedAndNotExpiringSoon();
   },
 
   getCurrentUserFromStorage(): User | null {
@@ -220,8 +173,6 @@ export const authService = {
   },
 
   clearAuth(): void {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    TokenService.clearAuthData();
   }
 };

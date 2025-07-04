@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../../types/auth';
 import { authService } from '../../services/authService';
+import { TokenService } from '../../services/tokenService';
+import TokenRefreshService from '../../services/tokenRefreshService';
 
 interface AuthContextType {
   user: User | null;
@@ -40,16 +42,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Check if user is logged in on app start
     const initializeAuth = async () => {
       try {
-        if (authService.isAuthenticated()) {
+        // Use TokenService for better token validation
+        if (TokenService.isAuthenticated()) {
           const storedUser = authService.getCurrentUserFromStorage();
           if (storedUser) {
             setUser(storedUser);
+            
+            // Set up automatic token refresh
+            const refreshService = TokenRefreshService.getInstance();
+            refreshService.refreshTokenIfNeeded().catch(error => {
+              console.warn('Initial token refresh failed:', error);
+            });
           } else {
             // Try to get fresh user data from server
-            const response = await authService.getCurrentUser();
-            if (response.success && response.data) {
-              setUser(response.data);
-            } else {
+            try {
+              const response = await authService.getCurrentUser();
+              if (response.success && response.data) {
+                setUser(response.data);
+              } else {
+                authService.clearAuth();
+              }
+            } catch (error) {
+              console.warn('Failed to get current user:', error);
               authService.clearAuth();
             }
           }
@@ -63,6 +77,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     initializeAuth();
+
+    // Set up periodic token refresh check
+    const tokenRefreshInterval = setInterval(async () => {
+      if (TokenService.isAuthenticated()) {
+        try {
+          const refreshService = TokenRefreshService.getInstance();
+          await refreshService.refreshTokenIfNeeded();
+        } catch (error) {
+          console.warn('Periodic token refresh failed:', error);
+          // If refresh fails, logout user
+          setUser(null);
+          authService.clearAuth();
+        }
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(tokenRefreshInterval);
   }, []);
 
   const login = async (email: string, password: string, rememberMe = false) => {
@@ -142,7 +173,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     user,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && TokenService.isAuthenticated(),
     isLoading,
     login,
     logout,

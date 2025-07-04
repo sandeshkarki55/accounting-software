@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { Account, CreateAccountDto, UpdateAccountDto, Customer, CreateCustomerDto, UpdateCustomerDto, CompanyInfo, CreateCompanyInfoDto, Invoice, CreateInvoiceDto, MarkInvoiceAsPaidDto } from '../types';
+import { TokenService } from './tokenService';
+import TokenRefreshService from './tokenRefreshService';
 
 // Use environment variable for API base URL, with fallback for development
 // Aspire automatically injects service URLs as environment variables
@@ -40,11 +42,24 @@ const apiClient = axios.create({
 
 // Add request interceptor for authentication and debugging
 apiClient.interceptors.request.use(
-  (config) => {
+  async (config) => {
     // Add Bearer token to requests
-    const token = localStorage.getItem('accessToken');
-    if (token) {
+    const token = TokenService.getAccessToken();
+    if (token && !TokenService.isTokenExpired(token)) {
       config.headers.Authorization = `Bearer ${token}`;
+      
+      // Try to refresh token proactively if it's expiring soon
+      const refreshService = TokenRefreshService.getInstance();
+      try {
+        await refreshService.refreshTokenIfNeeded();
+        // Get the potentially updated token after refresh
+        const updatedToken = TokenService.getAccessToken();
+        if (updatedToken && updatedToken !== token) {
+          config.headers.Authorization = `Bearer ${updatedToken}`;
+        }
+      } catch (error) {
+        console.warn('Proactive token refresh failed in request interceptor:', error);
+      }
     }
     
     console.log(`API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
@@ -67,34 +82,16 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        const accessToken = localStorage.getItem('accessToken');
+        const refreshService = TokenRefreshService.getInstance();
+        const newAccessToken = await refreshService.refreshToken();
 
-        if (refreshToken && accessToken) {
-          // Create a separate axios instance for token refresh to avoid infinite loops
-          const refreshResponse = await axios.post(`${API_BASE_URL}/auth/refresh-token`, {
-            accessToken,
-            refreshToken,
-          }, {
-            headers: { 'Content-Type': 'application/json' }
-          });
-
-          if (refreshResponse.data.success) {
-            const { accessToken: newAccessToken, refreshToken: newRefreshToken } = refreshResponse.data.data;
-            localStorage.setItem('accessToken', newAccessToken);
-            localStorage.setItem('refreshToken', newRefreshToken);
-
-            // Retry the original request with new token
-            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-            return apiClient(originalRequest);
-          }
-        }
+        // Retry the original request with new token
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return apiClient(originalRequest);
       } catch (refreshError) {
-        // Refresh failed, clear auth and redirect to login
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+        // Refresh failed, user will be redirected to login by the refresh service
+        console.error('Token refresh failed in response interceptor:', refreshError);
+        return Promise.reject(refreshError);
       }
     }
 
