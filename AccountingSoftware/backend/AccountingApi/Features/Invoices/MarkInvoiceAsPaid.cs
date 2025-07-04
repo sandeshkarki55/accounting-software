@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
+using AccountingApi.Services;
 
 namespace AccountingApi.Features.Invoices;
 
@@ -10,7 +11,9 @@ namespace AccountingApi.Features.Invoices;
 public record MarkInvoiceAsPaidCommand(int InvoiceId, DateTime PaidDate, string? PaymentReference = null) : IRequest<InvoiceDto>;
 
 // Handler for MarkInvoiceAsPaidCommand
-public class MarkInvoiceAsPaidCommandHandler(AccountingDbContext context) : IRequestHandler<MarkInvoiceAsPaidCommand, InvoiceDto>
+public class MarkInvoiceAsPaidCommandHandler(
+    AccountingDbContext context,
+    IAutomaticJournalEntryService automaticJournalEntryService) : IRequestHandler<MarkInvoiceAsPaidCommand, InvoiceDto>
 {
     public async Task<InvoiceDto> Handle(MarkInvoiceAsPaidCommand request, CancellationToken cancellationToken)
     {
@@ -37,6 +40,18 @@ public class MarkInvoiceAsPaidCommandHandler(AccountingDbContext context) : IReq
         invoice.UpdatedBy = "System"; // TODO: Replace with actual user when authentication is implemented
 
         await context.SaveChangesAsync(cancellationToken);
+
+        // Create automatic journal entry for the payment
+        try
+        {
+            await automaticJournalEntryService.CreatePaymentJournalEntryAsync(invoice, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            // Log the error but don't fail the payment
+            // In a production system, you might want to use a proper logging framework
+            Console.WriteLine($"Warning: Failed to create automatic journal entry for payment of invoice {invoice.InvoiceNumber}: {ex.Message}");
+        }
 
         // Return updated invoice DTO
         return new InvoiceDto

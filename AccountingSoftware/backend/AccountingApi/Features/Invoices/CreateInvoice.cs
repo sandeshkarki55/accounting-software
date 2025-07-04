@@ -11,7 +11,10 @@ namespace AccountingApi.Features.Invoices;
 public record CreateInvoiceCommand(CreateInvoiceDto Invoice) : IRequest<InvoiceDto>;
 
 // Handler for CreateInvoiceCommand
-public class CreateInvoiceCommandHandler(AccountingDbContext context, INumberGenerationService numberGenerationService) : IRequestHandler<CreateInvoiceCommand, InvoiceDto>
+public class CreateInvoiceCommandHandler(
+    AccountingDbContext context, 
+    INumberGenerationService numberGenerationService,
+    IAutomaticJournalEntryService automaticJournalEntryService) : IRequestHandler<CreateInvoiceCommand, InvoiceDto>
 {
     public async Task<InvoiceDto> Handle(CreateInvoiceCommand request, CancellationToken cancellationToken)
     {
@@ -60,6 +63,23 @@ public class CreateInvoiceCommandHandler(AccountingDbContext context, INumberGen
 
         context.Invoices.Add(invoice);
         await context.SaveChangesAsync(cancellationToken);
+
+        // Load the created invoice with related data for journal entry creation
+        await context.Entry(invoice)
+            .Reference(i => i.Customer)
+            .LoadAsync(cancellationToken);
+
+        // Create automatic journal entry for the invoice
+        try
+        {
+            await automaticJournalEntryService.CreateInvoiceJournalEntryAsync(invoice, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            // Log the error but don't fail the invoice creation
+            // In a production system, you might want to use a proper logging framework
+            Console.WriteLine($"Warning: Failed to create automatic journal entry for invoice {invoice.InvoiceNumber}: {ex.Message}");
+        }
 
         // Load the created invoice with related data
         var createdInvoice = await context.Invoices

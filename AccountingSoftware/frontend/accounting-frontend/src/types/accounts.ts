@@ -56,3 +56,17 @@ export interface JournalEntryLine {
   creditAmount: number;
   description: string;
 }
+
+export interface CreateJournalEntryLineDto {
+  accountId: number;
+  debitAmount: number;
+  creditAmount: number;
+  description: string;
+}
+
+export interface CreateJournalEntryDto {
+  transactionDate: string;
+  description: string;
+  reference: string;
+  lines: CreateJournalEntryLineDto[];
+}

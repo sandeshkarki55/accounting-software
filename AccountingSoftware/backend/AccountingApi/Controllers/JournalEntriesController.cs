@@ -1,11 +1,44 @@
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using AccountingApi.Features.JournalEntries;
+using AccountingApi.DTOs;
 
 namespace AccountingApi.Controllers;
 
 public class JournalEntriesController(IMediator mediator) : BaseController
 {
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<JournalEntryDto>>> GetJournalEntries()
+    {
+        try
+        {
+            var journalEntries = await mediator.Send(new GetAllJournalEntriesQuery());
+            return Ok(journalEntries);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while retrieving journal entries.", details = ex.Message });
+        }
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<JournalEntryDto>> CreateJournalEntry(CreateJournalEntryDto createJournalEntryDto)
+    {
+        try
+        {
+            var journalEntry = await mediator.Send(new CreateJournalEntryCommand(createJournalEntryDto));
+            return CreatedAtAction(nameof(GetJournalEntries), new { id = journalEntry.Id }, journalEntry);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while creating the journal entry.", details = ex.Message });
+        }
+    }
+
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteJournalEntry(int id)
     {

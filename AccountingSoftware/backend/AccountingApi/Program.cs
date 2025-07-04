@@ -122,6 +122,14 @@ builder.Services.AddMappingServices();
 // Add Number Generation Service
 builder.Services.AddScoped<INumberGenerationService, NumberGenerationService>();
 
+// Add Automatic Journal Entry Service
+builder.Services.AddScoped<IAutomaticJournalEntryService, AutomaticJournalEntryService>();
+
+// Add Account Configuration Service
+builder.Services.Configure<AccountMappingOptions>(
+    builder.Configuration.GetSection(AccountMappingOptions.SectionName));
+builder.Services.AddScoped<IAccountConfigurationService, AccountConfigurationService>();
+
 // Add Authentication Services
 builder.Services.AddScoped<IJwtService, JwtService>();
 
@@ -189,6 +197,11 @@ using (var scope = app.Services.CreateScope())
         logger.LogInformation("Seeding roles and default users...");
         await RoleSeeder.SeedRolesAsync(roleManager, userManager);
         logger.LogInformation("Roles and users seeded successfully.");
+
+        // Seed basic chart of accounts
+        logger.LogInformation("Seeding chart of accounts...");
+        await AccountSeeder.SeedAccountsAsync(context);
+        logger.LogInformation("Chart of accounts seeded successfully.");
     }
     catch (Exception ex)
     {
