@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Customer, CreateCustomerDto, UpdateCustomerDto } from '../../types';
 import { customerService } from '../../services/api';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import CustomerModal from '../../components/modals/CustomerModal';
 import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
 
 const CustomersPage: React.FC = () => {
+  usePageTitle('Customers');
+
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

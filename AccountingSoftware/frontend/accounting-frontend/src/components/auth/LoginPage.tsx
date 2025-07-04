@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import { usePageTitle } from '../../hooks/usePageTitle';
 
 const LoginPage: React.FC = () => {
+  usePageTitle('Login');
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',

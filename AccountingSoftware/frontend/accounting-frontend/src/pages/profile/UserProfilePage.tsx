@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../components/auth/AuthContext';
 import { authService } from '../../services/authService';
 import { ChangePasswordRequest, UpdateUserProfileRequest } from '../../types/auth';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import './UserProfilePage.scss';
 
 interface Message {
@@ -11,6 +12,7 @@ interface Message {
 }
 
 const UserProfilePage: React.FC = () => {
+  usePageTitle('Profile');
   const { user, updateUser } = useAuth();
   
   // Profile form state

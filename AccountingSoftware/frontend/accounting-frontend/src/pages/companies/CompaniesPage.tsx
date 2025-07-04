@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { CompanyInfo } from '../../types/customers';
 import { companyInfoService } from '../../services/api';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import AddCompanyModal from '../../components/modals/AddCompanyModal';
 import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
 import './CompaniesPage.scss';
 
 const CompaniesPage: React.FC = () => {
+  usePageTitle('Companies');
+
   const [companies, setCompanies] = useState<CompanyInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

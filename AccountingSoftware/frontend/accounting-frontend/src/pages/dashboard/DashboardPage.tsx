@@ -16,6 +16,7 @@ import {
 import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
 import { Invoice, InvoiceStatus, Customer, Account } from '../../types';
 import { invoiceService, customerService, accountService } from '../../services/api';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import './DashboardPage.scss';
 
 // Register Chart.js components
@@ -45,6 +46,7 @@ interface DashboardStats {
 }
 
 const DashboardPage: React.FC = () => {
+  usePageTitle('Dashboard');
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalRevenue: 0,

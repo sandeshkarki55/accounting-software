@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Account, AccountType, CreateAccountDto, UpdateAccountDto } from '../../types';
 import { accountService } from '../../services/api';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import AccountModal from '../../components/modals/AccountModal';
 import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
 import ChartOfAccountsTree from '../../components/charts/ChartOfAccountsTree';
 
 const AccountsPage: React.FC = () => {
+  usePageTitle('Chart of Accounts');
+
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [hierarchyAccounts, setHierarchyAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);

@@ -20,8 +20,13 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import LoginPage from './components/auth/LoginPage';
 import RegisterPage from './components/auth/RegisterPage';
 
+// Import hooks
+import { usePageTitle } from './hooks/usePageTitle';
+
 // Coming Soon component for incomplete pages
 const ComingSoonPage: React.FC<{ title: string }> = ({ title }) => {
+  usePageTitle(title);
+  
   return (
     <div className="coming-soon-page">
       <div className="coming-soon-content">

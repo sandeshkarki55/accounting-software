@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Invoice, InvoiceStatus, Customer, CompanyInfo, CreateInvoiceDto, MarkInvoiceAsPaidDto } from '../../types';
 import { invoiceService, customerService, companyInfoService } from '../../services/api';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import InvoiceModal from '../../components/modals/InvoiceModal';
 import InvoicePrintModal from '../../components/modals/InvoicePrintModal';
 import MarkAsPaidModal from '../../components/MarkAsPaidModal';
 import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
 
 const InvoicesPage: React.FC = () => {
+  usePageTitle('Invoices');
+
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [companyInfos, setCompanyInfos] = useState<CompanyInfo[]>([]);
