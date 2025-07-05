@@ -13,9 +13,6 @@ public class AccountMappingOptions
     public string AccountsReceivable { get; set; } = "1200";
     public string Revenue { get; set; } = "4000";
     public string SalesTaxPayable { get; set; } = "2300";
-    public string AccountsPayable { get; set; } = "2000";
-    public string Inventory { get; set; } = "1300";
-    public string CostOfGoodsSold { get; set; } = "5000";
 }
 
 /// <summary>
@@ -37,10 +34,4 @@ public class AccountConfigurationService : IAccountConfigurationService
     public string GetRevenueAccountCode() => _options.Revenue;
 
     public string GetSalesTaxPayableCode() => _options.SalesTaxPayable;
-
-    public string GetAccountsPayableCode() => _options.AccountsPayable;
-
-    public string GetInventoryAccountCode() => _options.Inventory;
-
-    public string GetCostOfGoodsSoldCode() => _options.CostOfGoodsSold;
 }

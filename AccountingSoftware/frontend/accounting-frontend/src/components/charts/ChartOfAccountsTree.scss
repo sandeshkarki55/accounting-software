@@ -1,30 +1,32 @@
 /* Chart of Accounts Tree Styling */
+@import '../../styles/variables';
+
 .chart-of-accounts-tree {
   .account-row {
     transition: background-color 0.2s ease-in-out;
 
     &:hover {
-      background-color: #f8f9fa !important;
+      background-color: $gray-100 !important;
     }
 
     &.level-0 {
       font-weight: 600;
-      border-left: 4px solid #0d6efd !important;
+      border-left: 4px solid $primary !important;
     }
 
     &.level-1 {
-      border-left: 4px solid #6c757d !important;
-      background-color: #fafbfc;
+      border-left: 4px solid $gray-700 !important;
+      background-color: $gray-50;
     }
 
     &.level-2 {
-      border-left: 4px solid #adb5bd !important;
-      background-color: #f8f9fa;
+      border-left: 4px solid $gray-500 !important;
+      background-color: $gray-100;
     }
 
     &.level-3 {
-      border-left: 4px solid #dee2e6 !important;
-      background-color: #f1f3f4;
+      border-left: 4px solid $gray-300 !important;
+      background-color: $gray-200;
     }
 
     &.collapsed {
@@ -39,13 +41,13 @@
   .tree-indicator {
     font-family: 'Courier New', monospace;
     font-weight: bold;
-    color: #6c757d;
+    color: $gray-700;
   }
 
   .expand-toggle {
     background: none;
     border: none;
-    color: #6c757d;
+    color: $gray-700;
     cursor: pointer;
     padding: 0;
     margin-right: 0.5rem;
@@ -57,7 +59,7 @@
     transition: transform 0.2s ease-in-out;
 
     &:hover {
-      color: #495057;
+      color: $gray-800;
     }
 
     &.no-children {
@@ -74,26 +76,26 @@
   }
 
   .level-0 .account-name {
-    color: #0d6efd;
+    color: $primary;
     font-weight: 600;
   }
 
   .level-1 .account-name {
-    color: #495057;
+    color: $gray-800;
     font-weight: 500;
   }
 
   .level-2 .account-name,
   .level-3 .account-name {
-    color: #6c757d;
+    color: $gray-700;
     font-weight: normal;
   }
 
   /* Type header styling */
   .table-secondary td {
-    background-color: #e9ecef !important;
-    border-top: 2px solid #6c757d;
-    border-bottom: 1px solid #6c757d;
+    background-color: $gray-200 !important;
+    border-top: 2px solid $gray-800;
+    border-bottom: 1px solid $gray-800;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -101,14 +103,14 @@
     .type-header-toggle {
       background: none;
       border: none;
-      color: #495057;
+      color: $gray-800;
       cursor: pointer;
       padding: 0;
       margin-right: 0.5rem;
       transition: transform 0.2s ease-in-out;
 
       &:hover {
-        color: #212529;
+        color: $gray-900;
       }
 
       &.collapsed .bi-chevron-down {
@@ -123,12 +125,12 @@
 
   /* Balance styling */
   .balance-positive {
-    color: #198754 !important;
+    color: $success !important;
     font-weight: 600;
   }
 
   .balance-negative {
-    color: #dc3545 !important;
+    color: $danger !important;
     font-weight: 600;
   }
 
@@ -175,16 +177,16 @@
     }
 
     &::-webkit-scrollbar-track {
-      background: #f1f1f1;
+      background: $gray-100;
       border-radius: 10px;
     }
 
     &::-webkit-scrollbar-thumb {
-      background: #888;
+      background: $gray-500;
       border-radius: 10px;
 
       &:hover {
-        background: #555;
+        background: $gray-700;
       }
     }
   }

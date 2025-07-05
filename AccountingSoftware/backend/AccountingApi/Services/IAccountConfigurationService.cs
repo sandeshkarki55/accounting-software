@@ -1,5 +1,3 @@
-using AccountingApi.Models;
-
 namespace AccountingApi.Services;
 
 /// <summary>
@@ -26,19 +24,4 @@ public interface IAccountConfigurationService
     /// Gets the account code for sales tax payable
     /// </summary>
     string GetSalesTaxPayableCode();
-
-    /// <summary>
-    /// Gets the account code for accounts payable
-    /// </summary>
-    string GetAccountsPayableCode();
-
-    /// <summary>
-    /// Gets the account code for inventory
-    /// </summary>
-    string GetInventoryAccountCode();
-
-    /// <summary>
-    /// Gets the account code for cost of goods sold
-    /// </summary>
-    string GetCostOfGoodsSoldCode();
 }
