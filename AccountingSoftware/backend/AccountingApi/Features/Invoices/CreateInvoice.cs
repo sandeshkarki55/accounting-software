@@ -23,7 +23,7 @@ public class CreateInvoiceCommandHandler(
 
         // Calculate totals from items
         var subTotal = request.Invoice.Items.Sum(item => item.Quantity * item.UnitPrice);
-        var taxAmount = subTotal * request.Invoice.TaxRate;
+        var taxAmount = subTotal * (request.Invoice.TaxRate / 100);
         var totalAmount = subTotal + taxAmount - request.Invoice.DiscountAmount;
 
         var invoice = new Invoice

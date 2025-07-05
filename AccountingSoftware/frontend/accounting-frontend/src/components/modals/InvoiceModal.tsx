@@ -49,7 +49,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
         customerId: invoice.customerId,
         companyInfoId: invoice.companyInfoId,
         description: invoice.description || '',
-        taxRate: invoice.taxRate,
+        taxRate: invoice.taxRate, // Keep as percentage
         discountAmount: invoice.discountAmount,
         notes: invoice.notes || '',
         terms: invoice.terms || ''

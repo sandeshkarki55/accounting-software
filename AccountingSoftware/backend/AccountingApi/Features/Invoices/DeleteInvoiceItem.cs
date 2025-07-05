@@ -53,7 +53,7 @@ public class DeleteInvoiceItemCommandHandler(AccountingDbContext context) : IReq
 
         // Recalculate invoice totals
         invoice.SubTotal = activeItems.Sum(i => i.Amount);
-        invoice.TaxAmount = invoice.SubTotal * invoice.TaxRate;
+        invoice.TaxAmount = invoice.SubTotal * (invoice.TaxRate / 100);
         invoice.TotalAmount = invoice.SubTotal + invoice.TaxAmount - invoice.DiscountAmount;
         invoice.UpdatedAt = DateTime.UtcNow;
         invoice.UpdatedBy = "System";

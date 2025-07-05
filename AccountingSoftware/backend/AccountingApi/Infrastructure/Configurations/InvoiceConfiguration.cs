@@ -30,7 +30,7 @@ public class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
             .HasDefaultValue(0);
 
         builder.Property(e => e.TaxRate)
-            .HasColumnType("decimal(5,4)")
+            .HasColumnType("decimal(6,4)")
             .HasDefaultValue(0);
 
         builder.Property(e => e.TaxAmount)
