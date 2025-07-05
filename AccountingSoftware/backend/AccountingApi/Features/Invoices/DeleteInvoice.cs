@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
+using AccountingApi.Services;
 
 namespace AccountingApi.Features.Invoices;
 
@@ -9,7 +10,7 @@ namespace AccountingApi.Features.Invoices;
 public record DeleteInvoiceCommand(int Id) : IRequest<bool>;
 
 // Handler for DeleteInvoiceCommand
-public class DeleteInvoiceCommandHandler(AccountingDbContext context) : IRequestHandler<DeleteInvoiceCommand, bool>
+public class DeleteInvoiceCommandHandler(AccountingDbContext context, ICurrentUserService currentUserService) : IRequestHandler<DeleteInvoiceCommand, bool>
 {
     public async Task<bool> Handle(DeleteInvoiceCommand request, CancellationToken cancellationToken)
     {
@@ -26,21 +27,23 @@ public class DeleteInvoiceCommandHandler(AccountingDbContext context) : IRequest
             throw new InvalidOperationException("Cannot delete a paid invoice. Paid invoices can only be archived through other means.");
         }
 
+        var currentUser = currentUserService.GetCurrentUserForAudit();
+
         // Perform soft delete on invoice and its items
         invoice.IsDeleted = true;
         invoice.DeletedAt = DateTime.UtcNow;
-        invoice.DeletedBy = "System"; // TODO: Replace with actual user when authentication is implemented
+        invoice.DeletedBy = currentUser;
         invoice.UpdatedAt = DateTime.UtcNow;
-        invoice.UpdatedBy = "System";
+        invoice.UpdatedBy = currentUser;
 
         // Also soft delete all invoice items
         foreach (var item in invoice.Items)
         {
             item.IsDeleted = true;
             item.DeletedAt = DateTime.UtcNow;
-            item.DeletedBy = "System";
+            item.DeletedBy = currentUser;
             item.UpdatedAt = DateTime.UtcNow;
-            item.UpdatedBy = "System";
+            item.UpdatedBy = currentUser;
         }
 
         await context.SaveChangesAsync(cancellationToken);

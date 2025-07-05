@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Mappings;
+using AccountingApi.Services;
 
 namespace AccountingApi.Features.Accounts;
 
@@ -10,7 +11,7 @@ namespace AccountingApi.Features.Accounts;
 public record UpdateAccountCommand(int Id, UpdateAccountDto Account) : IRequest<bool>;
 
 // Handler for UpdateAccountCommand
-public class UpdateAccountCommandHandler(AccountingDbContext context, AccountMapper accountMapper) : IRequestHandler<UpdateAccountCommand, bool>
+public class UpdateAccountCommandHandler(AccountingDbContext context, AccountMapper accountMapper, ICurrentUserService currentUserService) : IRequestHandler<UpdateAccountCommand, bool>
 {
     public async Task<bool> Handle(UpdateAccountCommand request, CancellationToken cancellationToken)
     {
@@ -22,6 +23,10 @@ public class UpdateAccountCommandHandler(AccountingDbContext context, AccountMap
 
         // Update account using mapper
         accountMapper.UpdateEntity(account, request.Account);
+        
+        // Update audit information
+        account.UpdatedBy = currentUserService.GetCurrentUserForAudit();
+        account.UpdatedAt = DateTime.UtcNow;
 
         await context.SaveChangesAsync(cancellationToken);
         return true;

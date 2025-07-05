@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
+using AccountingApi.Services;
 
 namespace AccountingApi.Features.JournalEntries;
 
@@ -8,7 +9,7 @@ namespace AccountingApi.Features.JournalEntries;
 public record DeleteJournalEntryLineCommand(int Id) : IRequest<bool>;
 
 // Handler for DeleteJournalEntryLineCommand
-public class DeleteJournalEntryLineCommandHandler(AccountingDbContext context) : IRequestHandler<DeleteJournalEntryLineCommand, bool>
+public class DeleteJournalEntryLineCommandHandler(AccountingDbContext context, ICurrentUserService currentUserService) : IRequestHandler<DeleteJournalEntryLineCommand, bool>
 {
     public async Task<bool> Handle(DeleteJournalEntryLineCommand request, CancellationToken cancellationToken)
     {
@@ -46,18 +47,20 @@ public class DeleteJournalEntryLineCommandHandler(AccountingDbContext context) :
             throw new InvalidOperationException("Cannot delete this journal entry line as it would leave the journal entry unbalanced. The sum of debits must equal the sum of credits.");
         }
 
+        var currentUser = currentUserService.GetCurrentUserForAudit();
+
         // Perform soft delete
         journalEntryLine.IsDeleted = true;
         journalEntryLine.DeletedAt = DateTime.UtcNow;
-        journalEntryLine.DeletedBy = "System"; // TODO: Replace with actual user when authentication is implemented
+        journalEntryLine.DeletedBy = currentUser;
         journalEntryLine.UpdatedAt = DateTime.UtcNow;
-        journalEntryLine.UpdatedBy = "System";
+        journalEntryLine.UpdatedBy = currentUser;
 
         // Update the journal entry total amount
         var journalEntry = journalEntryLine.JournalEntry;
         journalEntry.TotalAmount = remainingLines.Sum(l => Math.Max(l.DebitAmount, l.CreditAmount));
         journalEntry.UpdatedAt = DateTime.UtcNow;
-        journalEntry.UpdatedBy = "System";
+        journalEntry.UpdatedBy = currentUser;
 
         await context.SaveChangesAsync(cancellationToken);
         return true;

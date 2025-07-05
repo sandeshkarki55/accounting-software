@@ -4,6 +4,7 @@ using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
 using AccountingApi.Mappings;
+using AccountingApi.Services;
 
 namespace AccountingApi.Features.JournalEntries;
 
@@ -13,7 +14,8 @@ public record UpdateJournalEntryCommand(int Id, UpdateJournalEntryDto JournalEnt
 // Handler for UpdateJournalEntryCommand
 public class UpdateJournalEntryCommandHandler(
     AccountingDbContext context, 
-    JournalEntryMapper journalEntryMapper) : IRequestHandler<UpdateJournalEntryCommand, JournalEntryDto>
+    JournalEntryMapper journalEntryMapper,
+    ICurrentUserService currentUserService) : IRequestHandler<UpdateJournalEntryCommand, JournalEntryDto>
 {
     public async Task<JournalEntryDto> Handle(UpdateJournalEntryCommand request, CancellationToken cancellationToken)
     {
@@ -65,12 +67,14 @@ public class UpdateJournalEntryCommandHandler(
             throw new InvalidOperationException($"Invalid account IDs: {string.Join(", ", missingAccountIds)}");
         }
 
+        var currentUser = currentUserService.GetCurrentUserForAudit();
+
         // Update the journal entry properties
         existingJournalEntry.TransactionDate = request.JournalEntry.TransactionDate;
         existingJournalEntry.Description = request.JournalEntry.Description;
         existingJournalEntry.Reference = request.JournalEntry.Reference;
         existingJournalEntry.UpdatedAt = DateTime.UtcNow;
-        existingJournalEntry.UpdatedBy = "System"; // TODO: Replace with actual user when authentication is implemented
+        existingJournalEntry.UpdatedBy = currentUser;
 
         // Remove all existing lines
         context.JournalEntryLines.RemoveRange(existingJournalEntry.Lines);
@@ -87,8 +91,8 @@ public class UpdateJournalEntryCommandHandler(
                 Description = lineDto.Description,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
-                CreatedBy = "System",
-                UpdatedBy = "System"
+                CreatedBy = currentUser,
+                UpdatedBy = currentUser
             };
             existingJournalEntry.Lines.Add(line);
         }

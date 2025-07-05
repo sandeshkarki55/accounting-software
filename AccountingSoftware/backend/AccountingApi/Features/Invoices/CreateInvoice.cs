@@ -14,12 +14,14 @@ public record CreateInvoiceCommand(CreateInvoiceDto Invoice) : IRequest<InvoiceD
 public class CreateInvoiceCommandHandler(
     AccountingDbContext context, 
     INumberGenerationService numberGenerationService,
-    IAutomaticJournalEntryService automaticJournalEntryService) : IRequestHandler<CreateInvoiceCommand, InvoiceDto>
+    IAutomaticJournalEntryService automaticJournalEntryService,
+    ICurrentUserService currentUserService) : IRequestHandler<CreateInvoiceCommand, InvoiceDto>
 {
     public async Task<InvoiceDto> Handle(CreateInvoiceCommand request, CancellationToken cancellationToken)
     {
         // Generate invoice number
         var invoiceNumber = await numberGenerationService.GenerateInvoiceNumberAsync();
+        var currentUser = currentUserService.GetCurrentUserForAudit();
 
         // Calculate totals from items
         var subTotal = request.Invoice.Items.Sum(item => item.Quantity * item.UnitPrice);
@@ -41,8 +43,8 @@ public class CreateInvoiceCommandHandler(
             TotalAmount = totalAmount,
             Notes = request.Invoice.Notes,
             Terms = request.Invoice.Terms,
-            CreatedBy = "System", // TODO: Replace with actual user when authentication is implemented
-            UpdatedBy = "System"
+            CreatedBy = currentUser,
+            UpdatedBy = currentUser
         };
 
         // Add invoice items
@@ -55,8 +57,8 @@ public class CreateInvoiceCommandHandler(
                 UnitPrice = itemDto.UnitPrice,
                 Amount = itemDto.Quantity * itemDto.UnitPrice,
                 SortOrder = itemDto.SortOrder,
-                CreatedBy = "System",
-                UpdatedBy = "System"
+                CreatedBy = currentUser,
+                UpdatedBy = currentUser
             };
             invoice.Items.Add(item);
         }

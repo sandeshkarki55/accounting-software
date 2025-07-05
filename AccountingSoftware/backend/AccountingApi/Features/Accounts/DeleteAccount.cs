@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
+using AccountingApi.Services;
 
 namespace AccountingApi.Features.Accounts;
 
@@ -8,7 +9,7 @@ namespace AccountingApi.Features.Accounts;
 public record DeleteAccountCommand(int Id) : IRequest<bool>;
 
 // Handler for DeleteAccountCommand
-public class DeleteAccountCommandHandler(AccountingDbContext context) : IRequestHandler<DeleteAccountCommand, bool>
+public class DeleteAccountCommandHandler(AccountingDbContext context, ICurrentUserService currentUserService) : IRequestHandler<DeleteAccountCommand, bool>
 {
     public async Task<bool> Handle(DeleteAccountCommand request, CancellationToken cancellationToken)
     {
@@ -38,12 +39,15 @@ public class DeleteAccountCommandHandler(AccountingDbContext context) : IRequest
             throw new InvalidOperationException("Cannot delete account with non-zero balance. Please adjust the balance to zero first.");
         }
 
+        // Get current user for audit
+        var currentUser = currentUserService.GetCurrentUserForAudit();
+
         // Perform soft delete
         account.IsDeleted = true;
         account.DeletedAt = DateTime.UtcNow;
-        account.DeletedBy = "System"; // TODO: Replace with actual user when authentication is implemented
+        account.DeletedBy = currentUser;
         account.UpdatedAt = DateTime.UtcNow;
-        account.UpdatedBy = "System";
+        account.UpdatedBy = currentUser;
 
         await context.SaveChangesAsync(cancellationToken);
         return true;

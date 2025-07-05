@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
+using AccountingApi.Services;
 
 namespace AccountingApi.Features.Invoices;
 
@@ -9,7 +10,7 @@ namespace AccountingApi.Features.Invoices;
 public record DeleteInvoiceItemCommand(int Id) : IRequest<bool>;
 
 // Handler for DeleteInvoiceItemCommand
-public class DeleteInvoiceItemCommandHandler(AccountingDbContext context) : IRequestHandler<DeleteInvoiceItemCommand, bool>
+public class DeleteInvoiceItemCommandHandler(AccountingDbContext context, ICurrentUserService currentUserService) : IRequestHandler<DeleteInvoiceItemCommand, bool>
 {
     public async Task<bool> Handle(DeleteInvoiceItemCommand request, CancellationToken cancellationToken)
     {
@@ -38,12 +39,14 @@ public class DeleteInvoiceItemCommandHandler(AccountingDbContext context) : IReq
             throw new InvalidOperationException("Cannot delete the last remaining item from an invoice. Delete the entire invoice instead.");
         }
 
+        var currentUser = currentUserService.GetCurrentUserForAudit();
+
         // Perform soft delete
         invoiceItem.IsDeleted = true;
         invoiceItem.DeletedAt = DateTime.UtcNow;
-        invoiceItem.DeletedBy = "System"; // TODO: Replace with actual user when authentication is implemented
+        invoiceItem.DeletedBy = currentUser;
         invoiceItem.UpdatedAt = DateTime.UtcNow;
-        invoiceItem.UpdatedBy = "System";
+        invoiceItem.UpdatedBy = currentUser;
 
         // Update invoice totals
         var invoice = invoiceItem.Invoice;
@@ -56,7 +59,7 @@ public class DeleteInvoiceItemCommandHandler(AccountingDbContext context) : IReq
         invoice.TaxAmount = invoice.SubTotal * (invoice.TaxRate / 100);
         invoice.TotalAmount = invoice.SubTotal + invoice.TaxAmount - invoice.DiscountAmount;
         invoice.UpdatedAt = DateTime.UtcNow;
-        invoice.UpdatedBy = "System";
+        invoice.UpdatedBy = currentUser;
 
         await context.SaveChangesAsync(cancellationToken);
         return true;

@@ -4,6 +4,7 @@ using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
 using AccountingApi.Mappings;
+using AccountingApi.Services;
 
 namespace AccountingApi.Features.Accounts;
 
@@ -11,7 +12,7 @@ namespace AccountingApi.Features.Accounts;
 public record CreateAccountCommand(CreateAccountDto Account) : IRequest<AccountDto>;
 
 // Handler for CreateAccountCommand
-public class CreateAccountCommandHandler(AccountingDbContext context, AccountMapper accountMapper, ILogger<CreateAccountCommandHandler> logger) : IRequestHandler<CreateAccountCommand, AccountDto>
+public class CreateAccountCommandHandler(AccountingDbContext context, AccountMapper accountMapper, ICurrentUserService currentUserService, ILogger<CreateAccountCommandHandler> logger) : IRequestHandler<CreateAccountCommand, AccountDto>
 {
     public async Task<AccountDto> Handle(CreateAccountCommand request, CancellationToken cancellationToken)
     {
@@ -38,11 +39,16 @@ public class CreateAccountCommandHandler(AccountingDbContext context, AccountMap
 
         // Create new account entity using mapper
         var account = accountMapper.ToEntity(request.Account);
+        
+        // Set audit information
+        var currentUser = currentUserService.GetCurrentUserForAudit();
+        account.CreatedBy = currentUser;
+        account.UpdatedBy = currentUser;
 
         context.Accounts.Add(account);
         await context.SaveChangesAsync(cancellationToken);
 
-        logger.LogInformation("Account created successfully. Account Id: {accountId}", account.Id);
+        logger.LogInformation("Account created successfully by {User}. Account Id: {accountId}", currentUser, account.Id);
 
         // Return the created account as DTO using mapper
         return accountMapper.ToDto(account);

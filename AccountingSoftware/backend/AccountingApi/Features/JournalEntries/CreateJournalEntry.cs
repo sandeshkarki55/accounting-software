@@ -15,7 +15,7 @@ public record CreateJournalEntryCommand(CreateJournalEntryDto JournalEntry) : IR
 public class CreateJournalEntryCommandHandler(
     AccountingDbContext context, 
     JournalEntryMapper journalEntryMapper,
-    INumberGenerationService numberGenerationService) : IRequestHandler<CreateJournalEntryCommand, JournalEntryDto>
+    ICurrentUserService currentUserService) : IRequestHandler<CreateJournalEntryCommand, JournalEntryDto>
 {
     public async Task<JournalEntryDto> Handle(CreateJournalEntryCommand request, CancellationToken cancellationToken)
     {
@@ -53,18 +53,19 @@ public class CreateJournalEntryCommandHandler(
 
         // Generate journal entry number
         var entryNumber = await GenerateJournalEntryNumberAsync(cancellationToken);
+        var currentUser = currentUserService.GetCurrentUserForAudit();
 
         // Create the journal entry
         var journalEntry = journalEntryMapper.ToEntity(request.JournalEntry);
         journalEntry.EntryNumber = entryNumber;
-        journalEntry.CreatedBy = "System"; // TODO: Replace with actual user when authentication is implemented
-        journalEntry.UpdatedBy = "System";
+        journalEntry.CreatedBy = currentUser;
+        journalEntry.UpdatedBy = currentUser;
 
         // Set created/updated info for lines
         foreach (var line in journalEntry.Lines)
         {
-            line.CreatedBy = "System";
-            line.UpdatedBy = "System";
+            line.CreatedBy = currentUser;
+            line.UpdatedBy = currentUser;
         }
 
         context.JournalEntries.Add(journalEntry);
@@ -115,6 +116,7 @@ public class CreateJournalEntryCommandHandler(
 
     private async Task UpdateAccountBalancesAsync(JournalEntry journalEntry, CancellationToken cancellationToken)
     {
+        var currentUser = currentUserService.GetCurrentUserForAudit();
         var accountIds = journalEntry.Lines.Select(l => l.AccountId).Distinct();
         var accounts = await context.Accounts
             .Where(a => accountIds.Contains(a.Id))
@@ -144,7 +146,7 @@ public class CreateJournalEntryCommandHandler(
             }
 
             account.UpdatedAt = DateTime.UtcNow;
-            account.UpdatedBy = "System";
+            account.UpdatedBy = currentUser;
         }
 
         await context.SaveChangesAsync(cancellationToken);

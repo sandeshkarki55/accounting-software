@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
+using AccountingApi.Services;
 
 namespace AccountingApi.Features.JournalEntries;
 
@@ -9,7 +10,7 @@ namespace AccountingApi.Features.JournalEntries;
 public record PostJournalEntryCommand(int JournalEntryId) : IRequest<bool>;
 
 // Handler for PostJournalEntryCommand
-public class PostJournalEntryCommandHandler(AccountingDbContext context) : IRequestHandler<PostJournalEntryCommand, bool>
+public class PostJournalEntryCommandHandler(AccountingDbContext context, ICurrentUserService currentUserService) : IRequestHandler<PostJournalEntryCommand, bool>
 {
     public async Task<bool> Handle(PostJournalEntryCommand request, CancellationToken cancellationToken)
     {
@@ -47,12 +48,14 @@ public class PostJournalEntryCommandHandler(AccountingDbContext context) : IRequ
             }
         }
 
+        var currentUser = currentUserService.GetCurrentUserForAudit();
+
         // Post the journal entry
         journalEntry.IsPosted = true;
         journalEntry.PostedAt = DateTime.UtcNow;
-        journalEntry.PostedBy = "System"; // TODO: Replace with actual user when authentication is implemented
+        journalEntry.PostedBy = currentUser;
         journalEntry.UpdatedAt = DateTime.UtcNow;
-        journalEntry.UpdatedBy = "System";
+        journalEntry.UpdatedBy = currentUser;
 
         // Update account balances
         await UpdateAccountBalancesAsync(journalEntry, cancellationToken);
@@ -64,6 +67,7 @@ public class PostJournalEntryCommandHandler(AccountingDbContext context) : IRequ
 
     private async Task UpdateAccountBalancesAsync(JournalEntry journalEntry, CancellationToken cancellationToken)
     {
+        var currentUser = currentUserService.GetCurrentUserForAudit();
         var accountIds = journalEntry.Lines.Select(l => l.AccountId).Distinct();
         var accounts = await context.Accounts
             .Where(a => accountIds.Contains(a.Id))
@@ -93,7 +97,7 @@ public class PostJournalEntryCommandHandler(AccountingDbContext context) : IRequ
             }
 
             account.UpdatedAt = DateTime.UtcNow;
-            account.UpdatedBy = "System";
+            account.UpdatedBy = currentUser;
         }
     }
 }

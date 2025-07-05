@@ -4,6 +4,7 @@ using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
 using AccountingApi.Mappings;
+using AccountingApi.Services;
 
 namespace AccountingApi.Features.CompanyInfo;
 
@@ -11,10 +12,12 @@ namespace AccountingApi.Features.CompanyInfo;
 public record CreateCompanyInfoCommand(CreateCompanyInfoDto CompanyInfo) : IRequest<CompanyInfoDto>;
 
 // Handler for CreateCompanyInfoCommand
-public class CreateCompanyInfoCommandHandler(AccountingDbContext context, CompanyInfoMapper mapper) : IRequestHandler<CreateCompanyInfoCommand, CompanyInfoDto>
+public class CreateCompanyInfoCommandHandler(AccountingDbContext context, CompanyInfoMapper mapper, ICurrentUserService currentUserService) : IRequestHandler<CreateCompanyInfoCommand, CompanyInfoDto>
 {
     public async Task<CompanyInfoDto> Handle(CreateCompanyInfoCommand request, CancellationToken cancellationToken)
     {
+        var currentUser = currentUserService.GetCurrentUserForAudit();
+        
         // If this is being set as default, unset all other defaults
         if (request.CompanyInfo.IsDefault)
         {
@@ -26,13 +29,13 @@ public class CreateCompanyInfoCommandHandler(AccountingDbContext context, Compan
             {
                 existing.IsDefault = false;
                 existing.UpdatedAt = DateTime.UtcNow;
-                existing.UpdatedBy = "System";
+                existing.UpdatedBy = currentUser;
             }
         }
 
         var companyInfo = mapper.ToEntity(request.CompanyInfo);
-        companyInfo.CreatedBy = "System"; // TODO: Replace with actual user when authentication is implemented
-        companyInfo.UpdatedBy = "System";
+        companyInfo.CreatedBy = currentUser;
+        companyInfo.UpdatedBy = currentUser;
 
         context.CompanyInfos.Add(companyInfo);
         await context.SaveChangesAsync(cancellationToken);

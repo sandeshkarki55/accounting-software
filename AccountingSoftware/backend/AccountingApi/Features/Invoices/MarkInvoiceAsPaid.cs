@@ -13,7 +13,8 @@ public record MarkInvoiceAsPaidCommand(int InvoiceId, DateTime PaidDate, string?
 // Handler for MarkInvoiceAsPaidCommand
 public class MarkInvoiceAsPaidCommandHandler(
     AccountingDbContext context,
-    IAutomaticJournalEntryService automaticJournalEntryService) : IRequestHandler<MarkInvoiceAsPaidCommand, InvoiceDto>
+    IAutomaticJournalEntryService automaticJournalEntryService,
+    ICurrentUserService currentUserService) : IRequestHandler<MarkInvoiceAsPaidCommand, InvoiceDto>
 {
     public async Task<InvoiceDto> Handle(MarkInvoiceAsPaidCommand request, CancellationToken cancellationToken)
     {
@@ -37,7 +38,7 @@ public class MarkInvoiceAsPaidCommandHandler(
         invoice.PaidDate = request.PaidDate;
         invoice.PaymentReference = request.PaymentReference;
         invoice.UpdatedAt = DateTime.UtcNow;
-        invoice.UpdatedBy = "System"; // TODO: Replace with actual user when authentication is implemented
+        invoice.UpdatedBy = currentUserService.GetCurrentUserForAudit();
 
         await context.SaveChangesAsync(cancellationToken);
 

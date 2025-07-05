@@ -1,13 +1,14 @@
 using MediatR;
 using AccountingApi.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using AccountingApi.Services;
 
 namespace AccountingApi.Features.CompanyInfo;
 
 // Command to delete company info (soft delete)
 public record DeleteCompanyInfoCommand(int Id) : IRequest<bool>;
 
-public class DeleteCompanyInfoHandler(AccountingDbContext context) : IRequestHandler<DeleteCompanyInfoCommand, bool>
+public class DeleteCompanyInfoHandler(AccountingDbContext context, ICurrentUserService currentUserService) : IRequestHandler<DeleteCompanyInfoCommand, bool>
 {
     public async Task<bool> Handle(DeleteCompanyInfoCommand request, CancellationToken cancellationToken)
     {
@@ -31,12 +32,14 @@ public class DeleteCompanyInfoHandler(AccountingDbContext context) : IRequestHan
             throw new InvalidOperationException("Cannot delete company that has active invoices. Please delete or archive the invoices first.");
         }
 
+        var currentUser = currentUserService.GetCurrentUserForAudit();
+
         // Perform soft delete
         companyInfo.IsDeleted = true;
         companyInfo.DeletedAt = DateTime.UtcNow;
-        companyInfo.DeletedBy = "System"; // TODO: Replace with actual user when authentication is implemented
+        companyInfo.DeletedBy = currentUser;
         companyInfo.UpdatedAt = DateTime.UtcNow;
-        companyInfo.UpdatedBy = "System";
+        companyInfo.UpdatedBy = currentUser;
 
         await context.SaveChangesAsync(cancellationToken);
         return true;

@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
+using AccountingApi.Services;
 
 namespace AccountingApi.Features.Customers;
 
@@ -9,7 +10,7 @@ namespace AccountingApi.Features.Customers;
 public record UpdateCustomerCommand(int Id, UpdateCustomerDto Customer) : IRequest<CustomerDto?>;
 
 // Handler for UpdateCustomerCommand
-public class UpdateCustomerCommandHandler(AccountingDbContext context) : IRequestHandler<UpdateCustomerCommand, CustomerDto?>
+public class UpdateCustomerCommandHandler(AccountingDbContext context, ICurrentUserService currentUserService) : IRequestHandler<UpdateCustomerCommand, CustomerDto?>
 {
     public async Task<CustomerDto?> Handle(UpdateCustomerCommand request, CancellationToken cancellationToken)
     {
@@ -31,7 +32,7 @@ public class UpdateCustomerCommandHandler(AccountingDbContext context) : IReques
         customer.IsActive = request.Customer.IsActive;
         customer.Notes = request.Customer.Notes;
         customer.UpdatedAt = DateTime.UtcNow;
-        customer.UpdatedBy = "System"; // TODO: Replace with actual user when authentication is implemented
+        customer.UpdatedBy = currentUserService.GetCurrentUserForAudit();
 
         await context.SaveChangesAsync(cancellationToken);
 

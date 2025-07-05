@@ -133,6 +133,12 @@ builder.Services.AddScoped<IAccountConfigurationService, AccountConfigurationSer
 // Add Authentication Services
 builder.Services.AddScoped<IJwtService, JwtService>();
 
+// Add HTTP Context Accessor for CurrentUserService
+builder.Services.AddHttpContextAccessor();
+
+// Add Current User Service for audit purposes
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
 // Add CORS for frontend development with Aspire support
 builder.Services.AddCors(options =>
 {

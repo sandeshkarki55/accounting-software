@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
+using AccountingApi.Services;
 
 namespace AccountingApi.Features.JournalEntries;
 
@@ -8,7 +9,7 @@ namespace AccountingApi.Features.JournalEntries;
 public record DeleteJournalEntryCommand(int Id) : IRequest<bool>;
 
 // Handler for DeleteJournalEntryCommand
-public class DeleteJournalEntryCommandHandler(AccountingDbContext context) : IRequestHandler<DeleteJournalEntryCommand, bool>
+public class DeleteJournalEntryCommandHandler(AccountingDbContext context, ICurrentUserService currentUserService) : IRequestHandler<DeleteJournalEntryCommand, bool>
 {
     public async Task<bool> Handle(DeleteJournalEntryCommand request, CancellationToken cancellationToken)
     {
@@ -25,21 +26,23 @@ public class DeleteJournalEntryCommandHandler(AccountingDbContext context) : IRe
             throw new InvalidOperationException("Cannot delete a posted journal entry. Posted entries are immutable for audit purposes.");
         }
 
+        var currentUser = currentUserService.GetCurrentUserForAudit();
+
         // Perform soft delete on journal entry and its lines
         journalEntry.IsDeleted = true;
         journalEntry.DeletedAt = DateTime.UtcNow;
-        journalEntry.DeletedBy = "System"; // TODO: Replace with actual user when authentication is implemented
+        journalEntry.DeletedBy = currentUser;
         journalEntry.UpdatedAt = DateTime.UtcNow;
-        journalEntry.UpdatedBy = "System";
+        journalEntry.UpdatedBy = currentUser;
 
         // Also soft delete all journal entry lines
         foreach (var line in journalEntry.Lines)
         {
             line.IsDeleted = true;
             line.DeletedAt = DateTime.UtcNow;
-            line.DeletedBy = "System";
+            line.DeletedBy = currentUser;
             line.UpdatedAt = DateTime.UtcNow;
-            line.UpdatedBy = "System";
+            line.UpdatedBy = currentUser;
         }
 
         await context.SaveChangesAsync(cancellationToken);

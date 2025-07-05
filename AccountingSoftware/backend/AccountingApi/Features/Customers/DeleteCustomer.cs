@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
+using AccountingApi.Services;
 
 namespace AccountingApi.Features.Customers;
 
@@ -8,7 +9,7 @@ namespace AccountingApi.Features.Customers;
 public record DeleteCustomerCommand(int Id) : IRequest<bool>;
 
 // Handler for DeleteCustomerCommand
-public class DeleteCustomerCommandHandler(AccountingDbContext context) : IRequestHandler<DeleteCustomerCommand, bool>
+public class DeleteCustomerCommandHandler(AccountingDbContext context, ICurrentUserService currentUserService) : IRequestHandler<DeleteCustomerCommand, bool>
 {
     public async Task<bool> Handle(DeleteCustomerCommand request, CancellationToken cancellationToken)
     {
@@ -26,12 +27,14 @@ public class DeleteCustomerCommandHandler(AccountingDbContext context) : IReques
             throw new InvalidOperationException("Cannot delete customer that has active invoices. Please delete or archive the invoices first.");
         }
 
+        var currentUser = currentUserService.GetCurrentUserForAudit();
+
         // Perform soft delete
         customer.IsDeleted = true;
         customer.DeletedAt = DateTime.UtcNow;
-        customer.DeletedBy = "System"; // TODO: Replace with actual user when authentication is implemented
+        customer.DeletedBy = currentUser;
         customer.UpdatedAt = DateTime.UtcNow;
-        customer.UpdatedBy = "System";
+        customer.UpdatedBy = currentUser;
 
         await context.SaveChangesAsync(cancellationToken);
         return true;

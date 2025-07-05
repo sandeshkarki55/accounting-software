@@ -10,12 +10,13 @@ namespace AccountingApi.Features.Customers;
 public record CreateCustomerCommand(CreateCustomerDto Customer) : IRequest<CustomerDto>;
 
 // Handler for CreateCustomerCommand
-public class CreateCustomerCommandHandler(AccountingDbContext context, INumberGenerationService numberGenerationService) : IRequestHandler<CreateCustomerCommand, CustomerDto>
+public class CreateCustomerCommandHandler(AccountingDbContext context, INumberGenerationService numberGenerationService, ICurrentUserService currentUserService) : IRequestHandler<CreateCustomerCommand, CustomerDto>
 {
     public async Task<CustomerDto> Handle(CreateCustomerCommand request, CancellationToken cancellationToken)
     {
         // Generate customer code
         var customerCode = await numberGenerationService.GenerateCustomerCodeAsync();
+        var currentUser = currentUserService.GetCurrentUserForAudit();
 
         var customer = new Customer
         {
@@ -30,8 +31,8 @@ public class CreateCustomerCommandHandler(AccountingDbContext context, INumberGe
             PostalCode = request.Customer.PostalCode,
             Country = request.Customer.Country,
             Notes = request.Customer.Notes,
-            CreatedBy = "System", // TODO: Replace with actual user when authentication is implemented
-            UpdatedBy = "System"
+            CreatedBy = currentUser,
+            UpdatedBy = currentUser
         };
 
         context.Customers.Add(customer);
