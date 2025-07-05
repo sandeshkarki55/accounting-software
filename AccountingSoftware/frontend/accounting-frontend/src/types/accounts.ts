@@ -70,3 +70,10 @@ export interface CreateJournalEntryDto {
   reference: string;
   lines: CreateJournalEntryLineDto[];
 }
+
+export interface UpdateJournalEntryDto {
+  transactionDate: string;
+  description: string;
+  reference: string;
+  lines: CreateJournalEntryLineDto[];
+}

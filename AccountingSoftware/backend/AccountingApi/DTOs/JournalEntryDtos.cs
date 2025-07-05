@@ -39,3 +39,11 @@ public class CreateJournalEntryLineDto
     public decimal CreditAmount { get; set; }
     public string Description { get; set; } = string.Empty;
 }
+
+public class UpdateJournalEntryDto
+{
+    public DateTime TransactionDate { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public string Reference { get; set; } = string.Empty;
+    public List<CreateJournalEntryLineDto> Lines { get; set; } = [];
+}

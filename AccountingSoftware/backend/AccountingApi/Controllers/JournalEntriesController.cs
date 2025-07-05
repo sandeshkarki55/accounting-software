@@ -80,4 +80,22 @@ public class JournalEntriesController(IMediator mediator) : BaseController
             return StatusCode(500, new { message = "An error occurred while deleting the journal entry line.", details = ex.Message });
         }
     }
+
+    [HttpPut("{id:int}")]
+    public async Task<ActionResult<JournalEntryDto>> UpdateJournalEntry(int id, UpdateJournalEntryDto updateJournalEntryDto)
+    {
+        try
+        {
+            var journalEntry = await mediator.Send(new UpdateJournalEntryCommand(id, updateJournalEntryDto));
+            return Ok(journalEntry);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while updating the journal entry.", details = ex.Message });
+        }
+    }
 }

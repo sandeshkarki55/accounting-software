@@ -287,7 +287,10 @@ public class AutomaticJournalEntryService(
         var today = DateTime.UtcNow;
         var prefix = $"JE{today:yyyyMM}";
         
+        // Use IgnoreQueryFilters to include soft-deleted entries when determining the next number
+        // This ensures we don't reuse numbers even if entries are soft-deleted
         var lastEntry = await context.JournalEntries
+            .IgnoreQueryFilters() // This bypasses the global IsDeleted filter
             .Where(je => je.EntryNumber.StartsWith(prefix))
             .OrderByDescending(je => je.EntryNumber)
             .FirstOrDefaultAsync();

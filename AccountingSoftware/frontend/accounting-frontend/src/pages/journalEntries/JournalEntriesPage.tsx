@@ -1,31 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { JournalEntry } from '../../types';
-import { journalEntryService } from '../../services/journalEntryService';
+import { JournalEntry, CreateJournalEntryDto, UpdateJournalEntryDto, Account } from '../../types';
+import { journalEntryService, accountService } from '../../services/api';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import JournalEntryModal from '../../components/modals/JournalEntryModal';
+import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
 
 const JournalEntriesPage: React.FC = () => {
   usePageTitle('Journal Entries');
 
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBy, setFilterBy] = useState<'all' | 'posted' | 'unposted'>('all');
+  
+  // Modal states
+  const [showJournalEntryModal, setShowJournalEntryModal] = useState(false);
+  const [selectedJournalEntry, setSelectedJournalEntry] = useState<JournalEntry | undefined>();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [journalEntryToDelete, setJournalEntryToDelete] = useState<JournalEntry | undefined>();
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
-    loadJournalEntries();
+    loadData();
   }, []);
 
-  const loadJournalEntries = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const data = await journalEntryService.getJournalEntries();
-      setJournalEntries(data);
+      const [journalEntriesData, accountsData] = await Promise.all([
+        journalEntryService.getJournalEntries(),
+        accountService.getAccounts()
+      ]);
+      setJournalEntries(journalEntriesData);
+      setAccounts(accountsData);
       setError(null);
     } catch (err) {
-      setError('Failed to load journal entries');
-      console.error('Error loading journal entries:', err);
+      setError('Failed to load data');
+      console.error('Error loading data:', err);
     } finally {
       setLoading(false);
     }
@@ -70,6 +84,56 @@ const JournalEntriesPage: React.FC = () => {
     return isPosted ? 'bg-success' : 'bg-warning text-dark';
   };
 
+  // CRUD handlers
+  const handleAddJournalEntry = () => {
+    setSelectedJournalEntry(undefined);
+    setShowJournalEntryModal(true);
+  };
+
+  const handleEditJournalEntry = (entry: JournalEntry) => {
+    if (!entry.isPosted) {
+      setSelectedJournalEntry(entry);
+      setShowJournalEntryModal(true);
+    }
+  };
+
+  const handleDeleteJournalEntry = (entry: JournalEntry) => {
+    setJournalEntryToDelete(entry);
+    setShowDeleteModal(true);
+  };
+
+  const handleSaveJournalEntry = async (journalEntryData: CreateJournalEntryDto | UpdateJournalEntryDto, isUpdate: boolean = false, entryId?: number) => {
+    try {
+      if (isUpdate && entryId) {
+        // Update existing entry
+        await journalEntryService.updateJournalEntry(entryId, journalEntryData as UpdateJournalEntryDto);
+      } else {
+        // Create new entry
+        await journalEntryService.createJournalEntry(journalEntryData as CreateJournalEntryDto);
+      }
+      await loadData(); // Reload data
+    } catch (error) {
+      console.error('Error saving journal entry:', error);
+      throw error;
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!journalEntryToDelete) return;
+
+    try {
+      setDeleteLoading(true);
+      await journalEntryService.deleteJournalEntry(journalEntryToDelete.id);
+      await loadData(); // Reload data
+      setShowDeleteModal(false);
+      setJournalEntryToDelete(undefined);
+    } catch (error) {
+      console.error('Error deleting journal entry:', error);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   if (loading) return (
     <div className="d-flex justify-content-center align-items-center" style={{minHeight: '200px'}}>
       <div className="spinner-border text-primary" role="status">
@@ -81,7 +145,7 @@ const JournalEntriesPage: React.FC = () => {
   if (error) return (
     <div className="alert alert-danger" role="alert">
       <strong>Error:</strong> {error}
-      <button className="btn btn-sm btn-outline-danger ms-2" onClick={loadJournalEntries}>
+      <button className="btn btn-sm btn-outline-danger ms-2" onClick={loadData}>
         Try Again
       </button>
     </div>
@@ -123,7 +187,7 @@ const JournalEntriesPage: React.FC = () => {
             <div className="col-md-3">
               <button 
                 className="btn btn-primary w-100" 
-                onClick={() => {/* TODO: Add create journal entry modal */}}
+                onClick={() => handleAddJournalEntry()}
               >
                 <i className="bi bi-plus-circle me-2"></i>
                 Create Entry
@@ -184,14 +248,14 @@ const JournalEntriesPage: React.FC = () => {
                                 <>
                                   <button
                                     className="btn btn-sm btn-outline-secondary"
-                                    onClick={() => {/* TODO: Add edit functionality */}}
+                                    onClick={() => handleEditJournalEntry(entry)}
                                     title="Edit Entry"
                                   >
                                     <i className="bi bi-pencil"></i>
                                   </button>
                                   <button
                                     className="btn btn-sm btn-outline-danger"
-                                    onClick={() => {/* TODO: Add delete functionality */}}
+                                    onClick={() => handleDeleteJournalEntry(entry)}
                                     title="Delete Entry"
                                   >
                                     <i className="bi bi-trash"></i>
@@ -280,7 +344,7 @@ const JournalEntriesPage: React.FC = () => {
               {(!searchTerm && filterBy === 'all') && (
                 <button 
                   className="btn btn-primary" 
-                  onClick={() => {/* TODO: Add create journal entry modal */}}
+                  onClick={() => handleAddJournalEntry()}
                 >
                   <i className="bi bi-plus-circle me-2"></i>
                   Create Entry
@@ -295,6 +359,26 @@ const JournalEntriesPage: React.FC = () => {
               Showing {filteredJournalEntries.length} of {journalEntries.length} journal entries
             </div>
           )}
+
+          {/* Journal Entry Modal */}
+          <JournalEntryModal
+            show={showJournalEntryModal}
+            onHide={() => setShowJournalEntryModal(false)}
+            onSave={handleSaveJournalEntry}
+            journalEntry={selectedJournalEntry}
+            accounts={accounts}
+          />
+
+          {/* Delete Confirmation Modal */}
+          <GenericDeleteConfirmationModal
+            show={showDeleteModal}
+            onHide={() => setShowDeleteModal(false)}
+            onConfirm={handleConfirmDelete}
+            loading={deleteLoading}
+            itemName={journalEntryToDelete?.entryNumber || ''}
+            itemType="journal entry"
+            warningMessage="This will permanently delete the journal entry and all its lines."
+          />
         </div>
       </div>
     </div>
