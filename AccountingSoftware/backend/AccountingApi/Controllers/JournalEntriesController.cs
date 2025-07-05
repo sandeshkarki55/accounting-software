@@ -98,4 +98,25 @@ public class JournalEntriesController(IMediator mediator) : BaseController
             return StatusCode(500, new { message = "An error occurred while updating the journal entry.", details = ex.Message });
         }
     }
+
+    [HttpPost("{id:int}/post")]
+    public async Task<IActionResult> PostJournalEntry(int id)
+    {
+        try
+        {
+            var result = await mediator.Send(new PostJournalEntryCommand(id));
+            if (!result)
+                return NotFound(new { message = "Journal entry not found." });
+
+            return Ok(new { message = "Journal entry posted successfully." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while posting the journal entry.", details = ex.Message });
+        }
+    }
 }

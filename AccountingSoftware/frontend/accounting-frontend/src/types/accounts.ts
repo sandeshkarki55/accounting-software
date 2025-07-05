@@ -44,6 +44,8 @@ export interface JournalEntry {
   reference: string;
   totalAmount: number;
   isPosted: boolean;
+  postedAt?: string;
+  postedBy?: string;
   lines: JournalEntryLine[];
 }
 

@@ -35,4 +35,9 @@ export const journalEntryService = {
   deleteJournalEntryLine: async (id: number): Promise<void> => {
     await apiClient.delete(`/journalentries/lines/${id}`);
   },
+
+  // Post journal entry
+  postJournalEntry: async (id: number): Promise<void> => {
+    await apiClient.post(`/journalentries/${id}/post`);
+  },
 };

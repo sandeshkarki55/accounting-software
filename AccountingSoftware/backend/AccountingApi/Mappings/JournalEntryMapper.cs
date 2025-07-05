@@ -25,6 +25,8 @@ public class JournalEntryMapper(JournalEntryLineMapper lineMapper) : IEntityMapp
             Reference = entity.Reference,
             TotalAmount = entity.TotalAmount,
             IsPosted = entity.IsPosted,
+            PostedAt = entity.PostedAt,
+            PostedBy = entity.PostedBy,
             Lines = entity.Lines?.Select(lineMapper.ToDto).ToList() ?? []
         };
     }

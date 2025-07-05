@@ -10,6 +10,8 @@ public class JournalEntryDto
     public string Reference { get; set; } = string.Empty;
     public decimal TotalAmount { get; set; }
     public bool IsPosted { get; set; }
+    public DateTime? PostedAt { get; set; }
+    public string? PostedBy { get; set; }
     public List<JournalEntryLineDto> Lines { get; set; } = [];
 }
 

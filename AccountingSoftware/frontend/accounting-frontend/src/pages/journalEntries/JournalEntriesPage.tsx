@@ -3,6 +3,7 @@ import { JournalEntry, CreateJournalEntryDto, UpdateJournalEntryDto, Account } f
 import { journalEntryService, accountService } from '../../services/api';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import JournalEntryModal from '../../components/modals/JournalEntryModal';
+import PostJournalEntryModal from '../../components/modals/PostJournalEntryModal';
 import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
 
 const JournalEntriesPage: React.FC = () => {
@@ -22,6 +23,9 @@ const JournalEntriesPage: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [journalEntryToDelete, setJournalEntryToDelete] = useState<JournalEntry | undefined>();
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [journalEntryToPost, setJournalEntryToPost] = useState<JournalEntry | undefined>();
+  const [postLoading, setPostLoading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -131,6 +135,27 @@ const JournalEntriesPage: React.FC = () => {
       console.error('Error deleting journal entry:', error);
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  const handlePostJournalEntry = (entry: JournalEntry) => {
+    setJournalEntryToPost(entry);
+    setShowPostModal(true);
+  };
+
+  const handleConfirmPost = async () => {
+    if (!journalEntryToPost) return;
+
+    try {
+      setPostLoading(true);
+      await journalEntryService.postJournalEntry(journalEntryToPost.id);
+      await loadData(); // Reload data
+      setShowPostModal(false);
+      setJournalEntryToPost(undefined);
+    } catch (error) {
+      console.error('Error posting journal entry:', error);
+    } finally {
+      setPostLoading(false);
     }
   };
 
@@ -252,6 +277,13 @@ const JournalEntriesPage: React.FC = () => {
                                     title="Edit Entry"
                                   >
                                     <i className="bi bi-pencil"></i>
+                                  </button>
+                                  <button
+                                    className="btn btn-sm btn-outline-success"
+                                    onClick={() => handlePostJournalEntry(entry)}
+                                    title="Post Entry"
+                                  >
+                                    <i className="bi bi-check-circle"></i>
                                   </button>
                                   <button
                                     className="btn btn-sm btn-outline-danger"
@@ -378,6 +410,15 @@ const JournalEntriesPage: React.FC = () => {
             itemName={journalEntryToDelete?.entryNumber || ''}
             itemType="journal entry"
             warningMessage="This will permanently delete the journal entry and all its lines."
+          />
+
+          {/* Post Journal Entry Modal */}
+          <PostJournalEntryModal
+            show={showPostModal}
+            onHide={() => setShowPostModal(false)}
+            onConfirm={handleConfirmPost}
+            loading={postLoading}
+            journalEntry={journalEntryToPost || null}
           />
         </div>
       </div>

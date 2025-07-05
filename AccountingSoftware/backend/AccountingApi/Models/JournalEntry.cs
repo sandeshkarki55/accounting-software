@@ -9,6 +9,8 @@ public class JournalEntry : BaseEntity
     public string Reference { get; set; } = string.Empty;
     public decimal TotalAmount { get; set; }
     public bool IsPosted { get; set; } = false;
+    public DateTime? PostedAt { get; set; }
+    public string? PostedBy { get; set; }
     public ICollection<JournalEntryLine> Lines { get; set; } = [];
 }
 
