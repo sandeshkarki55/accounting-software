@@ -62,7 +62,7 @@ public class JournalEntryMapper(JournalEntryLineMapper lineMapper) : IEntityMapp
         entry.Lines = createDto.Lines?.Select(lineDto => lineMapper.ToEntity(lineDto, entry.Id)).ToList() ?? [];
         
         // Calculate total amount
-        entry.TotalAmount = entry.Lines.Sum(l => Math.Max(l.DebitAmount, l.CreditAmount));
+        entry.TotalAmount = entry.Lines.Sum(l => l.DebitAmount);
 
         return entry;
     }
