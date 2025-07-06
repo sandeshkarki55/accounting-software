@@ -31,22 +31,11 @@ public class CompanyInfoController(IMediator mediator) : BaseController
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCompanyInfo(int id)
     {
-        try
-        {
-            var result = await mediator.Send(new DeleteCompanyInfoCommand(id));
-            if (!result)
-                return NotFound(new { message = "Company info not found." });
+        var result = await mediator.Send(new DeleteCompanyInfoCommand(id));
+        if (!result)
+            return NotFound(new { message = "Company info not found." });
 
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "An error occurred while deleting the company info.", details = ex.Message });
-        }
+        return NoContent();
     }
 
     [HttpPut("{id}/set-default")]

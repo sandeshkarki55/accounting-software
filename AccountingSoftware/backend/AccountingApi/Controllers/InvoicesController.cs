@@ -35,59 +35,30 @@ public class InvoicesController(IMediator mediator) : BaseController
     [HttpPost("{id}/mark-as-paid")]
     public async Task<ActionResult<InvoiceDto>> MarkInvoiceAsPaid(int id, MarkInvoiceAsPaidDto markAsPaidDto)
     {
-        try
-        {
-            var invoice = await mediator.Send(new MarkInvoiceAsPaidCommand(id, markAsPaidDto.PaidDate, markAsPaidDto.PaymentReference));
-            return Ok(invoice);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var invoice = await mediator.Send(new MarkInvoiceAsPaidCommand(id, markAsPaidDto.PaidDate, markAsPaidDto.PaymentReference));
+        return Ok(invoice);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteInvoice(int id)
     {
-        try
-        {
-            var success = await mediator.Send(new DeleteInvoiceCommand(id));
-            
-            if (!success)
-            {
-                return NotFound(new { message = $"Invoice with ID {id} not found." });
-            }
+        var success = await mediator.Send(new DeleteInvoiceCommand(id));
 
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
+        if (!success)
         {
-            return BadRequest(new { message = ex.Message });
+            return NotFound(new { message = $"Invoice with ID {id} not found." });
         }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "An error occurred while deleting the invoice.", details = ex.Message });
-        }
+
+        return NoContent();
     }
 
     [HttpDelete("items/{id:int}")]
     public async Task<IActionResult> DeleteInvoiceItem(int id)
     {
-        try
-        {
-            var result = await mediator.Send(new DeleteInvoiceItemCommand(id));
-            if (!result)
-                return NotFound(new { message = "Invoice item not found." });
+        var result = await mediator.Send(new DeleteInvoiceItemCommand(id));
+        if (!result)
+            return NotFound(new { message = "Invoice item not found." });
 
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "An error occurred while deleting the invoice item.", details = ex.Message });
-        }
+        return NoContent();
     }
 }

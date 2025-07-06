@@ -46,24 +46,13 @@ public class CustomersController(IMediator mediator) : BaseController
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCustomer(int id)
     {
-        try
-        {
-            var success = await mediator.Send(new DeleteCustomerCommand(id));
-            
-            if (!success)
-            {
-                return NotFound(new { message = $"Customer with ID {id} not found." });
-            }
+        var success = await mediator.Send(new DeleteCustomerCommand(id));
 
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
+        if (!success)
         {
-            return BadRequest(new { message = ex.Message });
+            return NotFound(new { message = $"Customer with ID {id} not found." });
         }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "An error occurred while deleting the customer.", details = ex.Message });
-        }
+
+        return NoContent();
     }
 }
