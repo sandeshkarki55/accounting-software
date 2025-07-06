@@ -3,6 +3,7 @@ using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
 using AccountingApi.Services;
+using AccountingApi.Mappings;
 
 namespace AccountingApi.Features.Customers;
 
@@ -10,7 +11,12 @@ namespace AccountingApi.Features.Customers;
 public record CreateCustomerCommand(CreateCustomerDto Customer) : IRequest<CustomerDto>;
 
 // Handler for CreateCustomerCommand
-public class CreateCustomerCommandHandler(AccountingDbContext context, INumberGenerationService numberGenerationService, ICurrentUserService currentUserService) : IRequestHandler<CreateCustomerCommand, CustomerDto>
+public class CreateCustomerCommandHandler(
+    AccountingDbContext context, 
+    INumberGenerationService numberGenerationService, 
+    ICurrentUserService currentUserService,
+    CustomerMapper customerMapper) 
+    : IRequestHandler<CreateCustomerCommand, CustomerDto>
 {
     public async Task<CustomerDto> Handle(CreateCustomerCommand request, CancellationToken cancellationToken)
     {
@@ -18,41 +24,14 @@ public class CreateCustomerCommandHandler(AccountingDbContext context, INumberGe
         var customerCode = await numberGenerationService.GenerateCustomerCodeAsync();
         var currentUser = currentUserService.GetCurrentUserForAudit();
 
-        var customer = new Customer
-        {
-            CustomerCode = customerCode,
-            CompanyName = request.Customer.CompanyName,
-            ContactPersonName = request.Customer.ContactPersonName,
-            Email = request.Customer.Email,
-            Phone = request.Customer.Phone,
-            Address = request.Customer.Address,
-            City = request.Customer.City,
-            State = request.Customer.State,
-            PostalCode = request.Customer.PostalCode,
-            Country = request.Customer.Country,
-            Notes = request.Customer.Notes,
-            CreatedBy = currentUser,
-            UpdatedBy = currentUser
-        };
+        var customer = customerMapper.ToEntity(request.Customer);
+        customer.CustomerCode = customerCode;
+        customer.CreatedBy = currentUser;
+        customer.UpdatedBy = currentUser;
 
         context.Customers.Add(customer);
         await context.SaveChangesAsync(cancellationToken);
 
-        return new CustomerDto
-        {
-            Id = customer.Id,
-            CustomerCode = customer.CustomerCode,
-            CompanyName = customer.CompanyName,
-            ContactPersonName = customer.ContactPersonName,
-            Email = customer.Email,
-            Phone = customer.Phone,
-            Address = customer.Address,
-            City = customer.City,
-            State = customer.State,
-            PostalCode = customer.PostalCode,
-            Country = customer.Country,
-            IsActive = customer.IsActive,
-            Notes = customer.Notes
-        };
+        return customerMapper.ToDto(customer);
     }
 }

@@ -2,6 +2,8 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
+using AccountingApi.Mappings;
+using AccountingApi.Models;
 
 namespace AccountingApi.Features.Customers;
 
@@ -9,31 +11,18 @@ namespace AccountingApi.Features.Customers;
 public record GetAllCustomersQuery : IRequest<List<CustomerDto>>;
 
 // Handler for GetAllCustomersQuery
-public class GetAllCustomersQueryHandler(AccountingDbContext context) : IRequestHandler<GetAllCustomersQuery, List<CustomerDto>>
+public class GetAllCustomersQueryHandler(
+    AccountingDbContext context,
+    CustomerMapper customerMapper) 
+    : IRequestHandler<GetAllCustomersQuery, List<CustomerDto>>
 {
     public async Task<List<CustomerDto>> Handle(GetAllCustomersQuery request, CancellationToken cancellationToken)
     {
         var customers = await context.Customers
             .Where(c => c.IsActive)
             .OrderBy(c => c.CompanyName)
-            .Select(c => new CustomerDto
-            {
-                Id = c.Id,
-                CustomerCode = c.CustomerCode,
-                CompanyName = c.CompanyName,
-                ContactPersonName = c.ContactPersonName,
-                Email = c.Email,
-                Phone = c.Phone,
-                Address = c.Address,
-                City = c.City,
-                State = c.State,
-                PostalCode = c.PostalCode,
-                Country = c.Country,
-                IsActive = c.IsActive,
-                Notes = c.Notes
-            })
             .ToListAsync(cancellationToken);
 
-        return customers;
+        return customerMapper.ToDto(customers).ToList();
     }
 }

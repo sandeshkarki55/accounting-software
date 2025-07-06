@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Mappings;
+using AccountingApi.Models;
 
 namespace AccountingApi.Features.Customers;
 
@@ -10,7 +11,10 @@ namespace AccountingApi.Features.Customers;
 public record GetCustomerByIdQuery(int Id) : IRequest<CustomerDto?>;
 
 // Handler for GetCustomerByIdQuery
-public class GetCustomerByIdQueryHandler(AccountingDbContext context, CustomerMapper customerMapper) : IRequestHandler<GetCustomerByIdQuery, CustomerDto?>
+public class GetCustomerByIdQueryHandler(
+    AccountingDbContext context, 
+    CustomerMapper customerMapper) 
+    : IRequestHandler<GetCustomerByIdQuery, CustomerDto?>
 {
     public async Task<CustomerDto?> Handle(GetCustomerByIdQuery request, CancellationToken cancellationToken)
     {
