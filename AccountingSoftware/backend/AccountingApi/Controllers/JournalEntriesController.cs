@@ -8,10 +8,14 @@ namespace AccountingApi.Controllers;
 public class JournalEntriesController(IMediator mediator) : BaseController
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<JournalEntryDto>>> GetJournalEntries()
+    public async Task<ActionResult<PagedResult<JournalEntryDto>>> GetJournalEntries(
+        [FromQuery] PaginationParams paginationParams,
+        [FromQuery] SortingParams sortingParams,
+        [FromQuery] FilteringParams filteringParams)
     {
-        var journalEntries = await mediator.Send(new GetAllJournalEntriesQuery());
-        return Ok(journalEntries);
+        var query = new GetAllJournalEntriesQuery(paginationParams, sortingParams, filteringParams);
+        var pagedJournalEntries = await mediator.Send(query);
+        return Ok(pagedJournalEntries);
     }
 
     [HttpPost]

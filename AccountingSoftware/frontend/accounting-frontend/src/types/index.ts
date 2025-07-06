@@ -21,6 +21,22 @@ export interface TableAction {
   onClick: () => void;
 }
 
+// Pagination, sorting, and filtering types
+export interface PaginationParams {
+  pageNumber: number;
+  pageSize: number;
+}
+
+export interface SortingParams {
+  orderBy?: string;
+  descending?: boolean;
+}
+
+export interface FilteringParams {
+  searchTerm?: string;
+  statusFilter?: 'all' | 'posted' | 'unposted';
+}
+
 // Common API response types
 export interface ApiResponse<T> {
   data: T;
@@ -29,14 +45,12 @@ export interface ApiResponse<T> {
   errors?: string[];
 }
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  currentPage: number;
-  totalPages: number;
-  pageSize: number;
+export interface PagedResult<T> {
+  items: T[];
   totalCount: number;
-  hasNext: boolean;
-  hasPrevious: boolean;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 // Form validation types

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { JournalEntry, CreateJournalEntryDto, UpdateJournalEntryDto, Account } from '../../types';
+import { JournalEntry, JournalEntryLine, CreateJournalEntryDto, UpdateJournalEntryDto, Account, PaginationParams, SortingParams, FilteringParams, PagedResult } from '../../types/index';
 import { journalEntryService, accountService } from '../../services/api';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import usePagedData from '../../hooks/usePagedData'; // Import the reusable hook
 import JournalEntryModal from '../../components/modals/JournalEntryModal';
 import PostJournalEntryModal from '../../components/modals/PostJournalEntryModal';
 import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
@@ -9,14 +10,45 @@ import GenericDeleteConfirmationModal from '../../components/modals/GenericDelet
 const JournalEntriesPage: React.FC = () => {
   usePageTitle('Journal Entries');
 
-  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+  // Use the usePagedData hook
+  const { 
+    data: journalEntries, 
+    loading, 
+    error, 
+    pagination, 
+    setPagination, 
+    sorting, 
+    setSorting, 
+    filtering, 
+    setFiltering, 
+    totalCount, 
+    // loadData // loadData is now managed by the hook's useEffect
+  } = usePagedData<JournalEntry, PaginationParams, SortingParams, FilteringParams>({
+    fetchData: journalEntryService.getJournalEntries,
+    initialPagination: { pageNumber: 1, pageSize: 2 },
+    initialSorting: { orderBy: 'transactionDate', descending: true },
+    initialFiltering: { searchTerm: '', statusFilter: 'all' },
+  });
+
+  // Keep accounts state separate as it's not paged
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Keep expandedRows state separate as it's UI state
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterBy, setFilterBy] = useState<'all' | 'posted' | 'unposted'>('all');
-  
+
+  // Fetch accounts data on initial load
+  useEffect(() => {
+    const loadAccounts = async () => {
+      try {
+        const accountsData = await accountService.getAccounts();
+        setAccounts(accountsData);
+      } catch (err) {
+        console.error('Error loading accounts:', err);
+        // Optionally set an error state specifically for accounts if needed
+      }
+    };
+    loadAccounts();
+  }, []);
+
   // Modal states
   const [showJournalEntryModal, setShowJournalEntryModal] = useState(false);
   const [selectedJournalEntry, setSelectedJournalEntry] = useState<JournalEntry | undefined>();
@@ -27,28 +59,6 @@ const JournalEntriesPage: React.FC = () => {
   const [journalEntryToPost, setJournalEntryToPost] = useState<JournalEntry | undefined>();
   const [postLoading, setPostLoading] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [journalEntriesData, accountsData] = await Promise.all([
-        journalEntryService.getJournalEntries(),
-        accountService.getAccounts()
-      ]);
-      setJournalEntries(journalEntriesData);
-      setAccounts(accountsData);
-      setError(null);
-    } catch (err) {
-      setError('Failed to load data');
-      console.error('Error loading data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const toggleRowExpansion = (id: number) => {
     const newExpandedRows = new Set(expandedRows);
     if (newExpandedRows.has(id)) {
@@ -58,20 +68,6 @@ const JournalEntriesPage: React.FC = () => {
     }
     setExpandedRows(newExpandedRows);
   };
-
-  const filteredJournalEntries = journalEntries.filter(entry => {
-    const matchesSearch = 
-      entry.entryNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.reference.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesFilter = 
-      filterBy === 'all' ||
-      (filterBy === 'posted' && entry.isPosted) ||
-      (filterBy === 'unposted' && !entry.isPosted);
-
-    return matchesSearch && matchesFilter;
-  });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { 
@@ -109,13 +105,12 @@ const JournalEntriesPage: React.FC = () => {
   const handleSaveJournalEntry = async (journalEntryData: CreateJournalEntryDto | UpdateJournalEntryDto, isUpdate: boolean = false, entryId?: number) => {
     try {
       if (isUpdate && entryId) {
-        // Update existing entry
         await journalEntryService.updateJournalEntry(entryId, journalEntryData as UpdateJournalEntryDto);
       } else {
-        // Create new entry
         await journalEntryService.createJournalEntry(journalEntryData as CreateJournalEntryDto);
       }
-      await loadData(); // Reload data
+      // Changing state will trigger the hook to reload data
+      setPagination({ ...pagination }); // Trigger reload by updating pagination state
     } catch (error) {
       console.error('Error saving journal entry:', error);
       throw error;
@@ -128,7 +123,8 @@ const JournalEntriesPage: React.FC = () => {
     try {
       setDeleteLoading(true);
       await journalEntryService.deleteJournalEntry(journalEntryToDelete.id);
-      await loadData(); // Reload data
+      // Changing state will trigger the hook to reload data
+      setPagination({ ...pagination }); // Trigger reload by updating pagination state
       setShowDeleteModal(false);
       setJournalEntryToDelete(undefined);
     } catch (error) {
@@ -149,7 +145,8 @@ const JournalEntriesPage: React.FC = () => {
     try {
       setPostLoading(true);
       await journalEntryService.postJournalEntry(journalEntryToPost.id);
-      await loadData(); // Reload data
+      // Changing state will trigger the hook to reload data
+      setPagination({ ...pagination }); // Trigger reload by updating pagination state
       setShowPostModal(false);
       setJournalEntryToPost(undefined);
     } catch (error) {
@@ -170,7 +167,8 @@ const JournalEntriesPage: React.FC = () => {
   if (error) return (
     <div className="alert alert-danger" role="alert">
       <strong>Error:</strong> {error}
-      <button className="btn btn-sm btn-outline-danger ms-2" onClick={loadData}>
+      {/* The hook manages loading, so clicking Try Again should just trigger a reload via state change */}
+      <button className="btn btn-sm btn-outline-danger ms-2" onClick={() => setPagination({ ...pagination })}>
         Try Again
       </button>
     </div>
@@ -193,16 +191,16 @@ const JournalEntriesPage: React.FC = () => {
                   type="text"
                   className="form-control"
                   placeholder="Search entries, descriptions, or references..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={filtering.searchTerm}
+                  onChange={(e) => setFiltering({ ...filtering, searchTerm: e.target.value })}
                 />
               </div>
             </div>
             <div className="col-md-3">
               <select
                 className="form-select"
-                value={filterBy}
-                onChange={(e) => setFilterBy(e.target.value as 'all' | 'posted' | 'unposted')}
+                value={filtering.statusFilter}
+                onChange={(e) => setFiltering({ ...filtering, statusFilter: e.target.value as 'all' | 'posted' | 'unposted' })}
               >
                 <option value="all">All Entries</option>
                 <option value="posted">Posted Only</option>
@@ -227,17 +225,42 @@ const JournalEntriesPage: React.FC = () => {
                   <thead className="table-dark">
                     <tr>
                       <th scope="col" style={{width: '50px'}}></th>
-                      <th scope="col">Entry #</th>
-                      <th scope="col">Date</th>
-                      <th scope="col">Description</th>
-                      <th scope="col">Reference</th>
-                      <th scope="col">Total</th>
+                      <th scope="col" onClick={() => setSorting({ orderBy: 'entryNumber', descending: sorting.orderBy === 'entryNumber' ? !sorting.descending : false })} style={{ cursor: 'pointer' }}>
+                        Entry #
+                        {sorting.orderBy === 'entryNumber' && (
+                          <i className={`bi ms-1 bi-sort-${sorting.descending ? 'down' : 'up'}-alt`}></i>
+                        )}
+                      </th>
+                      <th scope="col" onClick={() => setSorting({ orderBy: 'transactionDate', descending: sorting.orderBy === 'transactionDate' ? !sorting.descending : false })} style={{ cursor: 'pointer' }}>
+                        Date
+                        {sorting.orderBy === 'transactionDate' && (
+                          <i className={`bi ms-1 bi-sort-${sorting.descending ? 'down' : 'up'}-alt`}></i>
+                        )}
+                      </th>
+                      <th scope="col" onClick={() => setSorting({ orderBy: 'description', descending: sorting.orderBy === 'description' ? !sorting.descending : false })} style={{ cursor: 'pointer' }}>
+                        Description
+                        {sorting.orderBy === 'description' && (
+                          <i className={`bi ms-1 bi-sort-${sorting.descending ? 'down' : 'up'}-alt`}></i>
+                        )}
+                      </th>
+                      <th scope="col" onClick={() => setSorting({ orderBy: 'reference', descending: sorting.orderBy === 'reference' ? !sorting.descending : false })} style={{ cursor: 'pointer' }}>
+                        Reference
+                        {sorting.orderBy === 'reference' && (
+                          <i className={`bi ms-1 bi-sort-${sorting.descending ? 'down' : 'up'}-alt`}></i>
+                        )}
+                      </th>
+                      <th scope="col" onClick={() => setSorting({ orderBy: 'totalAmount', descending: sorting.orderBy === 'totalAmount' ? !sorting.descending : false })} style={{ cursor: 'pointer' }}>
+                        Total
+                        {sorting.orderBy === 'totalAmount' && (
+                          <i className={`bi ms-1 bi-sort-${sorting.descending ? 'down' : 'up'}-alt`}></i>
+                        )}
+                      </th>
                       <th scope="col">Status</th>
                       <th scope="col">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredJournalEntries.map((entry) => (
+                    {journalEntries.map((entry) => (
                       <React.Fragment key={entry.id}>
                         {/* Main row */}
                         <tr>
@@ -320,7 +343,7 @@ const JournalEntriesPage: React.FC = () => {
                                         </tr>
                                       </thead>
                                       <tbody>
-                                        {entry.lines.map((line) => (
+                                        {entry.lines.map((line: JournalEntryLine) => (
                                           <tr key={line.id}>
                                             <td className="fw-bold">{line.accountCode}</td>
                                             <td>{line.accountName}</td>
@@ -338,10 +361,10 @@ const JournalEntriesPage: React.FC = () => {
                                         <tr className="table-secondary">
                                           <td colSpan={3} className="fw-bold">Totals:</td>
                                           <td className="text-end fw-bold">
-                                            {formatCurrency(entry.lines.reduce((sum, line) => sum + line.debitAmount, 0))}
+                                            {formatCurrency(entry.lines.reduce((sum: number, line: JournalEntryLine) => sum + line.debitAmount, 0))}
                                           </td>
                                           <td className="text-end fw-bold">
-                                            {formatCurrency(entry.lines.reduce((sum, line) => sum + line.creditAmount, 0))}
+                                            {formatCurrency(entry.lines.reduce((sum: number, line: JournalEntryLine) => sum + line.creditAmount, 0))}
                                           </td>
                                         </tr>
                                       </tfoot>
@@ -360,20 +383,20 @@ const JournalEntriesPage: React.FC = () => {
             </div>
           </div>
 
-          {filteredJournalEntries.length === 0 && !loading && (
+          {journalEntries.length === 0 && !loading && (
             <div className="text-center py-5">
               <div className="mb-3">
                 <i className="bi bi-journal-text display-1 text-muted"></i>
               </div>
               <h5 className="text-muted">
-                {searchTerm || filterBy !== 'all' ? 'No entries match your criteria' : 'No journal entries found'}
+                {filtering.searchTerm || filtering.statusFilter !== 'all' ? 'No entries match your criteria' : 'No journal entries found'}
               </h5>
               <p className="text-muted">
-                {searchTerm || filterBy !== 'all' 
-                  ? 'Try adjusting your search or filter settings.' 
+                {filtering.searchTerm || filtering.statusFilter !== 'all'
+                  ? 'Try adjusting your search or filter settings.'
                   : 'Journal entries are automatically created when invoices are generated or paid.'}
               </p>
-              {(!searchTerm && filterBy === 'all') && (
+              {(!filtering.searchTerm && filtering.statusFilter === 'all') && (
                 <button 
                   className="btn btn-primary" 
                   onClick={() => handleAddJournalEntry()}
@@ -386,10 +409,78 @@ const JournalEntriesPage: React.FC = () => {
           )}
 
           {/* Results count */}
-          {filteredJournalEntries.length > 0 && (
+          {totalCount > 0 && (
             <div className="mt-3 text-muted text-center">
-              Showing {filteredJournalEntries.length} of {journalEntries.length} journal entries
+              Showing {(pagination.pageNumber - 1) * pagination.pageSize + 1} to {Math.min(pagination.pageNumber * pagination.pageSize, totalCount)} of {totalCount} journal entries
             </div>
+          )}
+
+          {/* Pagination Controls */}
+          {totalCount > pagination.pageSize && (
+            <nav aria-label="Journal Entry Pagination" className="mt-3">
+              <ul className="pagination justify-content-center">
+                <li className={`page-item ${pagination.pageNumber === 1 ? 'disabled' : ''}`}>
+                  <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: pagination.pageNumber - 1 })} disabled={pagination.pageNumber === 1}>
+                    Previous
+                  </button>
+                </li>
+
+                {/* Page numbers with ellipsis */}
+                {(() => {
+                  const totalPages = Math.ceil(totalCount / pagination.pageSize);
+                  const currentPage = pagination.pageNumber;
+                  const pagesToShow = new Set<number>();
+
+                  // Add first two pages
+                  if (totalPages >= 1) pagesToShow.add(1);
+                  if (totalPages >= 2) pagesToShow.add(2);
+
+                  // Add last two pages
+                  if (totalPages >= 2) pagesToShow.add(totalPages - 1);
+                  if (totalPages >= 1) pagesToShow.add(totalPages);
+
+                  // Add pages around the current page
+                  for (let i = currentPage - 2; i <= currentPage + 2; i++) {
+                    if (i >= 1 && i <= totalPages) {
+                      pagesToShow.add(i);
+                    }
+                  }
+
+                  const sortedPages = Array.from(pagesToShow).sort((a, b) => a - b);
+                  const paginationItems = [];
+
+                  for (let i = 0; i < sortedPages.length; i++) {
+                    const page = sortedPages[i];
+                    const isCurrent = page === currentPage;
+
+                    // Add ellipsis if there's a gap
+                    if (i > 0 && page > sortedPages[i - 1] + 1) {
+                      paginationItems.push(
+                        <li key={`ellipsis-${page}`} className="page-item disabled">
+                          <span className="page-link">...</span>
+                        </li>
+                      );
+                    }
+
+                    paginationItems.push(
+                      <li key={page} className={`page-item ${isCurrent ? 'active' : ''}`}>
+                        <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: page })}>
+                          {page}
+                        </button>
+                      </li>
+                    );
+                  }
+
+                  return paginationItems;
+                })()}
+
+                <li className={`page-item ${pagination.pageNumber * pagination.pageSize >= totalCount ? 'disabled' : ''}`}>
+                  <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: pagination.pageNumber + 1 })} disabled={pagination.pageNumber * pagination.pageSize >= totalCount}>
+                    Next
+                  </button>
+                </li>
+              </ul>
+            </nav>
           )}
 
           {/* Journal Entry Modal */}

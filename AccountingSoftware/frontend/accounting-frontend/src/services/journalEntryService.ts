@@ -1,10 +1,12 @@
-import { JournalEntry, CreateJournalEntryDto, UpdateJournalEntryDto } from '../types';
+import { JournalEntry, CreateJournalEntryDto, UpdateJournalEntryDto, PaginationParams, SortingParams, FilteringParams, PagedResult } from '../types/index';
 import apiClient from './apiClient';
 
 export const journalEntryService = {
-  // Get all journal entries
-  getJournalEntries: async (): Promise<JournalEntry[]> => {
-    const response = await apiClient.get<JournalEntry[]>('/journalentries');
+  // Get all journal entries with pagination, sorting, and filtering
+  getJournalEntries: async (pagination: PaginationParams, sorting: SortingParams, filtering: FilteringParams): Promise<PagedResult<JournalEntry>> => {
+    const response = await apiClient.get<PagedResult<JournalEntry>>('/journalentries', {
+      params: { ...pagination, ...sorting, ...filtering }
+    });
     return response.data;
   },
 
