@@ -9,6 +9,7 @@ import GenericDeleteConfirmationModal from '../../components/modals/GenericDelet
 import ChartOfAccountsTree from '../../components/charts/ChartOfAccountsTree';
 import Pagination from '../../components/common/Pagination';
 import SortableTableHeader, { SortableColumn } from '../../components/common/SortableTableHeader';
+import DebouncedSearchInput from '../../components/common/DebouncedSearchInput';
 
 const AccountsPage: React.FC = () => {
   usePageTitle('Chart of Accounts');
@@ -227,12 +228,10 @@ const AccountsPage: React.FC = () => {
                       <span className="input-group-text">
                         <i className="bi bi-search"></i>
                       </span>
-                      <input
-                        type="text"
-                        className="form-control"
+                      <DebouncedSearchInput
                         placeholder="Search accounts..."
-                        value={filtering.searchTerm || ''}
-                        onChange={e => setFiltering({ ...filtering, searchTerm: e.target.value })}
+                        defaultValue={filtering.searchTerm || ''}
+                        onSearch={value => setFiltering(f => ({ ...f, searchTerm: value }))}
                       />
                     </div>
                   </div>

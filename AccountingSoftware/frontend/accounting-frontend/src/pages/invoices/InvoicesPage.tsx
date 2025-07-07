@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Invoice, InvoiceStatus, Customer, CompanyInfo, CreateInvoiceDto, MarkInvoiceAsPaidDto, PaginationParams, SortingParams } from '../../types/index';
 import Pagination from '../../components/common/Pagination';
 import SortableTableHeader, { SortableColumn } from '../../components/common/SortableTableHeader';
+import DebouncedSearchInput from '../../components/common/DebouncedSearchInput';
 import { InvoiceFilteringParams } from '../../types/invoices';
 import { invoiceService, customerService, companyInfoService } from '../../services/api';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -217,12 +218,10 @@ const InvoicesPage: React.FC = () => {
                 <span className="input-group-text">
                   <i className="bi bi-search"></i>
                 </span>
-                <input
-                  type="text"
-                  className="form-control"
+                <DebouncedSearchInput
                   placeholder="Search invoices, descriptions, or customers..."
-                  value={filtering.searchTerm}
-                  onChange={e => setFiltering({ ...filtering, searchTerm: e.target.value })}
+                  defaultValue={filtering.searchTerm || ''}
+                  onSearch={value => setFiltering(f => ({ ...f, searchTerm: value }))}
                 />
               </div>
             </div>

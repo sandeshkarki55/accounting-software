@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Pagination from '../../components/common/Pagination';
+import DebouncedSearchInput from '../../components/common/DebouncedSearchInput';
 import SortableTableHeader, { SortableColumn } from '../../components/common/SortableTableHeader';
 import { JournalEntry, JournalEntryLine, CreateJournalEntryDto, UpdateJournalEntryDto, Account, PaginationParams, SortingParams, JournalEntryFilteringParams, PagedResult } from '../../types/index';
 import { journalEntryService, accountService } from '../../services/api';
@@ -190,12 +191,10 @@ const JournalEntriesPage: React.FC = () => {
                 <span className="input-group-text">
                   <i className="bi bi-search"></i>
                 </span>
-                <input
-                  type="text"
-                  className="form-control"
+                <DebouncedSearchInput
                   placeholder="Search entries, descriptions, or references..."
-                  value={filtering.searchTerm}
-                  onChange={(e) => setFiltering({ ...filtering, searchTerm: e.target.value })}
+                  defaultValue={filtering.searchTerm || ''}
+                  onSearch={value => setFiltering(f => ({ ...f, searchTerm: value }))}
                 />
               </div>
             </div>

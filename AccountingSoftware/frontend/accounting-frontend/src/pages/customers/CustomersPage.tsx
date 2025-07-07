@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Pagination from '../../components/common/Pagination';
 import SortableTableHeader, { SortableColumn } from '../../components/common/SortableTableHeader';
+import DebouncedSearchInput from '../../components/common/DebouncedSearchInput';
 import { Customer, CreateCustomerDto, UpdateCustomerDto, PaginationParams, SortingParams, CustomerFilteringParams } from '../../types';
 import { customerService } from '../../services/customerService';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -99,6 +100,11 @@ const CustomersPage: React.FC = () => {
     { key: 'actions', label: 'Actions', sortable: false },
   ];
 
+  // Debounced search handler
+  const handleSearchInput = (value: string) => {
+    setFiltering(f => ({ ...f, searchTerm: value }));
+  };
+
   // Sorting handler
   const handleSort = (column: string) => {
     setSorting({
@@ -138,12 +144,10 @@ const CustomersPage: React.FC = () => {
                 <span className="input-group-text">
                   <i className="bi bi-search"></i>
                 </span>
-                <input
-                  type="text"
-                  className="form-control"
+                <DebouncedSearchInput
                   placeholder="Search customers..."
-                  value={filtering.searchTerm || ''}
-                  onChange={e => setFiltering({ ...filtering, searchTerm: e.target.value })}
+                  defaultValue={filtering.searchTerm || ''}
+                  onSearch={handleSearchInput}
                 />
               </div>
             </div>
