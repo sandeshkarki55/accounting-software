@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import Pagination from '../../components/common/Pagination';
 import { Customer, CreateCustomerDto, UpdateCustomerDto, PaginationParams, SortingParams, CustomerFilteringParams } from '../../types';
 import { customerService } from '../../services/customerService';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -244,28 +245,13 @@ const CustomersPage: React.FC = () => {
           )}
 
           {/* Pagination Controls */}
-          {totalCount > pagination.pageSize && (
-            <nav aria-label="Customer Pagination" className="mt-3">
-              <ul className="pagination justify-content-center">
-                <li className={`page-item ${pagination.pageNumber === 1 ? 'disabled' : ''}`}>
-                  <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: pagination.pageNumber - 1 })} disabled={pagination.pageNumber === 1}>
-                    Previous
-                  </button>
-                </li>
-                {/* Page numbers */}
-                {Array.from({ length: Math.ceil(totalCount / pagination.pageSize) }, (_, i) => i + 1).map(page => (
-                  <li key={page} className={`page-item ${pagination.pageNumber === page ? 'active' : ''}`}>
-                    <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: page })}>{page}</button>
-                  </li>
-                ))}
-                <li className={`page-item ${pagination.pageNumber * pagination.pageSize >= totalCount ? 'disabled' : ''}`}>
-                  <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: pagination.pageNumber + 1 })} disabled={pagination.pageNumber * pagination.pageSize >= totalCount}>
-                    Next
-                  </button>
-                </li>
-              </ul>
-            </nav>
-          )}
+          <Pagination
+            pageNumber={pagination.pageNumber}
+            pageSize={pagination.pageSize}
+            totalCount={totalCount}
+            onPageChange={(page: number) => setPagination({ ...pagination, pageNumber: page })}
+            ariaLabel="Customer Pagination"
+          />
 
           {customers.length === 0 && !loading && (
             <div className="text-center py-5">

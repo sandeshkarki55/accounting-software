@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Invoice, InvoiceStatus, Customer, CompanyInfo, CreateInvoiceDto, MarkInvoiceAsPaidDto, PaginationParams, SortingParams } from '../../types/index';
+import Pagination from '../../components/common/Pagination';
 import { InvoiceFilteringParams } from '../../types/invoices';
 import { invoiceService, customerService, companyInfoService } from '../../services/api';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -352,28 +353,13 @@ const InvoicesPage: React.FC = () => {
           )}
 
           {/* Pagination Controls */}
-          {totalCount > pagination.pageSize && (
-            <nav aria-label="Invoice Pagination" className="mt-3">
-              <ul className="pagination justify-content-center">
-                <li className={`page-item ${pagination.pageNumber === 1 ? 'disabled' : ''}`}>
-                  <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: pagination.pageNumber - 1 })} disabled={pagination.pageNumber === 1}>
-                    Previous
-                  </button>
-                </li>
-                {/* Page numbers */}
-                {Array.from({ length: Math.ceil(totalCount / pagination.pageSize) }, (_, i) => i + 1).map(page => (
-                  <li key={page} className={`page-item ${pagination.pageNumber === page ? 'active' : ''}`}>
-                    <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: page })}>{page}</button>
-                  </li>
-                ))}
-                <li className={`page-item ${pagination.pageNumber * pagination.pageSize >= totalCount ? 'disabled' : ''}`}>
-                  <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: pagination.pageNumber + 1 })} disabled={pagination.pageNumber * pagination.pageSize >= totalCount}>
-                    Next
-                  </button>
-                </li>
-              </ul>
-            </nav>
-          )}
+          <Pagination
+            pageNumber={pagination.pageNumber}
+            pageSize={pagination.pageSize}
+            totalCount={totalCount}
+            onPageChange={(page: number) => setPagination({ ...pagination, pageNumber: page })}
+            ariaLabel="Invoice Pagination"
+          />
 
           {/* Invoice Modal for Add/View */}
       <InvoiceModal

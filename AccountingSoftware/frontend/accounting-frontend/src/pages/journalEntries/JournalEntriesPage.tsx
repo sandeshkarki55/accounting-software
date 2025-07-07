@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Pagination from '../../components/common/Pagination';
 import { JournalEntry, JournalEntryLine, CreateJournalEntryDto, UpdateJournalEntryDto, Account, PaginationParams, SortingParams, JournalEntryFilteringParams, PagedResult } from '../../types/index';
 import { journalEntryService, accountService } from '../../services/api';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -25,7 +26,7 @@ const JournalEntriesPage: React.FC = () => {
     // loadData // loadData is now managed by the hook's useEffect
   } = usePagedData<JournalEntry, PaginationParams, SortingParams, JournalEntryFilteringParams>({
     fetchData: journalEntryService.getJournalEntries,
-    initialPagination: { pageNumber: 1, pageSize: 2 },
+    initialPagination: { pageNumber: 1, pageSize: 10 },
     initialSorting: { orderBy: 'transactionDate', descending: true },
     initialFiltering: { searchTerm: '', statusFilter: 'all' },
   });
@@ -34,6 +35,7 @@ const JournalEntriesPage: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   // Keep expandedRows state separate as it's UI state
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+
 
   // Fetch accounts data on initial load
   useEffect(() => {
@@ -416,72 +418,13 @@ const JournalEntriesPage: React.FC = () => {
           )}
 
           {/* Pagination Controls */}
-          {totalCount > pagination.pageSize && (
-            <nav aria-label="Journal Entry Pagination" className="mt-3">
-              <ul className="pagination justify-content-center">
-                <li className={`page-item ${pagination.pageNumber === 1 ? 'disabled' : ''}`}>
-                  <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: pagination.pageNumber - 1 })} disabled={pagination.pageNumber === 1}>
-                    Previous
-                  </button>
-                </li>
-
-                {/* Page numbers with ellipsis */}
-                {(() => {
-                  const totalPages = Math.ceil(totalCount / pagination.pageSize);
-                  const currentPage = pagination.pageNumber;
-                  const pagesToShow = new Set<number>();
-
-                  // Add first two pages
-                  if (totalPages >= 1) pagesToShow.add(1);
-                  if (totalPages >= 2) pagesToShow.add(2);
-
-                  // Add last two pages
-                  if (totalPages >= 2) pagesToShow.add(totalPages - 1);
-                  if (totalPages >= 1) pagesToShow.add(totalPages);
-
-                  // Add pages around the current page
-                  for (let i = currentPage - 2; i <= currentPage + 2; i++) {
-                    if (i >= 1 && i <= totalPages) {
-                      pagesToShow.add(i);
-                    }
-                  }
-
-                  const sortedPages = Array.from(pagesToShow).sort((a, b) => a - b);
-                  const paginationItems = [];
-
-                  for (let i = 0; i < sortedPages.length; i++) {
-                    const page = sortedPages[i];
-                    const isCurrent = page === currentPage;
-
-                    // Add ellipsis if there's a gap
-                    if (i > 0 && page > sortedPages[i - 1] + 1) {
-                      paginationItems.push(
-                        <li key={`ellipsis-${page}`} className="page-item disabled">
-                          <span className="page-link">...</span>
-                        </li>
-                      );
-                    }
-
-                    paginationItems.push(
-                      <li key={page} className={`page-item ${isCurrent ? 'active' : ''}`}>
-                        <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: page })}>
-                          {page}
-                        </button>
-                      </li>
-                    );
-                  }
-
-                  return paginationItems;
-                })()}
-
-                <li className={`page-item ${pagination.pageNumber * pagination.pageSize >= totalCount ? 'disabled' : ''}`}>
-                  <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: pagination.pageNumber + 1 })} disabled={pagination.pageNumber * pagination.pageSize >= totalCount}>
-                    Next
-                  </button>
-                </li>
-              </ul>
-            </nav>
-          )}
+          <Pagination
+            pageNumber={pagination.pageNumber}
+            pageSize={pagination.pageSize}
+            totalCount={totalCount}
+            onPageChange={(page: number) => setPagination({ ...pagination, pageNumber: page })}
+            ariaLabel="Journal Entry Pagination"
+          />
 
           {/* Journal Entry Modal */}
           <JournalEntryModal

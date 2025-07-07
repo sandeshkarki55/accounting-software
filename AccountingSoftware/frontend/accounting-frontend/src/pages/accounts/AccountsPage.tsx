@@ -7,6 +7,7 @@ import usePagedData from '../../hooks/usePagedData';
 import AccountModal from '../../components/modals/AccountModal';
 import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
 import ChartOfAccountsTree from '../../components/charts/ChartOfAccountsTree';
+import Pagination from '../../components/common/Pagination';
 
 const AccountsPage: React.FC = () => {
   usePageTitle('Chart of Accounts');
@@ -377,28 +378,13 @@ const AccountsPage: React.FC = () => {
                 )}
 
                 {/* Pagination Controls */}
-                {totalCount > pagination.pageSize && (
-                  <nav aria-label="Account Pagination" className="mt-3">
-                    <ul className="pagination justify-content-center">
-                      <li className={`page-item ${pagination.pageNumber === 1 ? 'disabled' : ''}`}>
-                        <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: pagination.pageNumber - 1 })} disabled={pagination.pageNumber === 1}>
-                          Previous
-                        </button>
-                      </li>
-                      {/* Page numbers */}
-                      {Array.from({ length: Math.ceil(totalCount / pagination.pageSize) }, (_, i) => i + 1).map(page => (
-                        <li key={page} className={`page-item ${pagination.pageNumber === page ? 'active' : ''}`}>
-                          <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: page })}>{page}</button>
-                        </li>
-                      ))}
-                      <li className={`page-item ${pagination.pageNumber * pagination.pageSize >= totalCount ? 'disabled' : ''}`}>
-                        <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: pagination.pageNumber + 1 })} disabled={pagination.pageNumber * pagination.pageSize >= totalCount}>
-                          Next
-                        </button>
-                      </li>
-                    </ul>
-                  </nav>
-                )}
+                <Pagination
+                  pageNumber={pagination.pageNumber}
+                  pageSize={pagination.pageSize}
+                  totalCount={totalCount}
+                  onPageChange={page => setPagination({ ...pagination, pageNumber: page })}
+                  ariaLabel="Account Pagination"
+                />
               </div>
             )}
           </div>
