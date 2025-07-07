@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Invoice, InvoiceStatus, Customer, CompanyInfo, CreateInvoiceDto, MarkInvoiceAsPaidDto } from '../../types';
+import { Invoice, InvoiceStatus, Customer, CompanyInfo, CreateInvoiceDto, MarkInvoiceAsPaidDto, PaginationParams, SortingParams } from '../../types/index';
+import { InvoiceFilteringParams } from '../../types/invoices';
 import { invoiceService, customerService, companyInfoService } from '../../services/api';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import usePagedData from '../../hooks/usePagedData';
 import InvoiceModal from '../../components/modals/InvoiceModal';
 import InvoicePrintModal from '../../components/modals/InvoicePrintModal';
 import MarkAsPaidModal from '../../components/MarkAsPaidModal';
@@ -10,11 +12,28 @@ import GenericDeleteConfirmationModal from '../../components/modals/GenericDelet
 const InvoicesPage: React.FC = () => {
   usePageTitle('Invoices');
 
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  // Paged invoices
+  const {
+    data: invoices,
+    loading,
+    error,
+    pagination,
+    setPagination,
+    sorting,
+    setSorting,
+    filtering,
+    setFiltering,
+    totalCount,
+  } = usePagedData<Invoice, PaginationParams, SortingParams, InvoiceFilteringParams>({
+    fetchData: invoiceService.getInvoices,
+    initialPagination: { pageNumber: 1, pageSize: 10 },
+    initialSorting: { orderBy: 'invoiceDate', descending: true },
+    initialFiltering: { searchTerm: '', statusFilter: 'all' },
+  });
+
+  // Customers and companyInfos (not paged)
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [companyInfos, setCompanyInfos] = useState<CompanyInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | undefined>();
   const [showPrintModal, setShowPrintModal] = useState(false);
@@ -26,28 +45,20 @@ const InvoicesPage: React.FC = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
-    loadData();
+    const loadMeta = async () => {
+      try {
+        const [customersData, companyInfosPaged] = await Promise.all([
+          customerService.getCustomers(),
+          companyInfoService.getCompanyInfos({ pageNumber: 1, pageSize: 1000 }, { orderBy: 'companyName', descending: false }, { searchTerm: '' })
+        ]);
+        setCustomers(customersData);
+        setCompanyInfos(companyInfosPaged.items);
+      } catch (err) {
+        // Optionally handle error
+      }
+    };
+    loadMeta();
   }, []);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [invoicesData, customersData, companyInfosData] = await Promise.all([
-        invoiceService.getInvoices(),
-        customerService.getCustomers(),
-        companyInfoService.getCompanyInfos()
-      ]);
-      setInvoices(invoicesData);
-      setCustomers(customersData);
-      setCompanyInfos(companyInfosData);
-      setError(null);
-    } catch (err) {
-      setError('Failed to load data');
-      console.error('Error loading data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddInvoice = () => {
     setSelectedInvoice(undefined);
@@ -62,7 +73,7 @@ const InvoicesPage: React.FC = () => {
   const handleSaveInvoice = async (invoiceData: CreateInvoiceDto) => {
     try {
       await invoiceService.createInvoice(invoiceData);
-      await loadData(); // Reload invoices
+      setPagination({ ...pagination }); // Trigger reload
       setShowInvoiceModal(false);
     } catch (err) {
       console.error('Error saving invoice:', err);
@@ -83,7 +94,7 @@ const InvoicesPage: React.FC = () => {
   const handleConfirmMarkAsPaid = async (invoiceData: MarkInvoiceAsPaidDto) => {
     try {
       await invoiceService.markInvoiceAsPaid(selectedInvoiceForPayment!.id, invoiceData);
-      await loadData();
+      setPagination({ ...pagination }); // Trigger reload
       setShowMarkAsPaidModal(false);
     } catch (err) {
       console.error('Error marking invoice as paid:', err);
@@ -102,11 +113,11 @@ const InvoicesPage: React.FC = () => {
     try {
       setDeleteLoading(true);
       await invoiceService.deleteInvoice(invoiceToDelete.id);
-      await loadData();
+      setPagination({ ...pagination }); // Trigger reload
       setShowDeleteModal(false);
       setInvoiceToDelete(undefined);
     } catch (err) {
-      setError('Failed to delete invoice');
+      // Optionally set error state
       console.error('Error deleting invoice:', err);
     } finally {
       setDeleteLoading(false);
@@ -157,26 +168,74 @@ const InvoicesPage: React.FC = () => {
   if (error) return (
     <div className="alert alert-danger" role="alert">
       <strong>Error:</strong> {error}
-      <button className="btn btn-sm btn-outline-danger ms-2" onClick={loadData}>
+      <button className="btn btn-sm btn-outline-danger ms-2" onClick={() => setPagination({ ...pagination })}>
         Try Again
       </button>
     </div>
   );
+
+
+
+  // Helper for rendering sort icons (Bootstrap style)
+  const renderSortIcon = (column: string) => {
+    if (sorting.orderBy !== column) return null;
+    return (
+      <i className={`bi ms-1 bi-sort-${sorting.descending ? 'down' : 'up'}-alt`}></i>
+    );
+  };
+
+  // Handler for sorting (toggle if same column, ascending if new)
+  const handleSort = (column: string) => {
+    setSorting({
+      orderBy: column,
+      descending: sorting.orderBy === column ? !sorting.descending : false
+    });
+  };
 
   return (
     <div className="container">
       <div className="row">
         <div className="col-12">
           <h1 className="mb-4 text-dark">Invoices</h1>
-          
-          <div className="mb-4">
-            <button 
-              className="btn btn-primary" 
-              onClick={handleAddInvoice}
-            >
-              <i className="bi bi-plus-circle me-2"></i>
-              Create New Invoice
-            </button>
+          {/* Search and Filter Controls */}
+          <div className="row mb-4">
+            <div className="col-md-6">
+              <div className="input-group">
+                <span className="input-group-text">
+                  <i className="bi bi-search"></i>
+                </span>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Search invoices, descriptions, or customers..."
+                  value={filtering.searchTerm}
+                  onChange={e => setFiltering({ ...filtering, searchTerm: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="col-md-3">
+              <select
+                className="form-select"
+                value={filtering.statusFilter}
+                onChange={e => setFiltering({ ...filtering, statusFilter: e.target.value as 'all' | 'paid' | 'unpaid' | 'overdue' | 'draft' | 'cancelled' })}
+              >
+                <option value="all">All Invoices</option>
+                <option value="paid">Paid Only</option>
+                <option value="unpaid">Unpaid Only</option>
+                <option value="overdue">Overdue Only</option>
+                <option value="draft">Draft Only</option>
+                <option value="cancelled">Cancelled Only</option>
+              </select>
+            </div>
+            <div className="col-md-3">
+              <button 
+                className="btn btn-primary w-100" 
+                onClick={handleAddInvoice}
+              >
+                <i className="bi bi-plus-circle me-2"></i>
+                Create Invoice
+              </button>
+            </div>
           </div>
 
           <div className="card shadow-sm">
@@ -185,12 +244,27 @@ const InvoicesPage: React.FC = () => {
                 <table className="table table-hover mb-0">
                   <thead className="table-dark">
                     <tr>
-                      <th scope="col">Invoice #</th>
+                      <th scope="col" style={{ cursor: 'pointer' }} onClick={() => handleSort('invoiceNumber')}>
+                        Invoice #
+                        {renderSortIcon('invoiceNumber')}
+                      </th>
                       <th scope="col">Customer</th>
-                      <th scope="col">Date</th>
-                      <th scope="col">Due Date</th>
-                      <th scope="col">Total</th>
-                      <th scope="col">Status</th>
+                      <th scope="col" style={{ cursor: 'pointer' }} onClick={() => handleSort('invoiceDate')}>
+                        Date
+                        {renderSortIcon('invoiceDate')}
+                      </th>
+                      <th scope="col" style={{ cursor: 'pointer' }} onClick={() => handleSort('dueDate')}>
+                        Due Date
+                        {renderSortIcon('dueDate')}
+                      </th>
+                      <th scope="col" style={{ cursor: 'pointer' }} onClick={() => handleSort('totalAmount')}>
+                        Total
+                        {renderSortIcon('totalAmount')}
+                      </th>
+                      <th scope="col" style={{ cursor: 'pointer' }} onClick={() => handleSort('status')}>
+                        Status
+                        {renderSortIcon('status')}
+                      </th>
                       <th scope="col">Actions</th>
                     </tr>
                   </thead>
@@ -251,7 +325,7 @@ const InvoicesPage: React.FC = () => {
             </div>
           </div>
 
-          {invoices.length === 0 && (
+          {invoices.length === 0 && !loading && (
             <div className="text-center py-5">
               <div className="mb-3">
                 <i className="bi bi-receipt display-1 text-muted"></i>
@@ -270,7 +344,38 @@ const InvoicesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Invoice Modal for Add/View */}
+          {/* Results count */}
+          {totalCount > 0 && (
+            <div className="mt-3 text-muted text-center">
+              Showing {(pagination.pageNumber - 1) * pagination.pageSize + 1} to {Math.min(pagination.pageNumber * pagination.pageSize, totalCount)} of {totalCount} invoices
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {totalCount > pagination.pageSize && (
+            <nav aria-label="Invoice Pagination" className="mt-3">
+              <ul className="pagination justify-content-center">
+                <li className={`page-item ${pagination.pageNumber === 1 ? 'disabled' : ''}`}>
+                  <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: pagination.pageNumber - 1 })} disabled={pagination.pageNumber === 1}>
+                    Previous
+                  </button>
+                </li>
+                {/* Page numbers */}
+                {Array.from({ length: Math.ceil(totalCount / pagination.pageSize) }, (_, i) => i + 1).map(page => (
+                  <li key={page} className={`page-item ${pagination.pageNumber === page ? 'active' : ''}`}>
+                    <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: page })}>{page}</button>
+                  </li>
+                ))}
+                <li className={`page-item ${pagination.pageNumber * pagination.pageSize >= totalCount ? 'disabled' : ''}`}>
+                  <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: pagination.pageNumber + 1 })} disabled={pagination.pageNumber * pagination.pageSize >= totalCount}>
+                    Next
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          )}
+
+          {/* Invoice Modal for Add/View */}
       <InvoiceModal
         show={showInvoiceModal}
         onHide={() => setShowInvoiceModal(false)}

@@ -1,10 +1,20 @@
-import { CompanyInfo, CreateCompanyInfoDto } from '../types';
+import { CompanyInfo, CreateCompanyInfoDto, PaginationParams, SortingParams, CompanyInfoFilteringParams, PagedResult } from '../types';
 import apiClient from './apiClient';
 
 export const companyInfoService = {
-  // Get all company infos
-  getCompanyInfos: async (): Promise<CompanyInfo[]> => {
-    const response = await apiClient.get<CompanyInfo[]>('/companyinfo');
+  // Get all company infos (paged)
+  getCompanyInfos: async (
+    pagination: PaginationParams,
+    sorting: SortingParams,
+    filtering: CompanyInfoFilteringParams
+  ): Promise<PagedResult<CompanyInfo>> => {
+    const response = await apiClient.get<PagedResult<CompanyInfo>>('/companyinfo', {
+      params: {
+        ...pagination,
+        ...sorting,
+        ...filtering,
+      },
+    });
     return response.data;
   },
 

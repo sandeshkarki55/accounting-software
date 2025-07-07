@@ -1,3 +1,17 @@
+export interface AccountFilteringParams {
+  searchTerm?: string;
+  accountType?: number;
+  isActive?: boolean;
+}
+
+export interface CustomerFilteringParams {
+  searchTerm?: string;
+  isActive?: boolean;
+}
+export interface CompanyInfoFilteringParams {
+  searchTerm?: string;
+  // Add more company info-specific filters as needed
+}
 // Re-export all types from organized structure
 export * from './accounts';
 export * from './customers';
@@ -34,7 +48,13 @@ export interface SortingParams {
 
 export interface FilteringParams {
   searchTerm?: string;
+  statusFilter?: 'all' | 'posted' | 'unposted' | 'paid' | 'unpaid' | 'overdue' | 'draft' | 'cancelled';
+}
+
+export interface JournalEntryFilteringParams {
+  searchTerm?: string;
   statusFilter?: 'all' | 'posted' | 'unposted';
+  // Add more journal entry-specific filters as needed
 }
 
 // Common API response types

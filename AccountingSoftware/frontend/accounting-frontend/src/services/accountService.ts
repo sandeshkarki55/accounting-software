@@ -1,8 +1,24 @@
-import { Account, CreateAccountDto, UpdateAccountDto } from '../types';
+import { Account, CreateAccountDto, UpdateAccountDto, PaginationParams, SortingParams, AccountFilteringParams, PagedResult } from '../types';
 import apiClient from './apiClient';
 
 export const accountService = {
-  // Get all accounts
+  // Get all accounts (paged)
+  getAccountsPaged: async (
+    pagination: PaginationParams,
+    sorting: SortingParams,
+    filtering: AccountFilteringParams
+  ): Promise<PagedResult<Account>> => {
+    const response = await apiClient.get<PagedResult<Account>>('/accounts', {
+      params: {
+        ...pagination,
+        ...sorting,
+        ...filtering,
+      },
+    });
+    return response.data;
+  },
+
+  // Get all accounts (legacy, all at once)
   getAccounts: async (): Promise<Account[]> => {
     const response = await apiClient.get<Account[]>('/accounts');
     return response.data;

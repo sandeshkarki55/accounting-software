@@ -69,12 +69,13 @@ const DashboardPage: React.FC = () => {
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      const [invoicesData, customersData, accountsData] = await Promise.all([
-        invoiceService.getInvoices(),
+      const [invoicesPaged, customersData, accountsData] = await Promise.all([
+        invoiceService.getInvoices({ pageNumber: 1, pageSize: 1000 }, { orderBy: 'invoiceDate', descending: true }, { searchTerm: '', statusFilter: 'all' }),
         customerService.getCustomers(),
         accountService.getAccounts()
       ]);
 
+      const invoicesData = invoicesPaged.items;
       setInvoices(invoicesData);
       setCustomers(customersData);
       setAccounts(accountsData);

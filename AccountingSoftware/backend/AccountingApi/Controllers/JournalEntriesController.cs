@@ -11,7 +11,7 @@ public class JournalEntriesController(IMediator mediator) : BaseController
     public async Task<ActionResult<PagedResult<JournalEntryDto>>> GetJournalEntries(
         [FromQuery] PaginationParams paginationParams,
         [FromQuery] SortingParams sortingParams,
-        [FromQuery] FilteringParams filteringParams)
+        [FromQuery] JournalEntryFilteringParams filteringParams)
     {
         var query = new GetAllJournalEntriesQuery(paginationParams, sortingParams, filteringParams);
         var pagedJournalEntries = await mediator.Send(query);

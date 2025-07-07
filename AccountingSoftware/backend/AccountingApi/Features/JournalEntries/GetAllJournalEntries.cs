@@ -8,7 +8,7 @@ using AccountingApi.Infrastructure.Extensions; // Add this using directive
 namespace AccountingApi.Features.JournalEntries;
 
 // Query to get all journal entries
-public record GetAllJournalEntriesQuery(PaginationParams Pagination, SortingParams Sorting, FilteringParams Filtering) : IRequest<PagedResult<JournalEntryDto>>;
+public record GetAllJournalEntriesQuery(PaginationParams Pagination, SortingParams Sorting, JournalEntryFilteringParams Filtering) : IRequest<PagedResult<JournalEntryDto>>;
 
 // Handler for GetAllJournalEntriesQuery
 public class GetAllJournalEntriesQueryHandler(AccountingDbContext context, JournalEntryMapper journalEntryMapper)

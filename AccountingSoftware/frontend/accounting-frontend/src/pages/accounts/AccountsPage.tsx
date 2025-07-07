@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
-import { Account, AccountType, CreateAccountDto, UpdateAccountDto } from '../../types';
-import { accountService } from '../../services/api';
+import { Account, AccountType, CreateAccountDto, UpdateAccountDto, PaginationParams, SortingParams, AccountFilteringParams } from '../../types';
+import { accountService } from '../../services/accountService';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import usePagedData from '../../hooks/usePagedData';
 import AccountModal from '../../components/modals/AccountModal';
 import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
 import ChartOfAccountsTree from '../../components/charts/ChartOfAccountsTree';
@@ -9,7 +11,26 @@ import ChartOfAccountsTree from '../../components/charts/ChartOfAccountsTree';
 const AccountsPage: React.FC = () => {
   usePageTitle('Chart of Accounts');
 
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  // Paged accounts for list view
+  const {
+    data: accounts,
+    loading: loadingList,
+    error: errorList,
+    pagination,
+    setPagination,
+    sorting,
+    setSorting,
+    filtering,
+    setFiltering,
+    totalCount,
+  } = usePagedData<Account, PaginationParams, SortingParams, AccountFilteringParams>({
+    fetchData: accountService.getAccountsPaged,
+    initialPagination: { pageNumber: 1, pageSize: 10 },
+    initialSorting: { orderBy: 'accountCode', descending: false },
+    initialFiltering: { searchTerm: '', accountType: undefined, isActive: undefined },
+  });
+
+  // Hierarchy accounts for tree view
   const [hierarchyAccounts, setHierarchyAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,29 +42,22 @@ const AccountsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'list' | 'tree'>('tree');
 
   useEffect(() => {
-    loadAccounts();
+    // Only load hierarchy accounts for tree view
+    const loadHierarchy = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const hierarchyData = await accountService.getAccountsHierarchy();
+        setHierarchyAccounts(hierarchyData);
+      } catch (err) {
+        setError('Failed to load accounts');
+        console.error('Error loading accounts:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadHierarchy();
   }, []);
-
-  const loadAccounts = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Load both regular accounts and hierarchy accounts
-      const [regularData, hierarchyData] = await Promise.all([
-        accountService.getAccounts(),
-        accountService.getAccountsHierarchy()
-      ]);
-      
-      setAccounts(regularData);
-      setHierarchyAccounts(hierarchyData);
-    } catch (err) {
-      setError('Failed to load accounts');
-      console.error('Error loading accounts:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddAccount = () => {
     setSelectedAccount(undefined);
@@ -67,7 +81,7 @@ const AccountsPage: React.FC = () => {
       } else {
         await accountService.createAccount(accountData as CreateAccountDto);
       }
-      await loadAccounts();
+      setPagination({ ...pagination }); // reload list view
       setShowAccountModal(false);
     } catch (error) {
       console.error('Error saving account:', error);
@@ -81,12 +95,12 @@ const AccountsPage: React.FC = () => {
     try {
       setDeleteLoading(true);
       await accountService.deleteAccount(accountToDelete.id);
-      await loadAccounts();
       setShowDeleteModal(false);
       setAccountToDelete(undefined);
+      setPagination({ ...pagination }); // reload list view
     } catch (error) {
+      alert('Failed to delete account');
       console.error('Error deleting account:', error);
-      setError('Failed to delete account');
     } finally {
       setDeleteLoading(false);
     }
@@ -103,18 +117,34 @@ const AccountsPage: React.FC = () => {
     }
   };
 
-  if (loading) return (
+
+  // Sorting icon helper
+  const renderSortIcon = (column: string) => {
+    if (sorting.orderBy !== column) return null;
+    return (
+      <i className={`bi ms-1 bi-sort-${sorting.descending ? 'down' : 'up'}-alt`}></i>
+    );
+  };
+
+  // Sorting handler
+  const handleSort = (column: string) => {
+    setSorting({
+      orderBy: column,
+      descending: sorting.orderBy === column ? !sorting.descending : false
+    });
+  };
+
+  if (activeTab === 'list' && loadingList) return (
     <div className="d-flex justify-content-center align-items-center" style={{minHeight: '200px'}}>
       <div className="spinner-border text-primary" role="status">
         <span className="visually-hidden">Loading accounts...</span>
       </div>
     </div>
   );
-  
-  if (error) return (
+  if (activeTab === 'list' && errorList) return (
     <div className="alert alert-danger" role="alert">
-      <strong>Error:</strong> {error}
-      <button className="btn btn-sm btn-outline-danger ms-2" onClick={loadAccounts}>
+      <strong>Error:</strong> {errorList}
+      <button className="btn btn-sm btn-outline-danger ms-2" onClick={() => setPagination({ ...pagination })}>
         Try Again
       </button>
     </div>
@@ -185,6 +215,54 @@ const AccountsPage: React.FC = () => {
             {/* List View */}
             {activeTab === 'list' && (
               <div className="tab-pane fade show active">
+                {/* Search and Add Controls */}
+                <div className="row mb-4">
+                  <div className="col-md-6">
+                    <div className="input-group">
+                      <span className="input-group-text">
+                        <i className="bi bi-search"></i>
+                      </span>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Search accounts..."
+                        value={filtering.searchTerm || ''}
+                        onChange={e => setFiltering({ ...filtering, searchTerm: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="col-md-3">
+                    <select
+                      className="form-select"
+                      value={filtering.accountType === undefined ? '' : filtering.accountType}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setFiltering({ ...filtering, accountType: val === '' ? undefined : Number(val) });
+                      }}
+                    >
+                      <option value="">All Types</option>
+                      <option value={AccountType.Asset}>Asset</option>
+                      <option value={AccountType.Liability}>Liability</option>
+                      <option value={AccountType.Equity}>Equity</option>
+                      <option value={AccountType.Revenue}>Revenue</option>
+                      <option value={AccountType.Expense}>Expense</option>
+                    </select>
+                  </div>
+                  <div className="col-md-3">
+                    <select
+                      className="form-select"
+                      value={filtering.isActive === undefined ? '' : filtering.isActive ? 'active' : 'inactive'}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setFiltering({ ...filtering, isActive: val === '' ? undefined : val === 'active' });
+                      }}
+                    >
+                      <option value="">All Statuses</option>
+                      <option value="active">Active Only</option>
+                      <option value="inactive">Inactive Only</option>
+                    </select>
+                  </div>
+                </div>
                 <div className="card shadow-sm">
                   <div className="card-header bg-secondary text-white">
                     <h5 className="mb-0">
@@ -197,13 +275,31 @@ const AccountsPage: React.FC = () => {
                       <table className="table table-hover mb-0">
                         <thead className="table-dark">
                           <tr>
-                            <th scope="col">Account Code</th>
-                            <th scope="col">Account Name</th>
-                            <th scope="col">Type</th>
-                            <th scope="col">Parent Account</th>
-                            <th scope="col">Balance</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Actions</th>
+                            <th style={{ cursor: 'pointer' }} onClick={() => handleSort('accountCode')}>
+                              Account Code
+                              {renderSortIcon('accountCode')}
+                            </th>
+                            <th style={{ cursor: 'pointer' }} onClick={() => handleSort('accountName')}>
+                              Account Name
+                              {renderSortIcon('accountName')}
+                            </th>
+                            <th style={{ cursor: 'pointer' }} onClick={() => handleSort('accountType')}>
+                              Type
+                              {renderSortIcon('accountType')}
+                            </th>
+                            <th style={{ cursor: 'pointer' }} onClick={() => handleSort('parentAccountName')}>
+                              Parent Account
+                              {renderSortIcon('parentAccountName')}
+                            </th>
+                            <th style={{ cursor: 'pointer' }} onClick={() => handleSort('balance')}>
+                              Balance
+                              {renderSortIcon('balance')}
+                            </th>
+                            <th style={{ cursor: 'pointer' }} onClick={() => handleSort('isActive')}>
+                              Status
+                              {renderSortIcon('isActive')}
+                            </th>
+                            <th>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -272,6 +368,37 @@ const AccountsPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Results count */}
+                {totalCount > 0 && (
+                  <div className="mt-3 text-muted text-center">
+                    Showing {(pagination.pageNumber - 1) * pagination.pageSize + 1} to {Math.min(pagination.pageNumber * pagination.pageSize, totalCount)} of {totalCount} accounts
+                  </div>
+                )}
+
+                {/* Pagination Controls */}
+                {totalCount > pagination.pageSize && (
+                  <nav aria-label="Account Pagination" className="mt-3">
+                    <ul className="pagination justify-content-center">
+                      <li className={`page-item ${pagination.pageNumber === 1 ? 'disabled' : ''}`}>
+                        <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: pagination.pageNumber - 1 })} disabled={pagination.pageNumber === 1}>
+                          Previous
+                        </button>
+                      </li>
+                      {/* Page numbers */}
+                      {Array.from({ length: Math.ceil(totalCount / pagination.pageSize) }, (_, i) => i + 1).map(page => (
+                        <li key={page} className={`page-item ${pagination.pageNumber === page ? 'active' : ''}`}>
+                          <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: page })}>{page}</button>
+                        </li>
+                      ))}
+                      <li className={`page-item ${pagination.pageNumber * pagination.pageSize >= totalCount ? 'disabled' : ''}`}>
+                        <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: pagination.pageNumber + 1 })} disabled={pagination.pageNumber * pagination.pageSize >= totalCount}>
+                          Next
+                        </button>
+                      </li>
+                    </ul>
+                  </nav>
+                )}
               </div>
             )}
           </div>

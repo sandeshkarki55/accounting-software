@@ -8,10 +8,13 @@ namespace AccountingApi.Controllers;
 public class CustomersController(IMediator mediator) : BaseController
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomers()
+    public async Task<ActionResult<PagedResult<CustomerDto>>> GetCustomers([
+        FromQuery] PaginationParams pagination,
+        [FromQuery] SortingParams sorting,
+        [FromQuery] CustomerFilteringParams filtering)
     {
-        var customers = await mediator.Send(new GetAllCustomersQuery());
-        return Ok(customers);
+        var result = await mediator.Send(new GetAllCustomersQuery(pagination, sorting, filtering));
+        return Ok(result);
     }
 
     [HttpGet("{id}")]

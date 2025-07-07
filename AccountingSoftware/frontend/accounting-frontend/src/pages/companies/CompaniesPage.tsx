@@ -1,40 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { CompanyInfo } from '../../types/customers';
-import { companyInfoService } from '../../services/api';
+
+import React, { useState } from 'react';
+import { CompanyInfo, PaginationParams, SortingParams, CompanyInfoFilteringParams } from '../../types';
+import { companyInfoService } from '../../services/companyInfoService';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import usePagedData from '../../hooks/usePagedData';
 import AddCompanyModal from '../../components/modals/AddCompanyModal';
 import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
 import './CompaniesPage.scss';
 
+
 const CompaniesPage: React.FC = () => {
   usePageTitle('Companies');
 
-  const [companies, setCompanies] = useState<CompanyInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Paged companies
+  const {
+    data: companies,
+    loading,
+    error,
+    pagination,
+    setPagination,
+    sorting,
+    setSorting,
+    filtering,
+    setFiltering,
+    totalCount,
+  } = usePagedData<CompanyInfo, PaginationParams, SortingParams, CompanyInfoFilteringParams>({
+    fetchData: companyInfoService.getCompanyInfos,
+    initialPagination: { pageNumber: 1, pageSize: 10 },
+    initialSorting: { orderBy: 'companyName', descending: false },
+    initialFiltering: { searchTerm: '' },
+  });
+
   const [showModal, setShowModal] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<CompanyInfo | undefined>();
   const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<CompanyInfo | undefined>();
 
-  useEffect(() => {
-    loadCompanies();
-  }, []);
-
-  const loadCompanies = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await companyInfoService.getCompanyInfos();
-      setCompanies(data);
-    } catch (err) {
-      setError('Failed to load companies');
-      console.error('Error loading companies:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddCompany = () => {
     setSelectedCompany(undefined);
@@ -46,27 +48,12 @@ const CompaniesPage: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleCompanySaved = (savedCompany: CompanyInfo) => {
-    if (selectedCompany) {
-      // Update existing company
-      setCompanies(prev => prev.map(company => 
-        company.id === selectedCompany.id ? savedCompany : company
-      ));
-    } else {
-      // Add new company
-      setCompanies(prev => {
-        // If the new company is set as default, update all others to not be default
-        if (savedCompany.isDefault) {
-          return [
-            ...prev.map(company => ({ ...company, isDefault: false })),
-            savedCompany
-          ];
-        }
-        return [...prev, savedCompany];
-      });
-    }
+  // After add/edit, just reload the current page
+  const handleCompanySaved = () => {
     setShowModal(false);
+    setPagination({ ...pagination });
   };
+
 
   const handleDeleteCompany = (company: CompanyInfo) => {
     setCompanyToDelete(company);
@@ -75,34 +62,48 @@ const CompaniesPage: React.FC = () => {
 
   const handleConfirmDelete = async () => {
     if (!companyToDelete) return;
-
     try {
       setDeleteLoading(companyToDelete.id);
       await companyInfoService.deleteCompanyInfo(companyToDelete.id);
-      setCompanies(prev => prev.filter(company => company.id !== companyToDelete.id));
       setShowDeleteModal(false);
       setCompanyToDelete(undefined);
+      setPagination({ ...pagination }); // reload
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete company');
+      alert(err.response?.data?.message || 'Failed to delete company');
       console.error('Error deleting company:', err);
     } finally {
       setDeleteLoading(null);
     }
   };
 
+
   const handleSetDefault = async (companyId: number) => {
     try {
       await companyInfoService.setDefaultCompany(companyId);
-      // Update the companies list to reflect the new default
-      setCompanies(prev => prev.map(company => ({
-        ...company,
-        isDefault: company.id === companyId
-      })));
+      setPagination({ ...pagination }); // reload
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to set default company');
       console.error('Error setting default company:', err);
     }
   };
+
+
+  // Sorting icon helper
+  const renderSortIcon = (column: string) => {
+    if (sorting.orderBy !== column) return null;
+    return (
+      <i className={`bi ms-1 bi-sort-${sorting.descending ? 'down' : 'up'}-alt`}></i>
+    );
+  };
+
+  // Sorting handler
+  const handleSort = (column: string) => {
+    setSorting({
+      orderBy: column,
+      descending: sorting.orderBy === column ? !sorting.descending : false
+    });
+  };
+
 
   if (loading) {
     return (
@@ -119,7 +120,7 @@ const CompaniesPage: React.FC = () => {
       <div className="alert alert-danger" role="alert">
         <i className="bi bi-exclamation-circle me-2"></i>
         {error}
-        <button className="btn btn-sm btn-outline-danger ms-2" onClick={loadCompanies}>
+        <button className="btn btn-sm btn-outline-danger ms-2" onClick={() => setPagination({ ...pagination })}>
           <i className="bi bi-arrow-clockwise me-1"></i>
           Retry
         </button>
@@ -132,54 +133,87 @@ const CompaniesPage: React.FC = () => {
       <div className="row">
         <div className="col-12">
           <h1 className="mb-4 text-dark">Companies</h1>
-          
-          <div className="mb-4">
-            <button 
-              className="btn btn-primary"
-              onClick={handleAddCompany}
-            >
-              <i className="bi bi-plus-circle me-2"></i>
-              Add Company
-            </button>
-          </div>
 
-          {companies.length === 0 ? (
-            <div className="card shadow-sm">
-              <div className="card-body">
-                <div className="empty-state">
-                  <div className="empty-state-icon">
-                    <i className="bi bi-building"></i>
-                  </div>
-                  <h3>No Companies Found</h3>
-                  <p>Get started by adding your first company for invoicing.</p>
-                  <button 
-                    className="btn btn-primary"
-                    onClick={handleAddCompany}
-                  >
-                    <i className="bi bi-plus-circle me-2"></i>
-                    Add Your First Company
-                  </button>
-                </div>
+          {/* Search and Add Controls */}
+          <div className="row mb-4">
+            <div className="col-md-6">
+              <div className="input-group">
+                <span className="input-group-text">
+                  <i className="bi bi-search"></i>
+                </span>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Search companies..."
+                  value={filtering.searchTerm || ''}
+                  onChange={e => setFiltering({ ...filtering, searchTerm: e.target.value })}
+                />
               </div>
             </div>
-          ) : (
-            <div className="card shadow-sm">
-              <div className="card-body p-0">
-                <div className="table-responsive">
-                  <table className="table table-hover mb-0">
-                    <thead className="table-dark">
+            <div className="col-md-3"></div>
+            <div className="col-md-3">
+              <button
+                className="btn btn-primary w-100"
+                onClick={handleAddCompany}
+              >
+                <i className="bi bi-plus-circle me-2"></i>
+                Add Company
+              </button>
+            </div>
+          </div>
+
+          <div className="card shadow-sm">
+            <div className="card-body p-0">
+              <div className="table-responsive">
+                <table className="table table-hover mb-0">
+                  <thead className="table-dark">
+                    <tr>
+                      <th style={{ cursor: 'pointer' }} onClick={() => handleSort('companyName')}>
+                        Company Name
+                        {renderSortIcon('companyName')}
+                      </th>
+                      <th style={{ cursor: 'pointer' }} onClick={() => handleSort('legalName')}>
+                        Legal Name
+                        {renderSortIcon('legalName')}
+                      </th>
+                      <th style={{ cursor: 'pointer' }} onClick={() => handleSort('email')}>
+                        Email
+                        {renderSortIcon('email')}
+                      </th>
+                      <th style={{ cursor: 'pointer' }} onClick={() => handleSort('phone')}>
+                        Phone
+                        {renderSortIcon('phone')}
+                      </th>
+                      <th style={{ cursor: 'pointer' }} onClick={() => handleSort('currency')}>
+                        Currency
+                        {renderSortIcon('currency')}
+                      </th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {companies.length === 0 ? (
                       <tr>
-                        <th>Company Name</th>
-                        <th>Legal Name</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>Currency</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                        <td colSpan={7} className="text-center py-4">
+                          <div className="empty-state">
+                            <div className="empty-state-icon">
+                              <i className="bi bi-building"></i>
+                            </div>
+                            <h3>No Companies Found</h3>
+                            <p>Get started by adding your first company for invoicing.</p>
+                            <button
+                              className="btn btn-primary"
+                              onClick={handleAddCompany}
+                            >
+                              <i className="bi bi-plus-circle me-2"></i>
+                              Add Your First Company
+                            </button>
+                          </div>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {companies.map(company => (
+                    ) : (
+                      companies.map(company => (
                         <tr key={company.id}>
                           <td className="fw-bold">
                             {company.companyName}
@@ -230,34 +264,65 @@ const CompaniesPage: React.FC = () => {
                             </div>
                           </td>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
+          </div>
+
+          {/* Results count */}
+          {totalCount > 0 && (
+            <div className="mt-3 text-muted text-center">
+              Showing {(pagination.pageNumber - 1) * pagination.pageSize + 1} to {Math.min(pagination.pageNumber * pagination.pageSize, totalCount)} of {totalCount} companies
+            </div>
           )}
+
+          {/* Pagination Controls */}
+          {totalCount > pagination.pageSize && (
+            <nav aria-label="Company Pagination" className="mt-3">
+              <ul className="pagination justify-content-center">
+                <li className={`page-item ${pagination.pageNumber === 1 ? 'disabled' : ''}`}>
+                  <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: pagination.pageNumber - 1 })} disabled={pagination.pageNumber === 1}>
+                    Previous
+                  </button>
+                </li>
+                {/* Page numbers */}
+                {Array.from({ length: Math.ceil(totalCount / pagination.pageSize) }, (_, i) => i + 1).map(page => (
+                  <li key={page} className={`page-item ${pagination.pageNumber === page ? 'active' : ''}`}>
+                    <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: page })}>{page}</button>
+                  </li>
+                ))}
+                <li className={`page-item ${pagination.pageNumber * pagination.pageSize >= totalCount ? 'disabled' : ''}`}>
+                  <button className="page-link" onClick={() => setPagination({ ...pagination, pageNumber: pagination.pageNumber + 1 })} disabled={pagination.pageNumber * pagination.pageSize >= totalCount}>
+                    Next
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          )}
+
+          {/* Company Modal */}
+          <AddCompanyModal
+            show={showModal}
+            onHide={() => setShowModal(false)}
+            onCompanySaved={handleCompanySaved}
+            company={selectedCompany}
+          />
+
+          {/* Delete Confirmation Modal */}
+          <GenericDeleteConfirmationModal
+            show={showDeleteModal}
+            onHide={() => setShowDeleteModal(false)}
+            onConfirm={handleConfirmDelete}
+            itemName={companyToDelete?.companyName || ''}
+            itemType="company"
+            loading={deleteLoading !== null}
+            warningMessage="This will soft delete the company. The company and its data will be preserved but hidden from normal views."
+          />
         </div>
       </div>
-
-      {/* Company Modal */}
-      <AddCompanyModal
-        show={showModal}
-        onHide={() => setShowModal(false)}
-        onCompanySaved={handleCompanySaved}
-        company={selectedCompany}
-      />
-
-      {/* Delete Confirmation Modal */}
-      <GenericDeleteConfirmationModal
-        show={showDeleteModal}
-        onHide={() => setShowDeleteModal(false)}
-        onConfirm={handleConfirmDelete}
-        itemName={companyToDelete?.companyName || ''}
-        itemType="company"
-        loading={deleteLoading !== null}
-        warningMessage="This will soft delete the company. The company and its data will be preserved but hidden from normal views."
-      />
     </div>
   );
 };

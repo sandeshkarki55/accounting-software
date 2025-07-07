@@ -10,10 +10,13 @@ namespace AccountingApi.Controllers;
 public class AccountsController(IMediator mediator) : BaseController
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<AccountDto>>> GetAccounts()
+    public async Task<ActionResult<PagedResult<AccountDto>>> GetAccounts([
+        FromQuery] PaginationParams pagination,
+        [FromQuery] SortingParams sorting,
+        [FromQuery] AccountFilteringParams filtering)
     {
-        var accounts = await mediator.Send(new GetAllAccountsQuery());
-        return Ok(accounts);
+        var result = await mediator.Send(new GetAllAccountsQuery(pagination, sorting, filtering));
+        return Ok(result);
     }
 
     [HttpGet("hierarchy")]

@@ -8,10 +8,13 @@ namespace AccountingApi.Controllers;
 public class CompanyInfoController(IMediator mediator) : BaseController
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<CompanyInfoDto>>> GetCompanyInfos()
+    public async Task<ActionResult<PagedResult<CompanyInfoDto>>> GetCompanyInfos(
+        [FromQuery] PaginationParams pagination,
+        [FromQuery] SortingParams sorting,
+        [FromQuery] CompanyInfoFilteringParams filtering)
     {
-        var companyInfos = await mediator.Send(new GetAllCompanyInfosQuery());
-        return Ok(companyInfos);
+        var result = await mediator.Send(new GetAllCompanyInfosQuery(pagination, sorting, filtering));
+        return Ok(result);
     }
 
     [HttpPost]

@@ -1,8 +1,24 @@
-import { Customer, CreateCustomerDto, UpdateCustomerDto } from '../types';
+import { Customer, CreateCustomerDto, UpdateCustomerDto, PaginationParams, SortingParams, CustomerFilteringParams, PagedResult } from '../types';
 import apiClient from './apiClient';
 
 export const customerService = {
-  // Get all customers
+  // Get all customers (paged)
+  getCustomersPaged: async (
+    pagination: PaginationParams,
+    sorting: SortingParams,
+    filtering: CustomerFilteringParams
+  ): Promise<PagedResult<Customer>> => {
+    const response = await apiClient.get<PagedResult<Customer>>('/customers', {
+      params: {
+        ...pagination,
+        ...sorting,
+        ...filtering,
+      },
+    });
+    return response.data;
+  },
+
+  // Get all customers (legacy, all at once)
   getCustomers: async (): Promise<Customer[]> => {
     const response = await apiClient.get<Customer[]>('/customers');
     return response.data;

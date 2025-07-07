@@ -1,3 +1,8 @@
+export interface InvoiceFilteringParams {
+  searchTerm?: string;
+  statusFilter?: 'all' | 'paid' | 'unpaid' | 'overdue' | 'draft' | 'cancelled';
+  // Add more invoice-specific filters as needed
+}
 // Invoice-related types
 export enum InvoiceStatus {
   Draft = 0,

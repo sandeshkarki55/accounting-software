@@ -1,24 +1,61 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
+using AccountingApi.Infrastructure.Extensions;
 using AccountingApi.Mappings;
+
+using MediatR;
+
+using Microsoft.EntityFrameworkCore;
 
 namespace AccountingApi.Features.Accounts;
 
-// Query to get all accounts
-public record GetAllAccountsQuery : IRequest<List<AccountDto>>;
+// Query to get all accounts with paging, sorting, filtering
+using AccountingApi.DTOs;
+public record GetAllAccountsQuery(
+    PaginationParams Pagination,
+    SortingParams Sorting,
+    AccountFilteringParams Filtering
+) : IRequest<PagedResult<AccountDto>>;
 
 // Handler for GetAllAccountsQuery
-public class GetAllAccountsQueryHandler(AccountingDbContext context, AccountMapper accountMapper) : IRequestHandler<GetAllAccountsQuery, List<AccountDto>>
+public class GetAllAccountsQueryHandler(AccountingDbContext context, AccountMapper accountMapper) : IRequestHandler<GetAllAccountsQuery, PagedResult<AccountDto>>
 {
-    public async Task<List<AccountDto>> Handle(GetAllAccountsQuery request, CancellationToken cancellationToken)
+    public async Task<PagedResult<AccountDto>> Handle(GetAllAccountsQuery request, CancellationToken cancellationToken)
     {
-        var accounts = await context.Accounts
-            .Include(a => a.ParentAccount)
-            .OrderBy(a => a.AccountCode)
-            .ToListAsync(cancellationToken);
+        var query = context.Accounts.Include(a => a.ParentAccount).AsQueryable();
 
-        return accountMapper.ToDto(accounts).ToList();
+        // Filtering
+        if (!string.IsNullOrWhiteSpace(request.Filtering.SearchTerm))
+        {
+            var term = request.Filtering.SearchTerm.ToLower();
+            query = query.Where(a => a.AccountName.ToLower().Contains(term) || a.AccountCode.ToLower().Contains(term));
+        }
+        if (request.Filtering.AccountType.HasValue)
+        {
+            query = query.Where(a => (int)a.AccountType == request.Filtering.AccountType.Value);
+        }
+        if (request.Filtering.IsActive.HasValue)
+        {
+            query = query.Where(a => a.IsActive == request.Filtering.IsActive.Value);
+        }
+
+        // Sorting
+        query = query.ApplySorting(request.Sorting);
+
+        // Total count before paging
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        // Paging
+        query = query.ApplyPagination(request.Pagination);
+
+        var accounts = await query.ToListAsync(cancellationToken);
+        var dtos = accountMapper.ToDto(accounts).ToList();
+
+        return new PagedResult<AccountDto>
+        {
+            Items = dtos,
+            TotalCount = totalCount,
+            PageNumber = request.Pagination.PageNumber,
+            PageSize = request.Pagination.PageSize
+        };
     }
 }

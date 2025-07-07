@@ -1,10 +1,21 @@
-import { Invoice, CreateInvoiceDto, MarkInvoiceAsPaidDto } from '../types';
+import { Invoice, CreateInvoiceDto, MarkInvoiceAsPaidDto, PaginationParams, SortingParams, PagedResult } from '../types/index';
+import { InvoiceFilteringParams } from '../types/invoices';
 import apiClient from './apiClient';
 
 export const invoiceService = {
-  // Get all invoices
-  getInvoices: async (): Promise<Invoice[]> => {
-    const response = await apiClient.get<Invoice[]>('/invoices');
+  // Get all invoices (paged)
+  getInvoices: async (
+    pagination: PaginationParams,
+    sorting: SortingParams,
+    filtering: InvoiceFilteringParams
+  ): Promise<PagedResult<Invoice>> => {
+    const response = await apiClient.get<PagedResult<Invoice>>('/invoices', {
+      params: {
+        ...pagination,
+        ...sorting,
+        ...filtering,
+      },
+    });
     return response.data;
   },
 

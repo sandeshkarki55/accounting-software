@@ -8,10 +8,13 @@ namespace AccountingApi.Controllers;
 public class InvoicesController(IMediator mediator) : BaseController
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<InvoiceDto>>> GetInvoices()
+    public async Task<ActionResult<PagedResult<InvoiceDto>>> GetInvoices([
+        FromQuery] PaginationParams pagination,
+        [FromQuery] SortingParams sorting,
+        [FromQuery] InvoiceFilteringParams filtering)
     {
-        var invoices = await mediator.Send(new GetAllInvoicesQuery());
-        return Ok(invoices);
+        var result = await mediator.Send(new GetAllInvoicesQuery(pagination, sorting, filtering));
+        return Ok(result);
     }
 
     [HttpGet("{id}")]

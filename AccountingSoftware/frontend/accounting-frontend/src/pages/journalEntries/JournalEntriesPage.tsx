@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { JournalEntry, JournalEntryLine, CreateJournalEntryDto, UpdateJournalEntryDto, Account, PaginationParams, SortingParams, FilteringParams, PagedResult } from '../../types/index';
+import { JournalEntry, JournalEntryLine, CreateJournalEntryDto, UpdateJournalEntryDto, Account, PaginationParams, SortingParams, JournalEntryFilteringParams, PagedResult } from '../../types/index';
 import { journalEntryService, accountService } from '../../services/api';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import usePagedData from '../../hooks/usePagedData'; // Import the reusable hook
@@ -23,7 +23,7 @@ const JournalEntriesPage: React.FC = () => {
     setFiltering, 
     totalCount, 
     // loadData // loadData is now managed by the hook's useEffect
-  } = usePagedData<JournalEntry, PaginationParams, SortingParams, FilteringParams>({
+  } = usePagedData<JournalEntry, PaginationParams, SortingParams, JournalEntryFilteringParams>({
     fetchData: journalEntryService.getJournalEntries,
     initialPagination: { pageNumber: 1, pageSize: 2 },
     initialSorting: { orderBy: 'transactionDate', descending: true },
