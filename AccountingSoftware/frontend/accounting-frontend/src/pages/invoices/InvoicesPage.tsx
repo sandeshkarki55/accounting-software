@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Invoice, InvoiceStatus, Customer, CompanyInfo, CreateInvoiceDto, MarkInvoiceAsPaidDto, PaginationParams, SortingParams } from '../../types/index';
 import Pagination from '../../components/common/Pagination';
+import SortableTableHeader, { SortableColumn } from '../../components/common/SortableTableHeader';
 import { InvoiceFilteringParams } from '../../types/invoices';
 import { invoiceService, customerService, companyInfoService } from '../../services/api';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -158,6 +159,17 @@ const InvoicesPage: React.FC = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  // Columns for SortableTableHeader
+  const columns: SortableColumn[] = [
+    { key: 'invoiceNumber', label: 'Invoice #', sortable: true },
+    { key: 'invoiceDate', label: 'Date', sortable: true },
+    { key: 'customer', label: 'Customer', sortable: false },
+    { key: 'company', label: 'Company', sortable: false },
+    { key: 'totalAmount', label: 'Total', sortable: true },
+    { key: 'status', label: 'Status', sortable: true },
+    { key: 'actions', label: 'Actions', sortable: false },
+  ];
+
   if (loading) return (
     <div className="d-flex justify-content-center align-items-center" style={{minHeight: '200px'}}>
       <div className="spinner-border text-primary" role="status">
@@ -243,32 +255,19 @@ const InvoicesPage: React.FC = () => {
             <div className="card-body p-0">
               <div className="table-responsive">
                 <table className="table table-hover mb-0">
-                  <thead className="table-dark">
-                    <tr>
-                      <th scope="col" style={{ cursor: 'pointer' }} onClick={() => handleSort('invoiceNumber')}>
-                        Invoice #
-                        {renderSortIcon('invoiceNumber')}
-                      </th>
-                      <th scope="col">Customer</th>
-                      <th scope="col" style={{ cursor: 'pointer' }} onClick={() => handleSort('invoiceDate')}>
-                        Date
-                        {renderSortIcon('invoiceDate')}
-                      </th>
-                      <th scope="col" style={{ cursor: 'pointer' }} onClick={() => handleSort('dueDate')}>
-                        Due Date
-                        {renderSortIcon('dueDate')}
-                      </th>
-                      <th scope="col" style={{ cursor: 'pointer' }} onClick={() => handleSort('totalAmount')}>
-                        Total
-                        {renderSortIcon('totalAmount')}
-                      </th>
-                      <th scope="col" style={{ cursor: 'pointer' }} onClick={() => handleSort('status')}>
-                        Status
-                        {renderSortIcon('status')}
-                      </th>
-                      <th scope="col">Actions</th>
-                    </tr>
-                  </thead>
+                  <SortableTableHeader
+                    columns={[
+                      { key: 'invoiceNumber', label: 'Invoice #', sortable: true },
+                      { key: 'customer', label: 'Customer', sortable: false },
+                      { key: 'invoiceDate', label: 'Date', sortable: true },
+                      { key: 'dueDate', label: 'Due Date', sortable: true },
+                      { key: 'totalAmount', label: 'Total', sortable: true },
+                      { key: 'status', label: 'Status', sortable: true },
+                      { key: 'actions', label: 'Actions', sortable: false },
+                    ]}
+                    sorting={{ orderBy: sorting.orderBy || '', descending: sorting.descending ?? false }}
+                    onSort={handleSort}
+                  />
                   <tbody>
                     {invoices.map((invoice) => (
                       <tr key={invoice.id}>

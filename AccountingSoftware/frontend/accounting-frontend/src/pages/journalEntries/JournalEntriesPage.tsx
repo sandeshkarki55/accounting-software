@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Pagination from '../../components/common/Pagination';
+import SortableTableHeader, { SortableColumn } from '../../components/common/SortableTableHeader';
 import { JournalEntry, JournalEntryLine, CreateJournalEntryDto, UpdateJournalEntryDto, Account, PaginationParams, SortingParams, JournalEntryFilteringParams, PagedResult } from '../../types/index';
 import { journalEntryService, accountService } from '../../services/api';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -224,43 +225,20 @@ const JournalEntriesPage: React.FC = () => {
             <div className="card-body p-0">
               <div className="table-responsive">
                 <table className="table table-hover mb-0">
-                  <thead className="table-dark">
-                    <tr>
-                      <th scope="col" style={{width: '50px'}}></th>
-                      <th scope="col" onClick={() => setSorting({ orderBy: 'entryNumber', descending: sorting.orderBy === 'entryNumber' ? !sorting.descending : false })} style={{ cursor: 'pointer' }}>
-                        Entry #
-                        {sorting.orderBy === 'entryNumber' && (
-                          <i className={`bi ms-1 bi-sort-${sorting.descending ? 'down' : 'up'}-alt`}></i>
-                        )}
-                      </th>
-                      <th scope="col" onClick={() => setSorting({ orderBy: 'transactionDate', descending: sorting.orderBy === 'transactionDate' ? !sorting.descending : false })} style={{ cursor: 'pointer' }}>
-                        Date
-                        {sorting.orderBy === 'transactionDate' && (
-                          <i className={`bi ms-1 bi-sort-${sorting.descending ? 'down' : 'up'}-alt`}></i>
-                        )}
-                      </th>
-                      <th scope="col" onClick={() => setSorting({ orderBy: 'description', descending: sorting.orderBy === 'description' ? !sorting.descending : false })} style={{ cursor: 'pointer' }}>
-                        Description
-                        {sorting.orderBy === 'description' && (
-                          <i className={`bi ms-1 bi-sort-${sorting.descending ? 'down' : 'up'}-alt`}></i>
-                        )}
-                      </th>
-                      <th scope="col" onClick={() => setSorting({ orderBy: 'reference', descending: sorting.orderBy === 'reference' ? !sorting.descending : false })} style={{ cursor: 'pointer' }}>
-                        Reference
-                        {sorting.orderBy === 'reference' && (
-                          <i className={`bi ms-1 bi-sort-${sorting.descending ? 'down' : 'up'}-alt`}></i>
-                        )}
-                      </th>
-                      <th scope="col" onClick={() => setSorting({ orderBy: 'totalAmount', descending: sorting.orderBy === 'totalAmount' ? !sorting.descending : false })} style={{ cursor: 'pointer' }}>
-                        Total
-                        {sorting.orderBy === 'totalAmount' && (
-                          <i className={`bi ms-1 bi-sort-${sorting.descending ? 'down' : 'up'}-alt`}></i>
-                        )}
-                      </th>
-                      <th scope="col">Status</th>
-                      <th scope="col">Actions</th>
-                    </tr>
-                  </thead>
+                  <SortableTableHeader
+                    columns={[
+                      { key: 'expander', label: '', sortable: false, style: { width: '50px' } },
+                      { key: 'entryNumber', label: 'Entry #', sortable: true },
+                      { key: 'transactionDate', label: 'Date', sortable: true },
+                      { key: 'description', label: 'Description', sortable: true },
+                      { key: 'reference', label: 'Reference', sortable: true },
+                      { key: 'totalAmount', label: 'Total', sortable: true },
+                      { key: 'status', label: 'Status', sortable: false },
+                      { key: 'actions', label: 'Actions', sortable: false },
+                    ]}
+                    sorting={{ orderBy: sorting.orderBy || '', descending: sorting.descending ?? false }}
+                    onSort={(column) => setSorting({ orderBy: column, descending: sorting.orderBy === column ? !sorting.descending : false })}
+                  />
                   <tbody>
                     {journalEntries.map((entry) => (
                       <React.Fragment key={entry.id}>

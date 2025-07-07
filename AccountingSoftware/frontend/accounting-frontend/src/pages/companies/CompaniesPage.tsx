@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import Pagination from '../../components/common/Pagination';
+import SortableTableHeader, { SortableColumn } from '../../components/common/SortableTableHeader';
 import { CompanyInfo, PaginationParams, SortingParams, CompanyInfoFilteringParams } from '../../types';
 import { companyInfoService } from '../../services/companyInfoService';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -89,13 +90,16 @@ const CompaniesPage: React.FC = () => {
   };
 
 
-  // Sorting icon helper
-  const renderSortIcon = (column: string) => {
-    if (sorting.orderBy !== column) return null;
-    return (
-      <i className={`bi ms-1 bi-sort-${sorting.descending ? 'down' : 'up'}-alt`}></i>
-    );
-  };
+  // Columns for SortableTableHeader
+  const columns: SortableColumn[] = [
+    { key: 'companyName', label: 'Company Name', sortable: true },
+    { key: 'legalName', label: 'Legal Name', sortable: true },
+    { key: 'email', label: 'Email', sortable: true },
+    { key: 'phone', label: 'Phone', sortable: true },
+    { key: 'currency', label: 'Currency', sortable: true },
+    { key: 'status', label: 'Status', sortable: false },
+    { key: 'actions', label: 'Actions', sortable: false },
+  ];
 
   // Sorting handler
   const handleSort = (column: string) => {
@@ -167,32 +171,11 @@ const CompaniesPage: React.FC = () => {
             <div className="card-body p-0">
               <div className="table-responsive">
                 <table className="table table-hover mb-0">
-                  <thead className="table-dark">
-                    <tr>
-                      <th style={{ cursor: 'pointer' }} onClick={() => handleSort('companyName')}>
-                        Company Name
-                        {renderSortIcon('companyName')}
-                      </th>
-                      <th style={{ cursor: 'pointer' }} onClick={() => handleSort('legalName')}>
-                        Legal Name
-                        {renderSortIcon('legalName')}
-                      </th>
-                      <th style={{ cursor: 'pointer' }} onClick={() => handleSort('email')}>
-                        Email
-                        {renderSortIcon('email')}
-                      </th>
-                      <th style={{ cursor: 'pointer' }} onClick={() => handleSort('phone')}>
-                        Phone
-                        {renderSortIcon('phone')}
-                      </th>
-                      <th style={{ cursor: 'pointer' }} onClick={() => handleSort('currency')}>
-                        Currency
-                        {renderSortIcon('currency')}
-                      </th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
+                  <SortableTableHeader
+                    columns={columns}
+                    sorting={{ orderBy: sorting.orderBy || '', descending: sorting.descending ?? false }}
+                    onSort={handleSort}
+                  />
                   <tbody>
                     {companies.length === 0 ? (
                       <tr>

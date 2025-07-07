@@ -8,6 +8,7 @@ import AccountModal from '../../components/modals/AccountModal';
 import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
 import ChartOfAccountsTree from '../../components/charts/ChartOfAccountsTree';
 import Pagination from '../../components/common/Pagination';
+import SortableTableHeader, { SortableColumn } from '../../components/common/SortableTableHeader';
 
 const AccountsPage: React.FC = () => {
   usePageTitle('Chart of Accounts');
@@ -119,13 +120,16 @@ const AccountsPage: React.FC = () => {
   };
 
 
-  // Sorting icon helper
-  const renderSortIcon = (column: string) => {
-    if (sorting.orderBy !== column) return null;
-    return (
-      <i className={`bi ms-1 bi-sort-${sorting.descending ? 'down' : 'up'}-alt`}></i>
-    );
-  };
+  // Columns for SortableTableHeader
+  const columns: SortableColumn[] = [
+    { key: 'accountCode', label: 'Account Code', sortable: true },
+    { key: 'accountName', label: 'Account Name', sortable: true },
+    { key: 'accountType', label: 'Type', sortable: true },
+    { key: 'parentAccountName', label: 'Parent Account', sortable: false },
+    { key: 'balance', label: 'Balance', sortable: true },
+    { key: 'isActive', label: 'Status', sortable: true },
+    { key: 'actions', label: 'Actions', sortable: false },
+  ];
 
   // Sorting handler
   const handleSort = (column: string) => {
@@ -274,35 +278,11 @@ const AccountsPage: React.FC = () => {
                   <div className="card-body p-0">
                     <div className="table-responsive">
                       <table className="table table-hover mb-0">
-                        <thead className="table-dark">
-                          <tr>
-                            <th style={{ cursor: 'pointer' }} onClick={() => handleSort('accountCode')}>
-                              Account Code
-                              {renderSortIcon('accountCode')}
-                            </th>
-                            <th style={{ cursor: 'pointer' }} onClick={() => handleSort('accountName')}>
-                              Account Name
-                              {renderSortIcon('accountName')}
-                            </th>
-                            <th style={{ cursor: 'pointer' }} onClick={() => handleSort('accountType')}>
-                              Type
-                              {renderSortIcon('accountType')}
-                            </th>
-                            <th style={{ cursor: 'pointer' }} onClick={() => handleSort('parentAccountName')}>
-                              Parent Account
-                              {renderSortIcon('parentAccountName')}
-                            </th>
-                            <th style={{ cursor: 'pointer' }} onClick={() => handleSort('balance')}>
-                              Balance
-                              {renderSortIcon('balance')}
-                            </th>
-                            <th style={{ cursor: 'pointer' }} onClick={() => handleSort('isActive')}>
-                              Status
-                              {renderSortIcon('isActive')}
-                            </th>
-                            <th>Actions</th>
-                          </tr>
-                        </thead>
+                        <SortableTableHeader
+                          columns={columns}
+                          sorting={{ orderBy: sorting.orderBy || '', descending: sorting.descending ?? false }}
+                          onSort={handleSort}
+                        />
                         <tbody>
                           {accounts.map((account) => (
                             <tr key={account.id}>
