@@ -4,7 +4,6 @@ import { Account, CreateAccountDto, UpdateAccountDto, AccountType } from '../../
 import BaseModal from './BaseModal';
 import { useFormState } from '../../hooks/useFormState';
 import { useValidation } from '../../hooks/useValidation';
-import './AccountModal.scss';
 
 interface AccountModalProps {
   show: boolean;
