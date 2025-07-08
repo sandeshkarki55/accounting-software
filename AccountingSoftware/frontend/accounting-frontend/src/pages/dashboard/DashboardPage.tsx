@@ -69,16 +69,17 @@ const DashboardPage: React.FC = () => {
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      const [invoicesPaged, customersData, accountsData] = await Promise.all([
+      const [invoicesPaged, customersPaged, accountsData] = await Promise.all([
         invoiceService.getInvoices({ pageNumber: 1, pageSize: 1000 }, { orderBy: 'invoiceDate', descending: true }, { searchTerm: '', statusFilter: 'all' }),
-        customerService.getCustomers(),
+        customerService.getCustomersPaged({ pageNumber: 1, pageSize: 1000 }, {}, {}),
         accountService.getAccounts()
       ]);
 
       const invoicesData = invoicesPaged.items;
+      const customersData = customersPaged.items || [];
       setInvoices(invoicesData);
       setCustomers(customersData);
-      setAccounts(accountsData);
+      setAccounts(Array.isArray(accountsData) ? accountsData : []);
       
       calculateStats(invoicesData, customersData);
       setError(null);
@@ -89,10 +90,6 @@ const DashboardPage: React.FC = () => {
       setLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
 
   const calculateStats = (invoicesData: Invoice[], customersData: Customer[]) => {
     const currentMonth = new Date().getMonth();
@@ -120,7 +117,6 @@ const DashboardPage: React.FC = () => {
       .reduce((sum, inv) => sum + inv.totalAmount, 0);
 
     const activeCustomers = customersData.filter(customer => customer.isActive).length;
-    
     const averageInvoiceValue = invoicesData.length > 0 
       ? invoicesData.reduce((sum, inv) => sum + inv.totalAmount, 0) / invoicesData.length 
       : 0;
@@ -158,6 +154,10 @@ const DashboardPage: React.FC = () => {
       previousMonthRevenue
     });
   };
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { 
@@ -277,7 +277,7 @@ const DashboardPage: React.FC = () => {
       });
 
     // Calculate expenses from expense accounts (AccountType.Expense = 4)
-    accounts
+    (Array.isArray(accounts) ? accounts : [])
       .filter(account => account.accountType === 4 && account.balance > 0) // Expense accounts with positive balance
       .forEach(account => {
         // For demo purposes, distribute the balance across the year
