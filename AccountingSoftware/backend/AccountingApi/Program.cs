@@ -147,6 +147,9 @@ builder.Services.AddHttpContextAccessor();
 // Add Current User Service for audit purposes
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
+// Add Dashboard Service
+builder.Services.AddScoped<AccountingApi.Features.Dashboard.IDashboardService, AccountingApi.Features.Dashboard.DashboardService>();
+
 // Add CORS for frontend development with Aspire support
 builder.Services.AddCors(options =>
 {

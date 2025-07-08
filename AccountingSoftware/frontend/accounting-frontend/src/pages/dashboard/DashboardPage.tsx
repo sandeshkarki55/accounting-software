@@ -13,10 +13,25 @@ import {
   Legend,
   Filler
 } from 'chart.js';
-import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
-import { Invoice, InvoiceStatus, Customer, Account } from '../../types';
-import { invoiceService, customerService, accountService } from '../../services/api';
+import { 
+  dashboardService, 
+  DashboardStats,
+  InvoiceStatusDistribution,
+  MonthlyRevenueTrend,
+  TopCustomers,
+  RevenueVsExpenses,
+  PaymentTrend,
+  AccountBalanceOverview
+} from '../../services/dashboardService';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import {
+  InvoiceStatusChart,
+  MonthlyRevenueChart,
+  TopCustomersChart,
+  RevenueVsExpensesChart,
+  PaymentTrendChart,
+  AccountBalanceChart
+} from './components';
 import './DashboardPage.scss';
 
 // Register Chart.js components
@@ -33,131 +48,169 @@ ChartJS.register(
   Filler
 );
 
-interface DashboardStats {
-  totalRevenue: number;
-  outstandingInvoices: number;
-  activeCustomers: number;
-  averageInvoiceValue: number;
-  overdueAmount: number;
-  totalInvoiceCount: number;
-  paidInvoicesCount: number;
-  monthlyRevenue: number;
-  previousMonthRevenue: number;
-}
-
 const DashboardPage: React.FC = () => {
   usePageTitle('Dashboard');
   const navigate = useNavigate();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalRevenue: 0,
-    outstandingInvoices: 0,
-    activeCustomers: 0,
-    averageInvoiceValue: 0,
-    overdueAmount: 0,
-    totalInvoiceCount: 0,
-    paidInvoicesCount: 0,
-    monthlyRevenue: 0,
-    previousMonthRevenue: 0
-  });
   
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // State for KPI stats
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
-  const loadDashboardData = useCallback(async () => {
+  // State for chart data
+  const [invoiceStatusData, setInvoiceStatusData] = useState<InvoiceStatusDistribution | null>(null);
+  const [invoiceStatusLoading, setInvoiceStatusLoading] = useState(true);
+  const [invoiceStatusError, setInvoiceStatusError] = useState<string | null>(null);
+
+  const [monthlyRevenueData, setMonthlyRevenueData] = useState<MonthlyRevenueTrend | null>(null);
+  const [monthlyRevenueLoading, setMonthlyRevenueLoading] = useState(true);
+  const [monthlyRevenueError, setMonthlyRevenueError] = useState<string | null>(null);
+
+  const [topCustomersData, setTopCustomersData] = useState<TopCustomers | null>(null);
+  const [topCustomersLoading, setTopCustomersLoading] = useState(true);
+  const [topCustomersError, setTopCustomersError] = useState<string | null>(null);
+
+  const [revenueVsExpensesData, setRevenueVsExpensesData] = useState<RevenueVsExpenses | null>(null);
+  const [revenueVsExpensesLoading, setRevenueVsExpensesLoading] = useState(true);
+  const [revenueVsExpensesError, setRevenueVsExpensesError] = useState<string | null>(null);
+
+  const [paymentTrendData, setPaymentTrendData] = useState<PaymentTrend | null>(null);
+  const [paymentTrendLoading, setPaymentTrendLoading] = useState(true);
+  const [paymentTrendError, setPaymentTrendError] = useState<string | null>(null);
+
+  const [accountBalanceData, setAccountBalanceData] = useState<AccountBalanceOverview | null>(null);
+  const [accountBalanceLoading, setAccountBalanceLoading] = useState(true);
+  const [accountBalanceError, setAccountBalanceError] = useState<string | null>(null);
+
+  // Load dashboard stats
+  const loadDashboardStats = useCallback(async () => {
     try {
-      setLoading(true);
-      const [invoicesPaged, customersPaged, accountsData] = await Promise.all([
-        invoiceService.getInvoices({ pageNumber: 1, pageSize: 1000 }, { orderBy: 'invoiceDate', descending: true }, { searchTerm: '', statusFilter: 'all' }),
-        customerService.getCustomersPaged({ pageNumber: 1, pageSize: 1000 }, {}, {}),
-        accountService.getAccounts()
-      ]);
-
-      const invoicesData = invoicesPaged.items;
-      const customersData = customersPaged.items || [];
-      setInvoices(invoicesData);
-      setCustomers(customersData);
-      setAccounts(Array.isArray(accountsData) ? accountsData : []);
-      
-      calculateStats(invoicesData, customersData);
-      setError(null);
+      setStatsLoading(true);
+      const data = await dashboardService.getDashboardStats();
+      setStats(data);
+      setStatsError(null);
     } catch (err) {
-      setError('Failed to load dashboard data');
-      console.error('Error loading dashboard data:', err);
+      setStatsError('Failed to load dashboard statistics');
+      console.error('Error loading dashboard stats:', err);
     } finally {
-      setLoading(false);
+      setStatsLoading(false);
     }
   }, []);
 
-  const calculateStats = (invoicesData: Invoice[], customersData: Customer[]) => {
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-    const previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-    const previousMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+  // Load invoice status distribution
+  const loadInvoiceStatusData = useCallback(async () => {
+    try {
+      setInvoiceStatusLoading(true);
+      const data = await dashboardService.getInvoiceStatusDistribution();
+      setInvoiceStatusData(data);
+      setInvoiceStatusError(null);
+    } catch (err) {
+      setInvoiceStatusError('Failed to load invoice status data');
+      console.error('Error loading invoice status data:', err);
+    } finally {
+      setInvoiceStatusLoading(false);
+    }
+  }, []);
 
-    // Calculate totals
-    const totalRevenue = invoicesData
-      .filter(inv => inv.status === InvoiceStatus.Paid)
-      .reduce((sum, inv) => sum + inv.totalAmount, 0);
+  // Load monthly revenue trend
+  const loadMonthlyRevenueData = useCallback(async () => {
+    try {
+      setMonthlyRevenueLoading(true);
+      const data = await dashboardService.getMonthlyRevenueTrend();
+      setMonthlyRevenueData(data);
+      setMonthlyRevenueError(null);
+    } catch (err) {
+      setMonthlyRevenueError('Failed to load monthly revenue data');
+      console.error('Error loading monthly revenue data:', err);
+    } finally {
+      setMonthlyRevenueLoading(false);
+    }
+  }, []);
 
-    const outstandingInvoices = invoicesData
-      .filter(inv => inv.status !== InvoiceStatus.Paid && inv.status !== InvoiceStatus.Cancelled)
-      .reduce((sum, inv) => sum + inv.totalAmount, 0);
+  // Load top customers data
+  const loadTopCustomersData = useCallback(async () => {
+    try {
+      setTopCustomersLoading(true);
+      const data = await dashboardService.getTopCustomers(5);
+      setTopCustomersData(data);
+      setTopCustomersError(null);
+    } catch (err) {
+      setTopCustomersError('Failed to load top customers data');
+      console.error('Error loading top customers data:', err);
+    } finally {
+      setTopCustomersLoading(false);
+    }
+  }, []);
 
-    const overdueAmount = invoicesData
-      .filter(inv => {
-        const dueDate = new Date(inv.dueDate);
-        const today = new Date();
-        return inv.status !== InvoiceStatus.Paid && 
-               inv.status !== InvoiceStatus.Cancelled && 
-               dueDate < today;
-      })
-      .reduce((sum, inv) => sum + inv.totalAmount, 0);
+  // Load revenue vs expenses data
+  const loadRevenueVsExpensesData = useCallback(async () => {
+    try {
+      setRevenueVsExpensesLoading(true);
+      const data = await dashboardService.getRevenueVsExpenses();
+      setRevenueVsExpensesData(data);
+      setRevenueVsExpensesError(null);
+    } catch (err) {
+      setRevenueVsExpensesError('Failed to load revenue vs expenses data');
+      console.error('Error loading revenue vs expenses data:', err);
+    } finally {
+      setRevenueVsExpensesLoading(false);
+    }
+  }, []);
 
-    const activeCustomers = customersData.filter(customer => customer.isActive).length;
-    const averageInvoiceValue = invoicesData.length > 0 
-      ? invoicesData.reduce((sum, inv) => sum + inv.totalAmount, 0) / invoicesData.length 
-      : 0;
+  // Load payment trend data
+  const loadPaymentTrendData = useCallback(async () => {
+    try {
+      setPaymentTrendLoading(true);
+      const data = await dashboardService.getPaymentTrend(6);
+      setPaymentTrendData(data);
+      setPaymentTrendError(null);
+    } catch (err) {
+      setPaymentTrendError('Failed to load payment trend data');
+      console.error('Error loading payment trend data:', err);
+    } finally {
+      setPaymentTrendLoading(false);
+    }
+  }, []);
 
-    // Monthly revenue calculations
-    const monthlyRevenue = invoicesData
-      .filter(inv => {
-        const invoiceDate = new Date(inv.invoiceDate);
-        return inv.status === InvoiceStatus.Paid &&
-               invoiceDate.getMonth() === currentMonth &&
-               invoiceDate.getFullYear() === currentYear;
-      })
-      .reduce((sum, inv) => sum + inv.totalAmount, 0);
+  // Load account balance data
+  const loadAccountBalanceData = useCallback(async () => {
+    try {
+      setAccountBalanceLoading(true);
+      const data = await dashboardService.getAccountBalanceOverview();
+      setAccountBalanceData(data);
+      setAccountBalanceError(null);
+    } catch (err) {
+      setAccountBalanceError('Failed to load account balance data');
+      console.error('Error loading account balance data:', err);
+    } finally {
+      setAccountBalanceLoading(false);
+    }
+  }, []);
 
-    const previousMonthRevenue = invoicesData
-      .filter(inv => {
-        const invoiceDate = new Date(inv.invoiceDate);
-        return inv.status === InvoiceStatus.Paid &&
-               invoiceDate.getMonth() === previousMonth &&
-               invoiceDate.getFullYear() === previousMonthYear;
-      })
-      .reduce((sum, inv) => sum + inv.totalAmount, 0);
-
-    const paidInvoicesCount = invoicesData.filter(inv => inv.status === InvoiceStatus.Paid).length;
-
-    setStats({
-      totalRevenue,
-      outstandingInvoices,
-      activeCustomers,
-      averageInvoiceValue,
-      overdueAmount,
-      totalInvoiceCount: invoicesData.length,
-      paidInvoicesCount,
-      monthlyRevenue,
-      previousMonthRevenue
-    });
-  };
+  // Load all dashboard data
+  const loadAllDashboardData = useCallback(async () => {
+    await Promise.all([
+      loadDashboardStats(),
+      loadInvoiceStatusData(),
+      loadMonthlyRevenueData(),
+      loadTopCustomersData(),
+      loadRevenueVsExpensesData(),
+      loadPaymentTrendData(),
+      loadAccountBalanceData()
+    ]);
+  }, [
+    loadDashboardStats,
+    loadInvoiceStatusData,
+    loadMonthlyRevenueData,
+    loadTopCustomersData,
+    loadRevenueVsExpensesData,
+    loadPaymentTrendData,
+    loadAccountBalanceData
+  ]);
 
   useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+    loadAllDashboardData();
+  }, [loadAllDashboardData]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { 
@@ -166,231 +219,28 @@ const DashboardPage: React.FC = () => {
     }).format(amount);
   };
 
-  const calculatePercentageChange = (current: number, previous: number) => {
-    if (previous === 0) return current > 0 ? 100 : 0;
-    return ((current - previous) / previous) * 100;
-  };
-
-  // Chart data preparation
-  const getInvoiceStatusData = () => {
-    const statusCounts = {
-      [InvoiceStatus.Draft]: 0,
-      [InvoiceStatus.Sent]: 0,
-      [InvoiceStatus.Paid]: 0,
-      [InvoiceStatus.Overdue]: 0,
-      [InvoiceStatus.Cancelled]: 0
-    };
-
-    invoices.forEach(invoice => {
-      statusCounts[invoice.status]++;
-    });
-
-    return {
-      labels: ['Draft', 'Sent', 'Paid', 'Overdue', 'Cancelled'],
-      datasets: [{
-        data: Object.values(statusCounts),
-        backgroundColor: [
-          '#6c757d', // Draft - gray
-          '#0d6efd', // Sent - blue  
-          '#198754', // Paid - green
-          '#dc3545', // Overdue - red
-          '#343a40'  // Cancelled - dark
-        ],
-        borderWidth: 0
-      }]
-    };
-  };
-
-  const getMonthlyRevenueData = () => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const currentYear = new Date().getFullYear();
-    const monthlyData = new Array(12).fill(0);
-
-    invoices
-      .filter(inv => inv.status === InvoiceStatus.Paid)
-      .forEach(invoice => {
-        const invoiceDate = new Date(invoice.invoiceDate);
-        if (invoiceDate.getFullYear() === currentYear) {
-          monthlyData[invoiceDate.getMonth()] += invoice.totalAmount;
-        }
-      });
-
-    return {
-      labels: months,
-      datasets: [{
-        label: 'Monthly Revenue',
-        data: monthlyData,
-        backgroundColor: 'rgba(13, 110, 253, 0.1)',
-        borderColor: '#0d6efd',
-        borderWidth: 2,
-        fill: true,
-        tension: 0.4
-      }]
-    };
-  };
-
-  const getTopCustomersData = () => {
-    const customerRevenue = new Map<string, number>();
-
-    invoices
-      .filter(inv => inv.status === InvoiceStatus.Paid)
-      .forEach(invoice => {
-        const current = customerRevenue.get(invoice.customerName) || 0;
-        customerRevenue.set(invoice.customerName, current + invoice.totalAmount);
-      });
-
-    const sortedCustomers = Array.from(customerRevenue.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
-
-    return {
-      labels: sortedCustomers.map(([name]) => name),
-      datasets: [{
-        label: 'Revenue',
-        data: sortedCustomers.map(([, revenue]) => revenue),
-        backgroundColor: [
-          '#198754',
-          '#0d6efd', 
-          '#ffc107',
-          '#fd7e14',
-          '#6f42c1'
-        ],
-        borderWidth: 0
-      }]
-    };
-  };
-
-  const getRevenueVsExpensesData = () => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const currentYear = new Date().getFullYear();
-    const revenueData = new Array(12).fill(0);
-    const expenseData = new Array(12).fill(0);
-
-    // Calculate revenue from paid invoices
-    invoices
-      .filter(inv => inv.status === InvoiceStatus.Paid)
-      .forEach(invoice => {
-        const invoiceDate = new Date(invoice.invoiceDate);
-        if (invoiceDate.getFullYear() === currentYear) {
-          revenueData[invoiceDate.getMonth()] += invoice.totalAmount;
-        }
-      });
-
-    // Calculate expenses from expense accounts (AccountType.Expense = 4)
-    (Array.isArray(accounts) ? accounts : [])
-      .filter(account => account.accountType === 4 && account.balance > 0) // Expense accounts with positive balance
-      .forEach(account => {
-        // For demo purposes, distribute the balance across the year
-        // In a real system, you'd have transaction dates to properly allocate
-        const monthlyExpense = account.balance / 12;
-        for (let i = 0; i < 12; i++) {
-          expenseData[i] += monthlyExpense;
-        }
-      });
-
-    return {
-      labels: months,
-      datasets: [
-        {
-          label: 'Revenue',
-          data: revenueData,
-          backgroundColor: 'rgba(25, 135, 84, 0.8)',
-          borderColor: '#198754',
-          borderWidth: 1
-        },
-        {
-          label: 'Expenses',
-          data: expenseData,
-          backgroundColor: 'rgba(220, 53, 69, 0.8)',
-          borderColor: '#dc3545',
-          borderWidth: 1
-        }
-      ]
-    };
-  };
-
-  const getPaymentTrendData = () => {
-    const last6Months = [];
-    const paymentData = [];
-    const currentDate = new Date();
-
-    // Generate last 6 months
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-      last6Months.push(date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
-      
-      // Calculate payments for this month
-      const monthPayments = invoices
-        .filter(inv => {
-          const invoiceDate = new Date(inv.invoiceDate);
-          return inv.status === InvoiceStatus.Paid &&
-                 invoiceDate.getMonth() === date.getMonth() &&
-                 invoiceDate.getFullYear() === date.getFullYear();
-        })
-        .reduce((sum, inv) => sum + inv.totalAmount, 0);
-      
-      paymentData.push(monthPayments);
-    }
-
-    return {
-      labels: last6Months,
-      datasets: [{
-        label: 'Payments Received',
-        data: paymentData,
-        backgroundColor: 'rgba(32, 201, 151, 0.1)',
-        borderColor: '#20c997',
-        borderWidth: 3,
-        fill: true,
-        tension: 0.4,
-        pointBackgroundColor: '#20c997',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointRadius: 6
-      }]
-    };
-  };
-
-  const getAccountBalanceData = () => {
-    const assetAccounts = accounts.filter(acc => acc.accountType === 0 && acc.isActive); // Assets
-    const liabilityAccounts = accounts.filter(acc => acc.accountType === 1 && acc.isActive); // Liabilities
-    
-    const totalAssets = assetAccounts.reduce((sum, acc) => sum + acc.balance, 0);
-    const totalLiabilities = liabilityAccounts.reduce((sum, acc) => sum + acc.balance, 0);
-    const equity = totalAssets - totalLiabilities;
-
-    return {
-      labels: ['Assets', 'Liabilities', 'Equity'],
-      datasets: [{
-        data: [totalAssets, totalLiabilities, equity],
-        backgroundColor: [
-          '#28a745', // Green for assets
-          '#dc3545', // Red for liabilities  
-          '#007bff'  // Blue for equity
-        ],
-        borderWidth: 0,
-        hoverOffset: 4
-      }]
-    };
-  };
-
-  if (loading) return (
-    <div className="d-flex justify-content-center align-items-center" style={{minHeight: '400px'}}>
-      <div className="spinner-border text-primary" role="status">
-        <span className="visually-hidden">Loading dashboard...</span>
+  // Show main loading if stats are still loading
+  if (statsLoading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{minHeight: '400px'}}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading dashboard...</span>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
-  if (error) return (
-    <div className="alert alert-danger" role="alert">
-      <strong>Error:</strong> {error}
-      <button className="btn btn-sm btn-outline-danger ms-2" onClick={loadDashboardData}>
-        Try Again
-      </button>
-    </div>
-  );
-
-  const revenueChange = calculatePercentageChange(stats.monthlyRevenue, stats.previousMonthRevenue);
+  // Show main error if stats failed to load
+  if (statsError || !stats) {
+    return (
+      <div className="alert alert-danger" role="alert">
+        <strong>Error:</strong> {statsError || 'Failed to load dashboard data'}
+        <button className="btn btn-sm btn-outline-danger ms-2" onClick={loadAllDashboardData}>
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-page">
@@ -418,9 +268,9 @@ const DashboardPage: React.FC = () => {
                     <div className="kpi-content">
                       <h6 className="kpi-title">Total Revenue</h6>
                       <h3 className="kpi-value">{formatCurrency(stats.totalRevenue)}</h3>
-                      <div className={`kpi-change ${revenueChange >= 0 ? 'positive' : 'negative'}`}>
-                        <i className={`bi bi-arrow-${revenueChange >= 0 ? 'up' : 'down'}`}></i>
-                        <span>{Math.abs(revenueChange).toFixed(1)}% from last month</span>
+                      <div className={`kpi-change ${stats.revenueChange >= 0 ? 'positive' : 'negative'}`}>
+                        <i className={`bi bi-arrow-${stats.revenueChange >= 0 ? 'up' : 'down'}`}></i>
+                        <span>{Math.abs(stats.revenueChange).toFixed(1)}% from last month</span>
                       </div>
                     </div>
                   </div>
@@ -440,7 +290,7 @@ const DashboardPage: React.FC = () => {
                       <h6 className="kpi-title">Outstanding Invoices</h6>
                       <h3 className="kpi-value">{formatCurrency(stats.outstandingInvoices)}</h3>
                       <div className="kpi-subtitle">
-                        {invoices.filter(i => i.status !== InvoiceStatus.Paid && i.status !== InvoiceStatus.Cancelled).length} invoices pending
+                        {stats.totalInvoiceCount - stats.paidInvoicesCount} invoices pending
                       </div>
                     </div>
                   </div>
@@ -460,7 +310,7 @@ const DashboardPage: React.FC = () => {
                       <h6 className="kpi-title">Active Customers</h6>
                       <h3 className="kpi-value">{stats.activeCustomers}</h3>
                       <div className="kpi-subtitle">
-                        {customers.length} total customers
+                        Active customers
                       </div>
                     </div>
                   </div>
@@ -522,11 +372,7 @@ const DashboardPage: React.FC = () => {
                     </div>
                     <div className="kpi-content">
                       <h6 className="kpi-title">Payment Rate</h6>
-                      <h3 className="kpi-value">
-                        {stats.totalInvoiceCount > 0 
-                          ? ((stats.paidInvoicesCount / stats.totalInvoiceCount) * 100).toFixed(1)
-                          : 0}%
-                      </h3>
+                      <h3 className="kpi-value">{stats.paymentRate.toFixed(1)}%</h3>
                       <div className="kpi-subtitle">
                         {stats.paidInvoicesCount} of {stats.totalInvoiceCount} paid
                       </div>
@@ -562,170 +408,56 @@ const DashboardPage: React.FC = () => {
             <div className="row g-4">
               {/* Invoice Status Distribution */}
               <div className="col-lg-6">
-                <div className="chart-card">
-                  <div className="chart-card-header">
-                    <h5 className="chart-title">
-                      <i className="bi bi-pie-chart me-2"></i>
-                      Invoice Status Distribution
-                    </h5>
-                  </div>
-                  <div className="chart-card-body">
-                    <Pie data={getInvoiceStatusData()} options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          position: 'bottom'
-                        }
-                      }
-                    }} />
-                  </div>
-                </div>
+                <InvoiceStatusChart 
+                  data={invoiceStatusData!} 
+                  loading={invoiceStatusLoading} 
+                  error={invoiceStatusError} 
+                />
               </div>
 
               {/* Monthly Revenue Trend */}
               <div className="col-lg-6">
-                <div className="chart-card">
-                  <div className="chart-card-header">
-                    <h5 className="chart-title">
-                      <i className="bi bi-graph-up me-2"></i>
-                      Monthly Revenue Trend
-                    </h5>
-                  </div>
-                  <div className="chart-card-body">
-                    <Line data={getMonthlyRevenueData()} options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          display: false
-                        }
-                      },
-                      scales: {
-                        y: {
-                          beginAtZero: true,
-                          ticks: {
-                            callback: function(value) {
-                              return '$' + Number(value).toLocaleString();
-                            }
-                          }
-                        }
-                      }
-                    }} />
-                  </div>
-                </div>
+                <MonthlyRevenueChart 
+                  data={monthlyRevenueData!} 
+                  loading={monthlyRevenueLoading} 
+                  error={monthlyRevenueError} 
+                />
               </div>
 
               {/* Top Customers by Revenue */}
               <div className="col-lg-6">
-                <div className="chart-card">
-                  <div className="chart-card-header">
-                    <h5 className="chart-title">
-                      <i className="bi bi-trophy me-2"></i>
-                      Top Customers by Revenue
-                    </h5>
-                  </div>
-                  <div className="chart-card-body">
-                    <Doughnut data={getTopCustomersData()} options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          position: 'bottom'
-                        }
-                      }
-                    }} />
-                  </div>
-                </div>
+                <TopCustomersChart 
+                  data={topCustomersData!} 
+                  loading={topCustomersLoading} 
+                  error={topCustomersError} 
+                />
               </div>
 
               {/* Revenue vs Expenses */}
               <div className="col-lg-6">
-                <div className="chart-card">
-                  <div className="chart-card-header">
-                    <h5 className="chart-title">
-                      <i className="bi bi-bar-chart me-2"></i>
-                      Revenue vs Expenses
-                    </h5>
-                  </div>
-                  <div className="chart-card-body">
-                    <Bar data={getRevenueVsExpensesData()} options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          position: 'top'
-                        }
-                      },
-                      scales: {
-                        y: {
-                          beginAtZero: true,
-                          ticks: {
-                            callback: function(value) {
-                              return '$' + Number(value).toLocaleString();
-                            }
-                          }
-                        }
-                      }
-                    }} />
-                  </div>
-                </div>
+                <RevenueVsExpensesChart 
+                  data={revenueVsExpensesData!} 
+                  loading={revenueVsExpensesLoading} 
+                  error={revenueVsExpensesError} 
+                />
               </div>
 
               {/* Payment Trend */}
               <div className="col-lg-6">
-                <div className="chart-card">
-                  <div className="chart-card-header">
-                    <h5 className="chart-title">
-                      <i className="bi bi-credit-card me-2"></i>
-                      Payment Trend (6 Months)
-                    </h5>
-                  </div>
-                  <div className="chart-card-body">
-                    <Line data={getPaymentTrendData()} options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          display: false
-                        }
-                      },
-                      scales: {
-                        y: {
-                          beginAtZero: true,
-                          ticks: {
-                            callback: function(value) {
-                              return '$' + Number(value).toLocaleString();
-                            }
-                          }
-                        }
-                      }
-                    }} />
-                  </div>
-                </div>
+                <PaymentTrendChart 
+                  data={paymentTrendData!} 
+                  loading={paymentTrendLoading} 
+                  error={paymentTrendError} 
+                />
               </div>
 
               {/* Account Balance Overview */}
               <div className="col-lg-6">
-                <div className="chart-card">
-                  <div className="chart-card-header">
-                    <h5 className="chart-title">
-                      <i className="bi bi-wallet2 me-2"></i>
-                      Financial Position
-                    </h5>
-                  </div>
-                  <div className="chart-card-body">
-                    <Pie data={getAccountBalanceData()} options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          position: 'bottom'
-                        }
-                      }
-                    }} />
-                  </div>
-                </div>
+                <AccountBalanceChart 
+                  data={accountBalanceData!} 
+                  loading={accountBalanceLoading} 
+                  error={accountBalanceError} 
+                />
               </div>
             </div>
 
@@ -771,7 +503,7 @@ const DashboardPage: React.FC = () => {
                       <div className="col-md-3">
                         <button 
                           className="btn btn-outline-warning w-100 quick-action-btn"
-                          onClick={() => window.location.reload()}
+                          onClick={loadAllDashboardData}
                         >
                           <i className="bi bi-arrow-clockwise me-2"></i>
                           Refresh Data
