@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using AccountingApi.DTOs.Authentication;
 using AccountingApi.Models;
-using AccountingApi.Services;
+using AccountingApi.Services.JwtService;
 using System.Security.Claims;
 
 namespace AccountingApi.Features.Authentication;

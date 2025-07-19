@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using AccountingApi.Models;
 
-namespace AccountingApi.Services;
+namespace AccountingApi.Services.JwtService;
 
 public interface IJwtService
 {

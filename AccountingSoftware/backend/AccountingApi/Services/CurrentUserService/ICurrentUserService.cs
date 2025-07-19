@@ -1,4 +1,4 @@
-namespace AccountingApi.Services;
+namespace AccountingApi.Services.CurrentUserService;
 
 /// <summary>
 /// Service to provide current user context information for audit purposes

@@ -1,6 +1,6 @@
 using System.Security.Claims;
 
-namespace AccountingApi.Services;
+namespace AccountingApi.Services.CurrentUserService;
 
 /// <summary>
 /// Implementation of ICurrentUserService that provides current user context from HTTP context

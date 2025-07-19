@@ -1,7 +1,8 @@
 using MyMediator;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
-using AccountingApi.Services;
+using AccountingApi.Services.NumberGenerationService;
+using AccountingApi.Services.CurrentUserService;
 using AccountingApi.Mappings;
 
 namespace AccountingApi.Features.Customers;

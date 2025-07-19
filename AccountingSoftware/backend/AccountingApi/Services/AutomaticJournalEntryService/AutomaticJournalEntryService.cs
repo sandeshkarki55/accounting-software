@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
+using AccountingApi.Services.AccountConfigurationService;
 
-namespace AccountingApi.Services;
+namespace AccountingApi.Services.AutomaticJournalEntryService;
 
 /// <summary>
 /// Service for automatically creating journal entries from business transactions

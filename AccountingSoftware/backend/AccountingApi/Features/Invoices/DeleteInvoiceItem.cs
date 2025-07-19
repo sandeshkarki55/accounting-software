@@ -2,7 +2,7 @@ using MyMediator;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
-using AccountingApi.Services;
+using AccountingApi.Services.CurrentUserService;
 
 namespace AccountingApi.Features.Invoices;
 

@@ -1,4 +1,4 @@
-namespace AccountingApi.Services;
+namespace AccountingApi.Services.NumberGenerationService;
 
 public interface INumberGenerationService
 {

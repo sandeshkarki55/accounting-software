@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
 
-namespace AccountingApi.Services;
+namespace AccountingApi.Services.AccountConfigurationService;
 
 /// <summary>
 /// Configuration options for account mappings

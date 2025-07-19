@@ -1,4 +1,4 @@
-namespace AccountingApi.Services;
+namespace AccountingApi.Services.AccountConfigurationService;
 
 /// <summary>
 /// Configuration service for mapping business transactions to chart of accounts

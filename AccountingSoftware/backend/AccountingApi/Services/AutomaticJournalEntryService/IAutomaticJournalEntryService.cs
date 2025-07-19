@@ -1,6 +1,6 @@
 using AccountingApi.Models;
 
-namespace AccountingApi.Services;
+namespace AccountingApi.Services.AutomaticJournalEntryService;
 
 /// <summary>
 /// Service for automatically creating journal entries from business transactions

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
-using AccountingApi.Services;
+using AccountingApi.Services.CurrentUserService;
 
 namespace AccountingApi.Features.Accounts;
 

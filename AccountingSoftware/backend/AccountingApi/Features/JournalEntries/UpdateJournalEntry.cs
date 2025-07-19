@@ -4,7 +4,7 @@ using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
 using AccountingApi.Mappings;
-using AccountingApi.Services;
+using AccountingApi.Services.CurrentUserService;
 
 namespace AccountingApi.Features.JournalEntries;
 

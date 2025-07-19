@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
 
-namespace AccountingApi.Services;
+namespace AccountingApi.Services.NumberGenerationService;
 
 public class NumberGenerationService(AccountingDbContext context) : INumberGenerationService
 {

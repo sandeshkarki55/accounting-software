@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Mappings;
-using AccountingApi.Services;
+using AccountingApi.Services.CurrentUserService;
 
 namespace AccountingApi.Features.Accounts;
 
