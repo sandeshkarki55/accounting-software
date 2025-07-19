@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
 using AccountingApi.DTOs.Dashboard;
-using AccountingApi.Features.Dashboard;
 
 namespace AccountingApi.Features.Dashboard
 {

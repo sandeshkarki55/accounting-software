@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using AccountingApi.Features.Dashboard;
 using AccountingApi.DTOs.Dashboard;
 using AccountingApi.Features.Dashboard.Handlers;
-using MediatR;
+using MyMediator;
 
 namespace AccountingApi.Controllers
 {
@@ -12,9 +11,9 @@ namespace AccountingApi.Controllers
     [Authorize]
     public class DashboardController : BaseController
     {
-        private readonly IMediator _mediator;
+        private readonly Mediator _mediator;
 
-        public DashboardController(IMediator mediator)
+        public DashboardController(Mediator mediator)
         {
             _mediator = mediator;
         }
@@ -25,7 +24,7 @@ namespace AccountingApi.Controllers
         [HttpGet("stats")]
         public async Task<ActionResult<DashboardStatsDto>> GetDashboardStats()
         {
-            var stats = await _mediator.Send(new GetDashboardStatsQuery());
+            var stats = await _mediator.Send<DashboardStatsDto>(new GetDashboardStatsQuery());
             return Ok(stats);
         }
 
@@ -35,7 +34,7 @@ namespace AccountingApi.Controllers
         [HttpGet("invoice-status-distribution")]
         public async Task<ActionResult<InvoiceStatusDistributionDto>> GetInvoiceStatusDistribution()
         {
-            var data = await _mediator.Send(new GetInvoiceStatusDistributionQuery());
+            var data = await _mediator.Send<InvoiceStatusDistributionDto>(new GetInvoiceStatusDistributionQuery());
             return Ok(data);
         }
 
@@ -45,7 +44,7 @@ namespace AccountingApi.Controllers
         [HttpGet("monthly-revenue-trend")]
         public async Task<ActionResult<MonthlyRevenueTrendDto>> GetMonthlyRevenueTrend()
         {
-            var data = await _mediator.Send(new GetMonthlyRevenueTrendQuery());
+            var data = await _mediator.Send<MonthlyRevenueTrendDto>(new GetMonthlyRevenueTrendQuery());
             return Ok(data);
         }
 
@@ -55,7 +54,7 @@ namespace AccountingApi.Controllers
         [HttpGet("top-customers")]
         public async Task<ActionResult<TopCustomersDto>> GetTopCustomers([FromQuery] int limit = 5)
         {
-            var data = await _mediator.Send(new GetTopCustomersQuery(limit));
+            var data = await _mediator.Send<TopCustomersDto>(new GetTopCustomersQuery(limit));
             return Ok(data);
         }
 
@@ -65,7 +64,7 @@ namespace AccountingApi.Controllers
         [HttpGet("revenue-vs-expenses")]
         public async Task<ActionResult<RevenueVsExpensesDto>> GetRevenueVsExpenses()
         {
-            var data = await _mediator.Send(new GetRevenueVsExpensesQuery());
+            var data = await _mediator.Send<RevenueVsExpensesDto>(new GetRevenueVsExpensesQuery());
             return Ok(data);
         }
 
@@ -75,7 +74,7 @@ namespace AccountingApi.Controllers
         [HttpGet("payment-trend")]
         public async Task<ActionResult<PaymentTrendDto>> GetPaymentTrend([FromQuery] int months = 6)
         {
-            var data = await _mediator.Send(new GetPaymentTrendQuery(months));
+            var data = await _mediator.Send<PaymentTrendDto>(new GetPaymentTrendQuery(months));
             return Ok(data);
         }
 
@@ -85,7 +84,7 @@ namespace AccountingApi.Controllers
         [HttpGet("account-balance-overview")]
         public async Task<ActionResult<AccountBalanceOverviewDto>> GetAccountBalanceOverview()
         {
-            var data = await _mediator.Send(new GetAccountBalanceOverviewQuery());
+            var data = await _mediator.Send<AccountBalanceOverviewDto>(new GetAccountBalanceOverviewQuery());
             return Ok(data);
         }
     }

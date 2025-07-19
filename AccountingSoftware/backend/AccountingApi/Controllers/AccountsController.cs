@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using MediatR;
 using AccountingApi.DTOs;
 using AccountingApi.Features.Accounts;
+using MyMediator;
 using AccountingApi.Constants;
 
 namespace AccountingApi.Controllers;
 
-public class AccountsController(IMediator mediator) : BaseController
+public class AccountsController(Mediator mediator) : BaseController
 {
     [HttpGet]
     public async Task<ActionResult<PagedResult<AccountDto>>> GetAccounts([
@@ -15,21 +15,21 @@ public class AccountsController(IMediator mediator) : BaseController
         [FromQuery] SortingParams sorting,
         [FromQuery] AccountFilteringParams filtering)
     {
-        var result = await mediator.Send(new GetAllAccountsQuery(pagination, sorting, filtering));
+    var result = await mediator.Send<PagedResult<AccountDto>>(new GetAllAccountsQuery(pagination, sorting, filtering));
         return Ok(result);
     }
 
     [HttpGet("hierarchy")]
     public async Task<ActionResult<IEnumerable<AccountDto>>> GetAccountsHierarchy()
     {
-        var accounts = await mediator.Send(new GetAccountsHierarchyQuery());
-        return Ok(accounts);
+    var accounts = await mediator.Send<List<AccountDto>>(new GetAccountsHierarchyQuery());
+    return Ok(accounts);
     }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<AccountDto>> GetAccount(int id)
     {
-        var account = await mediator.Send(new GetAccountByIdQuery(id));
+    var account = await mediator.Send<AccountDto?>(new GetAccountByIdQuery(id));
 
         if (account == null)
         {
@@ -45,7 +45,7 @@ public class AccountsController(IMediator mediator) : BaseController
     [HttpPost]
     public async Task<ActionResult<AccountDto>> CreateAccount(CreateAccountDto createAccountDto)
     {
-        var account = await mediator.Send(new CreateAccountCommand(createAccountDto));
+    var account = await mediator.Send<AccountDto>(new CreateAccountCommand(createAccountDto));
         return CreatedAtAction(nameof(GetAccount), new { id = account.Id }, account);
     }
 
@@ -56,7 +56,7 @@ public class AccountsController(IMediator mediator) : BaseController
     [Authorize(Roles = $"{Roles.Admin},{Roles.Manager}")]
     public async Task<IActionResult> UpdateAccount(int id, UpdateAccountDto updateAccountDto)
     {
-        var success = await mediator.Send(new UpdateAccountCommand(id, updateAccountDto));
+    var success = await mediator.Send<bool>(new UpdateAccountCommand(id, updateAccountDto));
 
         if (!success)
         {
@@ -69,7 +69,7 @@ public class AccountsController(IMediator mediator) : BaseController
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteAccount(int id)
     {
-        var success = await mediator.Send(new DeleteAccountCommand(id));
+    var success = await mediator.Send<bool>(new DeleteAccountCommand(id));
 
         if (!success)
         {

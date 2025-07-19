@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Text;
-using Microsoft.AspNetCore.Http;
 
 namespace AccountingApi.Middleware;
 

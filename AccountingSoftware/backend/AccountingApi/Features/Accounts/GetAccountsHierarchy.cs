@@ -1,4 +1,3 @@
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
@@ -6,6 +5,7 @@ using AccountingApi.Infrastructure;
 namespace AccountingApi.Features.Accounts;
 
 // Query for GetAccountsHierarchy
+using MyMediator;
 public record GetAccountsHierarchyQuery : IRequest<List<AccountDto>>;
 
 // Handler for GetAccountsHierarchyQuery

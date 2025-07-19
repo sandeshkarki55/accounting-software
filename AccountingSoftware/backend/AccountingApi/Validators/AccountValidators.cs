@@ -1,6 +1,5 @@
 using FluentValidation;
 using AccountingApi.DTOs;
-using AccountingApi.Models;
 
 namespace AccountingApi.Validators;
 

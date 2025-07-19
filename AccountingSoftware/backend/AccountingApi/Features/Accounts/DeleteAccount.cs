@@ -1,4 +1,3 @@
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
 using AccountingApi.Services;
@@ -6,6 +5,7 @@ using AccountingApi.Services;
 namespace AccountingApi.Features.Accounts;
 
 // Command to delete an account (soft delete)
+using MyMediator;
 public record DeleteAccountCommand(int Id) : IRequest<bool>;
 
 // Handler for DeleteAccountCommand

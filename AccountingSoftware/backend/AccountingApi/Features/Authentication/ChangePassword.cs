@@ -1,4 +1,3 @@
-using MediatR;
 using Microsoft.AspNetCore.Identity;
 using AccountingApi.DTOs.Authentication;
 using AccountingApi.Models;
@@ -6,6 +5,7 @@ using AccountingApi.Models;
 namespace AccountingApi.Features.Authentication;
 
 // Command to handle password change
+using MyMediator;
 public record ChangePasswordCommand(string UserId, ChangePasswordRequestDto ChangePasswordRequest) : IRequest<ApiResponseDto<string>>;
 
 // Handler for ChangePassword

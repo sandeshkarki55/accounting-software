@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using MediatR;
+using MyMediator;
 using AccountingApi.DTOs;
 using AccountingApi.Features.Customers;
 
 namespace AccountingApi.Controllers;
 
-public class CustomersController(IMediator mediator) : BaseController
+public class CustomersController(Mediator mediator) : BaseController
 {
     [HttpGet]
     public async Task<ActionResult<PagedResult<CustomerDto>>> GetCustomers([
@@ -13,14 +13,14 @@ public class CustomersController(IMediator mediator) : BaseController
         [FromQuery] SortingParams sorting,
         [FromQuery] CustomerFilteringParams filtering)
     {
-        var result = await mediator.Send(new GetAllCustomersQuery(pagination, sorting, filtering));
+    var result = await mediator.Send<PagedResult<CustomerDto>>(new GetAllCustomersQuery(pagination, sorting, filtering));
         return Ok(result);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<CustomerDto>> GetCustomer(int id)
     {
-        var customer = await mediator.Send(new GetCustomerByIdQuery(id));
+    var customer = await mediator.Send<CustomerDto?>(new GetCustomerByIdQuery(id));
         
         if (customer == null)
             return NotFound();
@@ -31,14 +31,14 @@ public class CustomersController(IMediator mediator) : BaseController
     [HttpPost]
     public async Task<ActionResult<CustomerDto>> CreateCustomer(CreateCustomerDto createCustomerDto)
     {
-        var customer = await mediator.Send(new CreateCustomerCommand(createCustomerDto));
+    var customer = await mediator.Send<CustomerDto>(new CreateCustomerCommand(createCustomerDto));
         return CreatedAtAction(nameof(GetCustomer), new { id = customer.Id }, customer);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateCustomer(int id, UpdateCustomerDto updateCustomerDto)
     {
-        var customer = await mediator.Send(new UpdateCustomerCommand(id, updateCustomerDto));
+    var customer = await mediator.Send<CustomerDto?>(new UpdateCustomerCommand(id, updateCustomerDto));
         
         if (customer == null)
             return NotFound();
@@ -49,7 +49,7 @@ public class CustomersController(IMediator mediator) : BaseController
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCustomer(int id)
     {
-        var success = await mediator.Send(new DeleteCustomerCommand(id));
+    var success = await mediator.Send<bool>(new DeleteCustomerCommand(id));
 
         if (!success)
         {

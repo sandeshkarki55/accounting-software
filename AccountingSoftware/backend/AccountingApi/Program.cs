@@ -10,16 +10,11 @@ using AccountingApi.Middleware;
 using AccountingApi.Mappings;
 using AccountingApi.Services;
 using AccountingApi.Models;
+using MyMediator;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using Microsoft.Extensions.ServiceDiscovery;
-using OpenTelemetry.Logs;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Trace;
-using OpenTelemetry.Resources;
 using Serilog;
 using Serilog.Enrichers.Span;
-using Serilog.Sinks.OpenTelemetry;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -118,7 +113,8 @@ builder.Services.AddAuthorization();
 // No need to manually add them again
 
 // Add MediatR - Register all handlers from the current assembly
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+// Add MyMediator and register all handlers
+builder.Services.AddMediator();
 
 // Add FluentValidation
 builder.Services.AddFluentValidationAutoValidation();

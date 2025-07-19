@@ -1,4 +1,3 @@
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
@@ -8,6 +7,7 @@ using AccountingApi.Services;
 namespace AccountingApi.Features.Accounts;
 
 // Command to update an existing account
+using MyMediator;
 public record UpdateAccountCommand(int Id, UpdateAccountDto Account) : IRequest<bool>;
 
 // Handler for UpdateAccountCommand

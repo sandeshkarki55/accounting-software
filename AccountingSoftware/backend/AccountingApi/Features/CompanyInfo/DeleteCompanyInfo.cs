@@ -1,4 +1,4 @@
-using MediatR;
+using MyMediator;
 using AccountingApi.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.Services;

@@ -2,7 +2,7 @@ using AccountingApi.Infrastructure;
 using AccountingApi.Infrastructure.Extensions;
 using AccountingApi.Mappings;
 
-using MediatR;
+using MyMediator;
 
 using Microsoft.EntityFrameworkCore;
 

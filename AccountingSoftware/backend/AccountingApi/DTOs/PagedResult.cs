@@ -1,7 +1,3 @@
-using System.Collections.Generic;
-using System.Linq; // Add this using directive
-using System;
-
 namespace AccountingApi.DTOs
 {
     public class PagedResult<T>

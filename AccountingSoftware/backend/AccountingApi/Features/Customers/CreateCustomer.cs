@@ -1,7 +1,6 @@
-using MediatR;
+using MyMediator;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
-using AccountingApi.Models;
 using AccountingApi.Services;
 using AccountingApi.Mappings;
 

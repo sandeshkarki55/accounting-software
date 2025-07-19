@@ -1,14 +1,13 @@
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
-using AccountingApi.Models;
 using AccountingApi.Mappings;
 using AccountingApi.Services;
 
 namespace AccountingApi.Features.Accounts;
 
 // Command to create a new account
+using MyMediator;
 public record CreateAccountCommand(CreateAccountDto Account) : IRequest<AccountDto>;
 
 // Handler for CreateAccountCommand

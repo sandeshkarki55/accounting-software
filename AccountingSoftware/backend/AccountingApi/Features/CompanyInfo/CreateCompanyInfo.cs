@@ -1,8 +1,7 @@
-using MediatR;
+using MyMediator;
 using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
-using AccountingApi.Models;
 using AccountingApi.Mappings;
 using AccountingApi.Services;
 

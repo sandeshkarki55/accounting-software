@@ -1,4 +1,3 @@
-using MediatR;
 using Microsoft.AspNetCore.Identity;
 using AccountingApi.DTOs.Authentication;
 using AccountingApi.Models;
@@ -6,6 +5,7 @@ using AccountingApi.Models;
 namespace AccountingApi.Features.Authentication;
 
 // Command to handle user profile update
+using MyMediator;
 public record UpdateUserProfileCommand(string UserId, UpdateUserProfileDto UpdateProfileRequest) : IRequest<ApiResponseDto<UserInfoDto>>;
 
 // Handler for UpdateUserProfileCommand

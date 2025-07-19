@@ -1,4 +1,3 @@
-using MediatR;
 using Microsoft.AspNetCore.Identity;
 using AccountingApi.DTOs.Authentication;
 using AccountingApi.Models;
@@ -7,6 +6,7 @@ using AccountingApi.Services;
 namespace AccountingApi.Features.Authentication;
 
 // Command to handle user login
+using MyMediator;
 public record LoginCommand(LoginRequestDto LoginRequest) : IRequest<ApiResponseDto<LoginResponseDto>>;
 
 // Handler for LoginCommand

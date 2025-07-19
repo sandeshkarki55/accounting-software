@@ -1,5 +1,3 @@
-using AccountingApi.Models;
-
 namespace AccountingApi.DTOs;
 
 // Customer DTOs

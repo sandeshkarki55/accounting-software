@@ -1,4 +1,3 @@
-using MediatR;
 using Microsoft.AspNetCore.Identity;
 using AccountingApi.DTOs.Authentication;
 using AccountingApi.Models;
@@ -6,6 +5,7 @@ using AccountingApi.Models;
 namespace AccountingApi.Features.Authentication;
 
 // Command to handle user registration
+using MyMediator;
 public record RegisterCommand(RegisterRequestDto RegisterRequest) : IRequest<ApiResponseDto<UserInfoDto>>;
 
 // Handler for RegisterCommand

@@ -1,24 +1,26 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MediatR;
 using AccountingApi.DTOs.Authentication;
 using AccountingApi.Features.Authentication;
 using System.Security.Claims;
 
 namespace AccountingApi.Controllers;
 
+using MyMediator;
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(IMediator mediator) : ControllerBase
+public class AuthController : ControllerBase
 {
-
-    /// <summary>
-    /// Authenticate user and return JWT tokens
+    private readonly Mediator _mediator;
+    public AuthController(Mediator mediator)
+    {
+        _mediator = mediator;
+    }
     /// </summary>
     [HttpPost("login")]
     public async Task<ActionResult<ApiResponseDto<LoginResponseDto>>> Login([FromBody] LoginRequestDto request)
     {
-        var result = await mediator.Send(new LoginCommand(request));
+        var result = await _mediator.Send<ApiResponseDto<LoginResponseDto>>(new LoginCommand(request));
         
         if (!result.Success)
         {
@@ -34,7 +36,7 @@ public class AuthController(IMediator mediator) : ControllerBase
     [HttpPost("register")]
     public async Task<ActionResult<ApiResponseDto<UserInfoDto>>> Register([FromBody] RegisterRequestDto request)
     {
-        var result = await mediator.Send(new RegisterCommand(request));
+        var result = await _mediator.Send<ApiResponseDto<UserInfoDto>>(new RegisterCommand(request));
         
         if (!result.Success)
         {
@@ -50,7 +52,7 @@ public class AuthController(IMediator mediator) : ControllerBase
     [HttpPost("refresh-token")]
     public async Task<ActionResult<ApiResponseDto<LoginResponseDto>>> RefreshToken([FromBody] RefreshTokenRequestDto request)
     {
-        var result = await mediator.Send(new RefreshTokenCommand(request));
+        var result = await _mediator.Send<ApiResponseDto<LoginResponseDto>>(new RefreshTokenCommand(request));
         
         if (!result.Success)
         {
@@ -78,7 +80,7 @@ public class AuthController(IMediator mediator) : ControllerBase
             });
         }
 
-        var result = await mediator.Send(new ChangePasswordCommand(userId, request));
+        var result = await _mediator.Send<ApiResponseDto<string>>(new ChangePasswordCommand(userId, request));
         
         if (!result.Success)
         {
@@ -106,7 +108,7 @@ public class AuthController(IMediator mediator) : ControllerBase
             });
         }
 
-        var result = await mediator.Send(new LogoutCommand(userId));
+        var result = await _mediator.Send<ApiResponseDto<string>>(new LogoutCommand(userId));
         
         if (!result.Success)
         {
@@ -134,7 +136,7 @@ public class AuthController(IMediator mediator) : ControllerBase
             });
         }
 
-        var result = await mediator.Send(new GetCurrentUserQuery(userId));
+        var result = await _mediator.Send<ApiResponseDto<UserInfoDto>>(new GetCurrentUserQuery(userId));
         
         if (!result.Success)
         {
@@ -162,7 +164,7 @@ public class AuthController(IMediator mediator) : ControllerBase
             });
         }
 
-        var result = await mediator.Send(new UpdateUserProfileCommand(userId, request));
+        var result = await _mediator.Send<ApiResponseDto<UserInfoDto>>(new UpdateUserProfileCommand(userId, request));
         
         if (!result.Success)
         {

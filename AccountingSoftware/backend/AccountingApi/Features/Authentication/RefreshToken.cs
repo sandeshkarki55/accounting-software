@@ -1,4 +1,3 @@
-using MediatR;
 using Microsoft.AspNetCore.Identity;
 using AccountingApi.DTOs.Authentication;
 using AccountingApi.Models;
@@ -8,6 +7,7 @@ using System.Security.Claims;
 namespace AccountingApi.Features.Authentication;
 
 // Command to handle token refresh
+using MyMediator;
 public record RefreshTokenCommand(RefreshTokenRequestDto RefreshTokenRequest) : IRequest<ApiResponseDto<LoginResponseDto>>;
 
 // Handler for RefreshToken

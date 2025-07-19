@@ -1,4 +1,3 @@
-using MediatR;
 using Microsoft.AspNetCore.Identity;
 using AccountingApi.DTOs.Authentication;
 using AccountingApi.Models;
@@ -6,6 +5,7 @@ using AccountingApi.Models;
 namespace AccountingApi.Features.Authentication;
 
 // Query to get current user information
+using MyMediator;
 public record GetCurrentUserQuery(string UserId) : IRequest<ApiResponseDto<UserInfoDto>>;
 
 // Handler for GetCurrentUser
