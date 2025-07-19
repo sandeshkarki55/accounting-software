@@ -5,7 +5,7 @@ using AccountingApi.Features.Customers;
 
 namespace AccountingApi.Controllers;
 
-public class CustomersController(Mediator mediator) : BaseController
+public class CustomersController(IMediator mediator) : BaseController
 {
     [HttpGet]
     public async Task<ActionResult<PagedResult<CustomerDto>>> GetCustomers([

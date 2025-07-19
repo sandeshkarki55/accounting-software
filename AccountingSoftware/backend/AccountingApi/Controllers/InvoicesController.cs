@@ -5,7 +5,7 @@ using AccountingApi.Features.Invoices;
 
 namespace AccountingApi.Controllers;
 
-public class InvoicesController(Mediator mediator) : BaseController
+public class InvoicesController(IMediator mediator) : BaseController
 {
     [HttpGet]
     public async Task<ActionResult<PagedResult<InvoiceDto>>> GetInvoices([

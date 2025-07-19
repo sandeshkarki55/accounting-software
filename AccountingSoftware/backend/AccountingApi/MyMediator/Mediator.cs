@@ -1,6 +1,6 @@
 namespace MyMediator
 {
-    public class Mediator
+public class Mediator : IMediator
     {
         private readonly IServiceProvider _serviceProvider;
 

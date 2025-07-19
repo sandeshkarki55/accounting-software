@@ -5,7 +5,7 @@ using AccountingApi.DTOs;
 
 namespace AccountingApi.Controllers;
 
-public class JournalEntriesController(Mediator mediator) : BaseController
+public class JournalEntriesController(IMediator mediator) : BaseController
 {
     [HttpGet]
     public async Task<ActionResult<PagedResult<JournalEntryDto>>> GetJournalEntries(

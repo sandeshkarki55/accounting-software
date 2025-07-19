@@ -7,7 +7,7 @@ using AccountingApi.Constants;
 
 namespace AccountingApi.Controllers;
 
-public class AccountsController(Mediator mediator) : BaseController
+public class AccountsController(IMediator mediator) : BaseController
 {
     [HttpGet]
     public async Task<ActionResult<PagedResult<AccountDto>>> GetAccounts([
@@ -22,7 +22,7 @@ public class AccountsController(Mediator mediator) : BaseController
     [HttpGet("hierarchy")]
     public async Task<ActionResult<IEnumerable<AccountDto>>> GetAccountsHierarchy()
     {
-    var accounts = await mediator.Send<List<AccountDto>>(new GetAccountsHierarchyQuery());
+    var accounts = await mediator.Send(new GetAccountsHierarchyQuery());
     return Ok(accounts);
     }
 

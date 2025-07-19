@@ -11,9 +11,9 @@ namespace AccountingApi.Controllers
     [Authorize]
     public class DashboardController : BaseController
     {
-        private readonly Mediator _mediator;
+        private readonly IMediator _mediator;
 
-        public DashboardController(Mediator mediator)
+        public DashboardController(IMediator mediator)
         {
             _mediator = mediator;
         }

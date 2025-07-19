@@ -11,8 +11,8 @@ using MyMediator;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly Mediator _mediator;
-    public AuthController(Mediator mediator)
+    private readonly IMediator _mediator;
+    public AuthController(IMediator mediator)
     {
         _mediator = mediator;
     }

@@ -4,7 +4,7 @@ namespace MyMediator
     {
         public static IServiceCollection AddMediator(this IServiceCollection services)
         {
-            services.AddScoped<Mediator>();
+            services.AddScoped<IMediator, Mediator>();
 
             var assembly = System.Reflection.Assembly.GetExecutingAssembly();
             var handlerTypes = assembly.GetTypes();
