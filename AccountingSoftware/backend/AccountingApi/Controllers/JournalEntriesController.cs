@@ -1,7 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
-using MyMediator;
-using AccountingApi.Features.JournalEntries;
 using AccountingApi.DTOs;
+using AccountingApi.Features.JournalEntries;
+
+using Microsoft.AspNetCore.Mvc;
+
+using MyMediator;
 
 namespace AccountingApi.Controllers;
 

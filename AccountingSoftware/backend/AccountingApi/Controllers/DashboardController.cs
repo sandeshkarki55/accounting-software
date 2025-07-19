@@ -1,7 +1,9 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using AccountingApi.DTOs.Dashboard;
 using AccountingApi.Features.Dashboard.Handlers;
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
 using MyMediator;
 
 namespace AccountingApi.Controllers

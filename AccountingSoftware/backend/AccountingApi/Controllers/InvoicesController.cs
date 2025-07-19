@@ -1,7 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
-using MyMediator;
 using AccountingApi.DTOs;
 using AccountingApi.Features.Invoices;
+
+using Microsoft.AspNetCore.Mvc;
+
+using MyMediator;
 
 namespace AccountingApi.Controllers;
 
@@ -21,7 +23,7 @@ public class InvoicesController(IMediator mediator) : BaseController
     public async Task<ActionResult<InvoiceDto>> GetInvoice(int id)
     {
         var invoice = await mediator.Send(new GetInvoiceByIdQuery(id));
-        
+
         if (invoice == null)
             return NotFound();
 
