@@ -13,14 +13,14 @@ public class InvoicesController(IMediator mediator) : BaseController
         [FromQuery] SortingParams sorting,
         [FromQuery] InvoiceFilteringParams filtering)
     {
-        var result = await mediator.Send<PagedResult<InvoiceDto>>(new GetAllInvoicesQuery(pagination, sorting, filtering));
+        var result = await mediator.Send(new GetAllInvoicesQuery(pagination, sorting, filtering));
         return Ok(result);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<InvoiceDto>> GetInvoice(int id)
     {
-        var invoice = await mediator.Send<InvoiceDto?>(new GetInvoiceByIdQuery(id));
+        var invoice = await mediator.Send(new GetInvoiceByIdQuery(id));
         
         if (invoice == null)
             return NotFound();
@@ -31,21 +31,21 @@ public class InvoicesController(IMediator mediator) : BaseController
     [HttpPost]
     public async Task<ActionResult<InvoiceDto>> CreateInvoice(CreateInvoiceDto createInvoiceDto)
     {
-        var invoice = await mediator.Send<InvoiceDto>(new CreateInvoiceCommand(createInvoiceDto));
+        var invoice = await mediator.Send(new CreateInvoiceCommand(createInvoiceDto));
         return CreatedAtAction(nameof(GetInvoice), new { id = invoice.Id }, invoice);
     }
 
     [HttpPost("{id}/mark-as-paid")]
     public async Task<ActionResult<InvoiceDto>> MarkInvoiceAsPaid(int id, MarkInvoiceAsPaidDto markAsPaidDto)
     {
-        var invoice = await mediator.Send<InvoiceDto>(new MarkInvoiceAsPaidCommand(id, markAsPaidDto.PaidDate, markAsPaidDto.PaymentReference));
+        var invoice = await mediator.Send(new MarkInvoiceAsPaidCommand(id, markAsPaidDto.PaidDate, markAsPaidDto.PaymentReference));
         return Ok(invoice);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteInvoice(int id)
     {
-        var success = await mediator.Send<bool>(new DeleteInvoiceCommand(id));
+        var success = await mediator.Send(new DeleteInvoiceCommand(id));
 
         if (!success)
         {
@@ -58,7 +58,7 @@ public class InvoicesController(IMediator mediator) : BaseController
     [HttpDelete("items/{id:int}")]
     public async Task<IActionResult> DeleteInvoiceItem(int id)
     {
-        var result = await mediator.Send<bool>(new DeleteInvoiceItemCommand(id));
+        var result = await mediator.Send(new DeleteInvoiceItemCommand(id));
         if (!result)
             return NotFound(new { message = "Invoice item not found." });
 
