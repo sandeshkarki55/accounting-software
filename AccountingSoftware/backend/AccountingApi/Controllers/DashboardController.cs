@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using AccountingApi.Features.Dashboard;
 using AccountingApi.DTOs.Dashboard;
+using AccountingApi.Features.Dashboard.Handlers;
+using MediatR;
 
 namespace AccountingApi.Controllers
 {
@@ -10,11 +12,11 @@ namespace AccountingApi.Controllers
     [Authorize]
     public class DashboardController : BaseController
     {
-        private readonly IDashboardService _dashboardService;
+        private readonly IMediator _mediator;
 
-        public DashboardController(IDashboardService dashboardService)
+        public DashboardController(IMediator mediator)
         {
-            _dashboardService = dashboardService;
+            _mediator = mediator;
         }
 
         /// <summary>
@@ -23,15 +25,8 @@ namespace AccountingApi.Controllers
         [HttpGet("stats")]
         public async Task<ActionResult<DashboardStatsDto>> GetDashboardStats()
         {
-            try
-            {
-                var stats = await _dashboardService.GetDashboardStatsAsync();
-                return Ok(stats);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = "Failed to retrieve dashboard statistics", error = ex.Message });
-            }
+            var stats = await _mediator.Send(new GetDashboardStatsQuery());
+            return Ok(stats);
         }
 
         /// <summary>
@@ -40,15 +35,8 @@ namespace AccountingApi.Controllers
         [HttpGet("invoice-status-distribution")]
         public async Task<ActionResult<InvoiceStatusDistributionDto>> GetInvoiceStatusDistribution()
         {
-            try
-            {
-                var data = await _dashboardService.GetInvoiceStatusDistributionAsync();
-                return Ok(data);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = "Failed to retrieve invoice status distribution", error = ex.Message });
-            }
+            var data = await _mediator.Send(new GetInvoiceStatusDistributionQuery());
+            return Ok(data);
         }
 
         /// <summary>
@@ -57,15 +45,8 @@ namespace AccountingApi.Controllers
         [HttpGet("monthly-revenue-trend")]
         public async Task<ActionResult<MonthlyRevenueTrendDto>> GetMonthlyRevenueTrend()
         {
-            try
-            {
-                var data = await _dashboardService.GetMonthlyRevenueTrendAsync();
-                return Ok(data);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = "Failed to retrieve monthly revenue trend", error = ex.Message });
-            }
+            var data = await _mediator.Send(new GetMonthlyRevenueTrendQuery());
+            return Ok(data);
         }
 
         /// <summary>
@@ -74,15 +55,8 @@ namespace AccountingApi.Controllers
         [HttpGet("top-customers")]
         public async Task<ActionResult<TopCustomersDto>> GetTopCustomers([FromQuery] int limit = 5)
         {
-            try
-            {
-                var data = await _dashboardService.GetTopCustomersAsync(limit);
-                return Ok(data);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = "Failed to retrieve top customers data", error = ex.Message });
-            }
+            var data = await _mediator.Send(new GetTopCustomersQuery(limit));
+            return Ok(data);
         }
 
         /// <summary>
@@ -91,15 +65,8 @@ namespace AccountingApi.Controllers
         [HttpGet("revenue-vs-expenses")]
         public async Task<ActionResult<RevenueVsExpensesDto>> GetRevenueVsExpenses()
         {
-            try
-            {
-                var data = await _dashboardService.GetRevenueVsExpensesAsync();
-                return Ok(data);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = "Failed to retrieve revenue vs expenses data", error = ex.Message });
-            }
+            var data = await _mediator.Send(new GetRevenueVsExpensesQuery());
+            return Ok(data);
         }
 
         /// <summary>
@@ -108,15 +75,8 @@ namespace AccountingApi.Controllers
         [HttpGet("payment-trend")]
         public async Task<ActionResult<PaymentTrendDto>> GetPaymentTrend([FromQuery] int months = 6)
         {
-            try
-            {
-                var data = await _dashboardService.GetPaymentTrendAsync(months);
-                return Ok(data);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = "Failed to retrieve payment trend data", error = ex.Message });
-            }
+            var data = await _mediator.Send(new GetPaymentTrendQuery(months));
+            return Ok(data);
         }
 
         /// <summary>
@@ -125,15 +85,8 @@ namespace AccountingApi.Controllers
         [HttpGet("account-balance-overview")]
         public async Task<ActionResult<AccountBalanceOverviewDto>> GetAccountBalanceOverview()
         {
-            try
-            {
-                var data = await _dashboardService.GetAccountBalanceOverviewAsync();
-                return Ok(data);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = "Failed to retrieve account balance overview", error = ex.Message });
-            }
+            var data = await _mediator.Send(new GetAccountBalanceOverviewQuery());
+            return Ok(data);
         }
     }
 }
