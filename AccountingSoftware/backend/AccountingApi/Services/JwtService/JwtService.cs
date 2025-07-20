@@ -2,22 +2,13 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
+
 using AccountingApi.Models;
 
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+
 namespace AccountingApi.Services.JwtService;
-
-public interface IJwtService
-{
-    Task<string> GenerateAccessTokenAsync(ApplicationUser user);
-
-    string GenerateRefreshToken();
-
-    ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
-
-    Task<bool> SaveRefreshTokenAsync(ApplicationUser user, string refreshToken);
-}
 
 public class JwtService(
     IConfiguration configuration,
