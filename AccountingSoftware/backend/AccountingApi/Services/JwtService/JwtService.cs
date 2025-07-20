@@ -11,8 +11,11 @@ namespace AccountingApi.Services.JwtService;
 public interface IJwtService
 {
     Task<string> GenerateAccessTokenAsync(ApplicationUser user);
+
     string GenerateRefreshToken();
+
     ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
+
     Task<bool> SaveRefreshTokenAsync(ApplicationUser user, string refreshToken);
 }
 
@@ -87,12 +90,12 @@ public class JwtService(
         };
 
         var tokenHandler = new JwtSecurityTokenHandler();
-        
+
         try
         {
             var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
-            
-            if (securityToken is not JwtSecurityToken jwtSecurityToken || 
+
+            if (securityToken is not JwtSecurityToken jwtSecurityToken ||
                 !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
             {
                 return null;

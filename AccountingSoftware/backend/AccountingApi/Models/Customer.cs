@@ -15,7 +15,7 @@ public class Customer : BaseEntity
     public string Country { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
     public string Notes { get; set; } = string.Empty;
-    
+
     // Navigation property for invoices
     public ICollection<Invoice> Invoices { get; set; } = [];
 }

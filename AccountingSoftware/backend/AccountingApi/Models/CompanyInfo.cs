@@ -21,7 +21,7 @@ public class CompanyInfo : BaseEntity
     public string BankRoutingNumber { get; set; } = string.Empty;
     public string Currency { get; set; } = "USD";
     public bool IsDefault { get; set; } = false;
-    
+
     // Navigation property for invoices that use this company info
     public ICollection<Invoice> Invoices { get; set; } = [];
 }

@@ -1,5 +1,6 @@
-using Microsoft.AspNetCore.Identity;
 using AccountingApi.Models;
+
+using Microsoft.AspNetCore.Identity;
 
 namespace AccountingApi.Infrastructure.Seeds;
 

@@ -1,7 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
 using AccountingApi.Services.AccountConfigurationService;
+
+using Microsoft.EntityFrameworkCore;
 
 namespace AccountingApi.Services.AutomaticJournalEntryService;
 
@@ -21,22 +22,22 @@ public class AutomaticJournalEntryService(
     {
         // Get the required accounts using configuration
         var accountsReceivableAccount = await GetAccountByCodeAsync(
-            accountConfig.GetAccountsReceivableCode(), 
-            "Accounts Receivable", 
-            AccountType.Asset, 
+            accountConfig.GetAccountsReceivableCode(),
+            "Accounts Receivable",
+            AccountType.Asset,
             cancellationToken);
-        
+
         var revenueAccount = await GetAccountByCodeAsync(
-            accountConfig.GetRevenueAccountCode(), 
-            "Revenue", 
-            AccountType.Revenue, 
+            accountConfig.GetRevenueAccountCode(),
+            "Revenue",
+            AccountType.Revenue,
             cancellationToken);
-        
-        var salesTaxPayableAccount = invoice.TaxAmount > 0 
+
+        var salesTaxPayableAccount = invoice.TaxAmount > 0
             ? await GetAccountByCodeAsync(
-                accountConfig.GetSalesTaxPayableCode(), 
-                "Sales Tax Payable", 
-                AccountType.Liability, 
+                accountConfig.GetSalesTaxPayableCode(),
+                "Sales Tax Payable",
+                AccountType.Liability,
                 cancellationToken)
             : null;
 
@@ -123,15 +124,15 @@ public class AutomaticJournalEntryService(
     {
         // Get the required accounts using configuration
         var cashAccount = await GetAccountByCodeAsync(
-            accountConfig.GetCashAccountCode(), 
-            "Cash", 
-            AccountType.Asset, 
+            accountConfig.GetCashAccountCode(),
+            "Cash",
+            AccountType.Asset,
             cancellationToken);
-        
+
         var accountsReceivableAccount = await GetAccountByCodeAsync(
-            accountConfig.GetAccountsReceivableCode(), 
-            "Accounts Receivable", 
-            AccountType.Asset, 
+            accountConfig.GetAccountsReceivableCode(),
+            "Accounts Receivable",
+            AccountType.Asset,
             cancellationToken);
 
         // Generate journal entry number
@@ -287,7 +288,7 @@ public class AutomaticJournalEntryService(
     {
         var today = DateTime.UtcNow;
         var prefix = $"JE{today:yyyyMM}";
-        
+
         // Use IgnoreQueryFilters to include soft-deleted entries when determining the next number
         // This ensures we don't reuse numbers even if entries are soft-deleted
         var lastEntry = await context.JournalEntries
@@ -351,5 +352,5 @@ public class AutomaticJournalEntryService(
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    #endregion
+    #endregion Private Helper Methods
 }

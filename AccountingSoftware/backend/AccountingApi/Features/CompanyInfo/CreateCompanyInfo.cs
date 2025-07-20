@@ -1,9 +1,11 @@
-using MyMediator;
-using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Mappings;
 using AccountingApi.Services.CurrentUserService;
+
+using Microsoft.EntityFrameworkCore;
+
+using MyMediator;
 
 namespace AccountingApi.Features.CompanyInfo;
 
@@ -16,7 +18,7 @@ public class CreateCompanyInfoCommandHandler(AccountingDbContext context, Compan
     public async Task<CompanyInfoDto> Handle(CreateCompanyInfoCommand request, CancellationToken cancellationToken)
     {
         var currentUser = currentUserService.GetCurrentUserForAudit();
-        
+
         // If this is being set as default, unset all other defaults
         if (request.CompanyInfo.IsDefault)
         {

@@ -1,16 +1,20 @@
-using MyMediator;
-using AccountingApi.Infrastructure;
 using AccountingApi.DTOs.Dashboard;
+using AccountingApi.Infrastructure;
 using AccountingApi.Models;
+
 using Microsoft.EntityFrameworkCore;
+
+using MyMediator;
 
 namespace AccountingApi.Features.Dashboard.Handlers
 {
-    public class GetDashboardStatsQuery : IRequest<DashboardStatsDto> { }
+    public class GetDashboardStatsQuery : IRequest<DashboardStatsDto>
+    { }
 
     public class GetDashboardStatsHandler : IRequestHandler<GetDashboardStatsQuery, DashboardStatsDto>
     {
         private readonly AccountingDbContext _context;
+
         public GetDashboardStatsHandler(AccountingDbContext context) => _context = context;
 
         public async Task<DashboardStatsDto> Handle(GetDashboardStatsQuery request, CancellationToken cancellationToken)

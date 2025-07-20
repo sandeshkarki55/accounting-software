@@ -1,12 +1,14 @@
-using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Mappings;
+
+using Microsoft.EntityFrameworkCore;
 
 namespace AccountingApi.Features.Accounts;
 
 // Query to get account by ID
 using MyMediator;
+
 public record GetAccountByIdQuery(int Id) : IRequest<AccountDto?>;
 
 // Handler for GetAccountByIdQuery

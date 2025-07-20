@@ -1,16 +1,20 @@
-using MyMediator;
-using AccountingApi.Infrastructure;
 using AccountingApi.DTOs.Dashboard;
+using AccountingApi.Infrastructure;
 using AccountingApi.Models;
+
 using Microsoft.EntityFrameworkCore;
+
+using MyMediator;
 
 namespace AccountingApi.Features.Dashboard.Handlers
 {
-    public class GetAccountBalanceOverviewQuery : IRequest<AccountBalanceOverviewDto> { }
+    public class GetAccountBalanceOverviewQuery : IRequest<AccountBalanceOverviewDto>
+    { }
 
     public class GetAccountBalanceOverviewHandler : IRequestHandler<GetAccountBalanceOverviewQuery, AccountBalanceOverviewDto>
     {
         private readonly AccountingDbContext _context;
+
         public GetAccountBalanceOverviewHandler(AccountingDbContext context) => _context = context;
 
         public async Task<AccountBalanceOverviewDto> Handle(GetAccountBalanceOverviewQuery request, CancellationToken cancellationToken)

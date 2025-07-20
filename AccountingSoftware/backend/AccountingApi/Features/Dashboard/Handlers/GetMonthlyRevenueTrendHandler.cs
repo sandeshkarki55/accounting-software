@@ -1,16 +1,20 @@
-using MyMediator;
-using AccountingApi.Infrastructure;
 using AccountingApi.DTOs.Dashboard;
+using AccountingApi.Infrastructure;
 using AccountingApi.Models;
+
 using Microsoft.EntityFrameworkCore;
+
+using MyMediator;
 
 namespace AccountingApi.Features.Dashboard.Handlers
 {
-    public class GetMonthlyRevenueTrendQuery : IRequest<MonthlyRevenueTrendDto> { }
+    public class GetMonthlyRevenueTrendQuery : IRequest<MonthlyRevenueTrendDto>
+    { }
 
     public class GetMonthlyRevenueTrendHandler : IRequestHandler<GetMonthlyRevenueTrendQuery, MonthlyRevenueTrendDto>
     {
         private readonly AccountingDbContext _context;
+
         public GetMonthlyRevenueTrendHandler(AccountingDbContext context) => _context = context;
 
         public async Task<MonthlyRevenueTrendDto> Handle(GetMonthlyRevenueTrendQuery request, CancellationToken cancellationToken)

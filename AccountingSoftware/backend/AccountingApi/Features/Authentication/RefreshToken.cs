@@ -8,6 +8,7 @@ namespace AccountingApi.Features.Authentication;
 
 // Command to handle token refresh
 using MyMediator;
+
 public record RefreshTokenCommand(RefreshTokenRequestDto RefreshTokenRequest) : IRequest<ApiResponseDto<LoginResponseDto>>;
 
 // Handler for RefreshToken
@@ -54,7 +55,7 @@ public class RefreshTokenHandler(
         // Generate new tokens
         var newAccessToken = await jwtService.GenerateAccessTokenAsync(user);
         var newRefreshToken = jwtService.GenerateRefreshToken();
-        
+
         // Save new refresh token
         await jwtService.SaveRefreshTokenAsync(user, newRefreshToken);
 

@@ -6,11 +6,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AccountingApi.Features.Dashboard.Handlers
 {
-    public class GetInvoiceStatusDistributionQuery : IRequest<InvoiceStatusDistributionDto> { }
+    public class GetInvoiceStatusDistributionQuery : IRequest<InvoiceStatusDistributionDto>
+    { }
 
     public class GetInvoiceStatusDistributionHandler : IRequestHandler<GetInvoiceStatusDistributionQuery, InvoiceStatusDistributionDto>
     {
         private readonly AccountingDbContext _context;
+
         public GetInvoiceStatusDistributionHandler(AccountingDbContext context) => _context = context;
 
         public async Task<InvoiceStatusDistributionDto> Handle(GetInvoiceStatusDistributionQuery request, CancellationToken cancellationToken)

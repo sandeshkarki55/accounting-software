@@ -1,5 +1,5 @@
-using AccountingApi.Models;
 using AccountingApi.DTOs;
+using AccountingApi.Models;
 
 namespace AccountingApi.Mappings;
 
@@ -84,13 +84,13 @@ public class AccountMapper : IEntityMapper<Account, AccountDto, CreateAccountDto
     {
         int level = 0;
         var current = account.ParentAccount;
-        
+
         while (current != null)
         {
             level++;
             current = current.ParentAccount;
         }
-        
+
         return level;
     }
 }

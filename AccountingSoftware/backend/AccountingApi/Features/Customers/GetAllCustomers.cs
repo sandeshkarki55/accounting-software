@@ -2,14 +2,15 @@ using AccountingApi.Infrastructure;
 using AccountingApi.Infrastructure.Extensions;
 using AccountingApi.Mappings;
 
-using MyMediator;
-
 using Microsoft.EntityFrameworkCore;
+
+using MyMediator;
 
 namespace AccountingApi.Features.Customers;
 
 // Query to get all customers with paging, sorting, filtering
 using AccountingApi.DTOs;
+
 public record GetAllCustomersQuery(
     PaginationParams Pagination,
     SortingParams Sorting,

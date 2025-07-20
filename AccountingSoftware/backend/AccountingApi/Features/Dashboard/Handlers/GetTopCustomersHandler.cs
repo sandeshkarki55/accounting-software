@@ -1,20 +1,24 @@
-using MyMediator;
-using AccountingApi.Infrastructure;
 using AccountingApi.DTOs.Dashboard;
+using AccountingApi.Infrastructure;
 using AccountingApi.Models;
+
 using Microsoft.EntityFrameworkCore;
+
+using MyMediator;
 
 namespace AccountingApi.Features.Dashboard.Handlers
 {
     public class GetTopCustomersQuery : IRequest<TopCustomersDto>
     {
         public int Limit { get; set; }
+
         public GetTopCustomersQuery(int limit) => Limit = limit;
     }
 
     public class GetTopCustomersHandler : IRequestHandler<GetTopCustomersQuery, TopCustomersDto>
     {
         private readonly AccountingDbContext _context;
+
         public GetTopCustomersHandler(AccountingDbContext context) => _context = context;
 
         public async Task<TopCustomersDto> Handle(GetTopCustomersQuery request, CancellationToken cancellationToken)

@@ -160,7 +160,7 @@ builder.Services.AddCors(options =>
             policy.SetIsOriginAllowed(origin =>
             {
                 if (string.IsNullOrWhiteSpace(origin)) return false;
-                
+
                 var uri = new Uri(origin);
                 // Allow localhost with any port for development
                 return uri.Host == "localhost" || uri.Host == "127.0.0.1";
@@ -172,7 +172,7 @@ builder.Services.AddCors(options =>
         else
         {
             // Production: Use specific origins from configuration
-            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() 
+            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
                 ?? new[] { "https://yourdomain.com" };
             policy.WithOrigins(allowedOrigins)
                   .AllowAnyHeader()
@@ -199,14 +199,14 @@ using (var scope = app.Services.CreateScope())
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    
+
     try
     {
         logger.LogInformation("Applying database migrations...");
-        
+
         // Ensure the database is created and apply all pending migrations
         await context.Database.MigrateAsync();
-        
+
         logger.LogInformation("Database migrations applied successfully.");
 
         // Seed roles and default admin user
@@ -222,14 +222,14 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         logger.LogError(ex, "An error occurred while applying database migrations or seeding data.");
-        
+
         // In development, we might want to continue anyway
         // In production, you might want to fail fast
         if (!app.Environment.IsDevelopment())
         {
             throw;
         }
-        
+
         logger.LogWarning("Continuing startup despite migration errors in development environment.");
     }
 }
@@ -257,6 +257,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
 
 app.Run();

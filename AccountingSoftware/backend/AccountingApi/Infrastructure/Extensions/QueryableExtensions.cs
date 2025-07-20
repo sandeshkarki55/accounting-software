@@ -1,6 +1,6 @@
-using AccountingApi.DTOs;
-
 using System.Linq.Expressions;
+
+using AccountingApi.DTOs;
 
 namespace AccountingApi.Infrastructure.Extensions
 {

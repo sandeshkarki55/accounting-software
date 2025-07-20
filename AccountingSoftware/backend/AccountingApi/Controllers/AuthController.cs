@@ -1,27 +1,32 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+
 using AccountingApi.DTOs.Authentication;
 using AccountingApi.Features.Authentication;
-using System.Security.Claims;
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AccountingApi.Controllers;
 
 using MyMediator;
+
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
+
     public AuthController(IMediator mediator)
     {
         _mediator = mediator;
     }
+
     /// </summary>
     [HttpPost("login")]
     public async Task<ActionResult<ApiResponseDto<LoginResponseDto>>> Login([FromBody] LoginRequestDto request)
     {
         var result = await _mediator.Send(new LoginCommand(request));
-        
+
         if (!result.Success)
         {
             return BadRequest(result);
@@ -37,7 +42,7 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<ApiResponseDto<UserInfoDto>>> Register([FromBody] RegisterRequestDto request)
     {
         var result = await _mediator.Send(new RegisterCommand(request));
-        
+
         if (!result.Success)
         {
             return BadRequest(result);
@@ -53,7 +58,7 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<ApiResponseDto<LoginResponseDto>>> RefreshToken([FromBody] RefreshTokenRequestDto request)
     {
         var result = await _mediator.Send(new RefreshTokenCommand(request));
-        
+
         if (!result.Success)
         {
             return BadRequest(result);
@@ -81,7 +86,7 @@ public class AuthController : ControllerBase
         }
 
         var result = await _mediator.Send(new ChangePasswordCommand(userId, request));
-        
+
         if (!result.Success)
         {
             return BadRequest(result);
@@ -109,7 +114,7 @@ public class AuthController : ControllerBase
         }
 
         var result = await _mediator.Send(new LogoutCommand(userId));
-        
+
         if (!result.Success)
         {
             return BadRequest(result);
@@ -137,7 +142,7 @@ public class AuthController : ControllerBase
         }
 
         var result = await _mediator.Send(new GetCurrentUserQuery(userId));
-        
+
         if (!result.Success)
         {
             return BadRequest(result);
@@ -165,7 +170,7 @@ public class AuthController : ControllerBase
         }
 
         var result = await _mediator.Send(new UpdateUserProfileCommand(userId, request));
-        
+
         if (!result.Success)
         {
             return BadRequest(result);

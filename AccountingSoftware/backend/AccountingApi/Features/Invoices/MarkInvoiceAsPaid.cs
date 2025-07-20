@@ -1,10 +1,12 @@
-using MyMediator;
-using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
 using AccountingApi.Services.AutomaticJournalEntryService;
 using AccountingApi.Services.CurrentUserService;
+
+using Microsoft.EntityFrameworkCore;
+
+using MyMediator;
 
 namespace AccountingApi.Features.Invoices;
 

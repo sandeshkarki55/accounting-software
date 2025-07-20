@@ -1,11 +1,13 @@
-using Microsoft.AspNetCore.Identity;
 using AccountingApi.DTOs.Authentication;
 using AccountingApi.Models;
+
+using Microsoft.AspNetCore.Identity;
 
 namespace AccountingApi.Features.Authentication;
 
 // Command to handle user registration
 using MyMediator;
+
 public record RegisterCommand(RegisterRequestDto RegisterRequest) : IRequest<ApiResponseDto<UserInfoDto>>;
 
 // Handler for RegisterCommand
@@ -39,7 +41,7 @@ public class RegisterHandler(
         };
 
         var result = await userManager.CreateAsync(user, request.RegisterRequest.Password);
-        
+
         if (!result.Succeeded)
         {
             return new ApiResponseDto<UserInfoDto>

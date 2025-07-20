@@ -1,16 +1,20 @@
-using MyMediator;
-using AccountingApi.Infrastructure;
 using AccountingApi.DTOs.Dashboard;
+using AccountingApi.Infrastructure;
 using AccountingApi.Models;
+
 using Microsoft.EntityFrameworkCore;
+
+using MyMediator;
 
 namespace AccountingApi.Features.Dashboard.Handlers
 {
-    public class GetRevenueVsExpensesQuery : IRequest<RevenueVsExpensesDto> { }
+    public class GetRevenueVsExpensesQuery : IRequest<RevenueVsExpensesDto>
+    { }
 
     public class GetRevenueVsExpensesHandler : IRequestHandler<GetRevenueVsExpensesQuery, RevenueVsExpensesDto>
     {
         private readonly AccountingDbContext _context;
+
         public GetRevenueVsExpensesHandler(AccountingDbContext context) => _context = context;
 
         public async Task<RevenueVsExpensesDto> Handle(GetRevenueVsExpensesQuery request, CancellationToken cancellationToken)

@@ -1,8 +1,10 @@
-using MyMediator;
-using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
 using AccountingApi.Services.CurrentUserService;
+
+using Microsoft.EntityFrameworkCore;
+
+using MyMediator;
 
 namespace AccountingApi.Features.JournalEntries;
 
@@ -32,7 +34,7 @@ public class PostJournalEntryCommandHandler(AccountingDbContext context, ICurren
         // Validate that the entry is balanced
         var totalDebits = journalEntry.Lines.Sum(l => l.DebitAmount);
         var totalCredits = journalEntry.Lines.Sum(l => l.CreditAmount);
-        
+
         if (Math.Abs(totalDebits - totalCredits) > 0.01m)
         {
             throw new InvalidOperationException($"Cannot post unbalanced journal entry. Debits: {totalDebits:C}, Credits: {totalCredits:C}");
@@ -41,7 +43,7 @@ public class PostJournalEntryCommandHandler(AccountingDbContext context, ICurren
         // Validate that all lines have either debit or credit (not both, not neither)
         foreach (var line in journalEntry.Lines)
         {
-            if ((line.DebitAmount > 0 && line.CreditAmount > 0) || 
+            if ((line.DebitAmount > 0 && line.CreditAmount > 0) ||
                 (line.DebitAmount == 0 && line.CreditAmount == 0))
             {
                 throw new InvalidOperationException("Cannot post journal entry with invalid line amounts.");

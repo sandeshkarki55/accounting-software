@@ -1,7 +1,9 @@
-using MyMediator;
-using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
 using AccountingApi.Services.CurrentUserService;
+
+using Microsoft.EntityFrameworkCore;
+
+using MyMediator;
 
 namespace AccountingApi.Features.JournalEntries;
 
@@ -28,8 +30,8 @@ public class DeleteJournalEntryLineCommandHandler(AccountingDbContext context, I
 
         // Business rule: Must maintain balanced journal entry
         var remainingLines = await context.JournalEntryLines
-            .Where(jel => jel.JournalEntryId == journalEntryLine.JournalEntryId && 
-                         jel.Id != request.Id && 
+            .Where(jel => jel.JournalEntryId == journalEntryLine.JournalEntryId &&
+                         jel.Id != request.Id &&
                          !jel.IsDeleted)
             .ToListAsync(cancellationToken);
 
@@ -41,7 +43,7 @@ public class DeleteJournalEntryLineCommandHandler(AccountingDbContext context, I
         // Check if remaining lines would still be balanced after this deletion
         var remainingDebits = remainingLines.Sum(l => l.DebitAmount);
         var remainingCredits = remainingLines.Sum(l => l.CreditAmount);
-        
+
         if (remainingDebits != remainingCredits)
         {
             throw new InvalidOperationException("Cannot delete this journal entry line as it would leave the journal entry unbalanced. The sum of debits must equal the sum of credits.");

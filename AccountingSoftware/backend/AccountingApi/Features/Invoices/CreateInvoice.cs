@@ -1,11 +1,13 @@
-using MyMediator;
-using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
-using AccountingApi.Services.NumberGenerationService;
 using AccountingApi.Services.AutomaticJournalEntryService;
 using AccountingApi.Services.CurrentUserService;
+using AccountingApi.Services.NumberGenerationService;
+
+using Microsoft.EntityFrameworkCore;
+
+using MyMediator;
 
 namespace AccountingApi.Features.Invoices;
 
@@ -14,7 +16,7 @@ public record CreateInvoiceCommand(CreateInvoiceDto Invoice) : IRequest<InvoiceD
 
 // Handler for CreateInvoiceCommand
 public class CreateInvoiceCommandHandler(
-    AccountingDbContext context, 
+    AccountingDbContext context,
     INumberGenerationService numberGenerationService,
     IAutomaticJournalEntryService automaticJournalEntryService,
     ICurrentUserService currentUserService) : IRequestHandler<CreateInvoiceCommand, InvoiceDto>

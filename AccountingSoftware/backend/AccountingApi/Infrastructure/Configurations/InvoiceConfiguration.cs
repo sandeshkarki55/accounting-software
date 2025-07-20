@@ -1,6 +1,7 @@
+using AccountingApi.Models;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using AccountingApi.Models;
 
 namespace AccountingApi.Infrastructure.Configurations;
 

@@ -1,5 +1,5 @@
-using AccountingApi.Models;
 using AccountingApi.DTOs;
+using AccountingApi.Models;
 
 namespace AccountingApi.Mappings;
 
@@ -8,7 +8,6 @@ namespace AccountingApi.Mappings;
 /// </summary>
 public class InvoiceMapper(InvoiceItemMapper itemMapper) : IEntityMapper<Invoice, InvoiceDto, CreateInvoiceDto, UpdateInvoiceDto>
 {
-
     /// <summary>
     /// Maps an Invoice entity to InvoiceDto
     /// </summary>
@@ -78,7 +77,7 @@ public class InvoiceMapper(InvoiceItemMapper itemMapper) : IEntityMapper<Invoice
 
         // Map the items
         invoice.Items = createDto.Items?.Select(itemDto => itemMapper.ToEntity(itemDto, invoice.Id)).ToList() ?? [];
-        
+
         // Calculate amounts
         CalculateInvoiceAmounts(invoice);
 
@@ -109,7 +108,7 @@ public class InvoiceMapper(InvoiceItemMapper itemMapper) : IEntityMapper<Invoice
         // Update items - this is a simplified approach, in practice you might want more sophisticated item management
         entity.Items.Clear();
         entity.Items = updateDto.Items?.Select(itemDto => itemMapper.ToEntityFromUpdate(itemDto, entity.Id)).ToList() ?? [];
-        
+
         // Recalculate amounts
         CalculateInvoiceAmounts(entity);
     }

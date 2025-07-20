@@ -1,12 +1,14 @@
-using Microsoft.AspNetCore.Identity;
 using AccountingApi.DTOs.Authentication;
 using AccountingApi.Models;
 using AccountingApi.Services.JwtService;
+
+using Microsoft.AspNetCore.Identity;
 
 namespace AccountingApi.Features.Authentication;
 
 // Command to handle user login
 using MyMediator;
+
 public record LoginCommand(LoginRequestDto LoginRequest) : IRequest<ApiResponseDto<LoginResponseDto>>;
 
 // Handler for LoginCommand
@@ -40,11 +42,11 @@ public class LoginHandler(
         }
 
         var result = await signInManager.CheckPasswordSignInAsync(user, request.LoginRequest.Password, lockoutOnFailure: true);
-        
+
         if (!result.Succeeded)
         {
             var errors = new List<string>();
-            
+
             if (result.IsLockedOut)
                 errors.Add("Account is locked out. Please try again later.");
             else if (result.IsNotAllowed)
@@ -63,7 +65,7 @@ public class LoginHandler(
         // Generate tokens
         var accessToken = await jwtService.GenerateAccessTokenAsync(user);
         var refreshToken = jwtService.GenerateRefreshToken();
-        
+
         // Save refresh token
         await jwtService.SaveRefreshTokenAsync(user, refreshToken);
 

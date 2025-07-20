@@ -1,7 +1,9 @@
-using MyMediator;
 using AccountingApi.Infrastructure;
-using Microsoft.EntityFrameworkCore;
 using AccountingApi.Services.CurrentUserService;
+
+using Microsoft.EntityFrameworkCore;
+
+using MyMediator;
 
 namespace AccountingApi.Features.CompanyInfo;
 

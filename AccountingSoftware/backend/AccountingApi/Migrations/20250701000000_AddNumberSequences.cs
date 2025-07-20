@@ -12,7 +12,7 @@ namespace AccountingApi.Migrations
         {
             // Create sequence for invoice numbers
             migrationBuilder.Sql("CREATE SEQUENCE InvoiceSequence START WITH 1 INCREMENT BY 1");
-            
+
             // Create sequence for customer codes
             migrationBuilder.Sql("CREATE SEQUENCE CustomerSequence START WITH 1 INCREMENT BY 1");
         }

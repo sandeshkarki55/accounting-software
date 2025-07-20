@@ -32,16 +32,19 @@ public class GlobalExceptionHandlingMiddleware(RequestDelegate next, ILogger<Glo
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 break;
+
             case ArgumentException:
                 response.Message = exception.Message;
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 break;
+
             case KeyNotFoundException:
                 response.Message = "Resource not found";
                 response.StatusCode = (int)HttpStatusCode.NotFound;
                 context.Response.StatusCode = (int)HttpStatusCode.NotFound;
                 break;
+
             default:
                 response.Message = "An internal server error occurred";
                 response.StatusCode = (int)HttpStatusCode.InternalServerError;

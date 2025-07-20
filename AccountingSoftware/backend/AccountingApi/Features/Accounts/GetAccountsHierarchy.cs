@@ -1,11 +1,13 @@
-using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
+
+using Microsoft.EntityFrameworkCore;
 
 namespace AccountingApi.Features.Accounts;
 
 // Query for GetAccountsHierarchy
 using MyMediator;
+
 public record GetAccountsHierarchyQuery : IRequest<List<AccountDto>>;
 
 // Handler for GetAccountsHierarchyQuery
@@ -36,7 +38,7 @@ public class GetAccountsHierarchyQueryHandler(AccountingDbContext context) : IRe
 
         // Build hierarchy and calculate levels
         var result = BuildHierarchy(accountDtos);
-        
+
         // Flatten the hierarchy for tabular display with proper indentation levels
         return FlattenHierarchy(result);
     }
@@ -71,7 +73,7 @@ public class GetAccountsHierarchyQueryHandler(AccountingDbContext context) : IRe
         {
             account.Level = level;
             result.Add(account);
-            
+
             // Recursively add sub-accounts
             if (account.SubAccounts.Any())
             {

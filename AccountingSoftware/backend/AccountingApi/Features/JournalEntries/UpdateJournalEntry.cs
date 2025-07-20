@@ -1,10 +1,12 @@
-using MyMediator;
-using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
-using AccountingApi.Models;
 using AccountingApi.Mappings;
+using AccountingApi.Models;
 using AccountingApi.Services.CurrentUserService;
+
+using Microsoft.EntityFrameworkCore;
+
+using MyMediator;
 
 namespace AccountingApi.Features.JournalEntries;
 
@@ -13,7 +15,7 @@ public record UpdateJournalEntryCommand(int Id, UpdateJournalEntryDto JournalEnt
 
 // Handler for UpdateJournalEntryCommand
 public class UpdateJournalEntryCommandHandler(
-    AccountingDbContext context, 
+    AccountingDbContext context,
     JournalEntryMapper journalEntryMapper,
     ICurrentUserService currentUserService) : IRequestHandler<UpdateJournalEntryCommand, JournalEntryDto>
 {
@@ -38,7 +40,7 @@ public class UpdateJournalEntryCommandHandler(
         // Validate that debits equal credits
         var totalDebits = request.JournalEntry.Lines.Sum(l => l.DebitAmount);
         var totalCredits = request.JournalEntry.Lines.Sum(l => l.CreditAmount);
-        
+
         if (Math.Abs(totalDebits - totalCredits) > 0.01m) // Allow for small rounding differences
         {
             throw new InvalidOperationException($"Journal entry is not balanced. Debits: {totalDebits:C}, Credits: {totalCredits:C}");
@@ -47,7 +49,7 @@ public class UpdateJournalEntryCommandHandler(
         // Validate that all lines have either debit or credit (not both, not neither)
         foreach (var line in request.JournalEntry.Lines)
         {
-            if ((line.DebitAmount > 0 && line.CreditAmount > 0) || 
+            if ((line.DebitAmount > 0 && line.CreditAmount > 0) ||
                 (line.DebitAmount == 0 && line.CreditAmount == 0))
             {
                 throw new InvalidOperationException("Each journal entry line must have either a debit amount or credit amount (but not both or neither).");

@@ -36,8 +36,8 @@ namespace AccountingApi.Features.Dashboard
 
             // Calculate overdue amount
             var overdueAmount = invoices
-                .Where(i => i.Status != InvoiceStatus.Paid && 
-                           i.Status != InvoiceStatus.Cancelled && 
+                .Where(i => i.Status != InvoiceStatus.Paid &&
+                           i.Status != InvoiceStatus.Cancelled &&
                            i.DueDate < DateTime.Now)
                 .Sum(i => i.TotalAmount);
 

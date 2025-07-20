@@ -1,5 +1,5 @@
-using AccountingApi.Models;
 using AccountingApi.DTOs;
+using AccountingApi.Models;
 
 namespace AccountingApi.Mappings;
 

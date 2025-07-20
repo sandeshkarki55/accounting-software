@@ -1,5 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using AccountingApi.Models;
+
+using Microsoft.EntityFrameworkCore;
 
 namespace AccountingApi.Infrastructure.Seeds;
 

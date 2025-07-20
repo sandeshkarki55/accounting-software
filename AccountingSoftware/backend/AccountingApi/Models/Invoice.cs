@@ -21,7 +21,7 @@ public class Invoice : BaseEntity
     public string Terms { get; set; } = string.Empty;
     public DateTime? PaidDate { get; set; }
     public string? PaymentReference { get; set; }
-    
+
     // Navigation property for invoice items
     public ICollection<InvoiceItem> Items { get; set; } = [];
 }

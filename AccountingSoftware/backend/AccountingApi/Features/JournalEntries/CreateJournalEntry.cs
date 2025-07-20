@@ -1,10 +1,12 @@
-using MyMediator;
-using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
-using AccountingApi.Models;
 using AccountingApi.Mappings;
+using AccountingApi.Models;
 using AccountingApi.Services.CurrentUserService;
+
+using Microsoft.EntityFrameworkCore;
+
+using MyMediator;
 
 namespace AccountingApi.Features.JournalEntries;
 
@@ -13,7 +15,7 @@ public record CreateJournalEntryCommand(CreateJournalEntryDto JournalEntry) : IR
 
 // Handler for CreateJournalEntryCommand
 public class CreateJournalEntryCommandHandler(
-    AccountingDbContext context, 
+    AccountingDbContext context,
     JournalEntryMapper journalEntryMapper,
     ICurrentUserService currentUserService) : IRequestHandler<CreateJournalEntryCommand, JournalEntryDto>
 {
@@ -22,7 +24,7 @@ public class CreateJournalEntryCommandHandler(
         // Validate that debits equal credits
         var totalDebits = request.JournalEntry.Lines.Sum(l => l.DebitAmount);
         var totalCredits = request.JournalEntry.Lines.Sum(l => l.CreditAmount);
-        
+
         if (Math.Abs(totalDebits - totalCredits) > 0.01m) // Allow for small rounding differences
         {
             throw new InvalidOperationException($"Journal entry is not balanced. Debits: {totalDebits:C}, Credits: {totalCredits:C}");
@@ -31,7 +33,7 @@ public class CreateJournalEntryCommandHandler(
         // Validate that all lines have either debit or credit (not both, not neither)
         foreach (var line in request.JournalEntry.Lines)
         {
-            if ((line.DebitAmount > 0 && line.CreditAmount > 0) || 
+            if ((line.DebitAmount > 0 && line.CreditAmount > 0) ||
                 (line.DebitAmount == 0 && line.CreditAmount == 0))
             {
                 throw new InvalidOperationException("Each journal entry line must have either a debit amount or credit amount (but not both or neither).");
@@ -90,7 +92,7 @@ public class CreateJournalEntryCommandHandler(
     {
         var today = DateTime.UtcNow;
         var prefix = $"JE{today:yyyyMM}";
-        
+
         // Use IgnoreQueryFilters to include soft-deleted entries when determining the next number
         // This ensures we don't reuse numbers even if entries are soft-deleted
         var lastEntry = await context.JournalEntries

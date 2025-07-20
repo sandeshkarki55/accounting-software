@@ -8,6 +8,7 @@ namespace AccountingApi.Features.Accounts;
 
 // Command to create a new account
 using MyMediator;
+
 public record CreateAccountCommand(CreateAccountDto Account) : IRequest<AccountDto>;
 
 // Handler for CreateAccountCommand
@@ -38,7 +39,7 @@ public class CreateAccountCommandHandler(AccountingDbContext context, AccountMap
 
         // Create new account entity using mapper
         var account = accountMapper.ToEntity(request.Account);
-        
+
         // Set audit information
         var currentUser = currentUserService.GetCurrentUserForAudit();
         account.CreatedBy = currentUser;

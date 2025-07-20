@@ -1,13 +1,15 @@
-using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
 using AccountingApi.Mappings;
 using AccountingApi.Services.CurrentUserService;
 
+using Microsoft.EntityFrameworkCore;
+
 namespace AccountingApi.Features.Accounts;
 
 // Command to update an existing account
 using MyMediator;
+
 public record UpdateAccountCommand(int Id, UpdateAccountDto Account) : IRequest<bool>;
 
 // Handler for UpdateAccountCommand
@@ -23,7 +25,7 @@ public class UpdateAccountCommandHandler(AccountingDbContext context, AccountMap
 
         // Update account using mapper
         accountMapper.UpdateEntity(account, request.Account);
-        
+
         // Update audit information
         account.UpdatedBy = currentUserService.GetCurrentUserForAudit();
         account.UpdatedAt = DateTime.UtcNow;

@@ -1,5 +1,5 @@
-using AccountingApi.Models;
 using AccountingApi.DTOs;
+using AccountingApi.Models;
 
 namespace AccountingApi.Mappings;
 
@@ -8,7 +8,6 @@ namespace AccountingApi.Mappings;
 /// </summary>
 public class JournalEntryMapper(JournalEntryLineMapper lineMapper) : IEntityMapper<JournalEntry, JournalEntryDto, CreateJournalEntryDto, object>
 {
-
     /// <summary>
     /// Maps a JournalEntry entity to JournalEntryDto
     /// </summary>
@@ -60,7 +59,7 @@ public class JournalEntryMapper(JournalEntryLineMapper lineMapper) : IEntityMapp
 
         // Map the lines
         entry.Lines = createDto.Lines?.Select(lineDto => lineMapper.ToEntity(lineDto, entry.Id)).ToList() ?? [];
-        
+
         // Calculate total amount
         entry.TotalAmount = entry.Lines.Sum(l => l.DebitAmount);
 

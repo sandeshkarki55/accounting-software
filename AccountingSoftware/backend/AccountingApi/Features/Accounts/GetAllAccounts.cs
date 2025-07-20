@@ -8,7 +8,9 @@ namespace AccountingApi.Features.Accounts;
 
 // Query to get all accounts with paging, sorting, filtering
 using AccountingApi.DTOs;
+
 using MyMediator;
+
 public record GetAllAccountsQuery(
     PaginationParams Pagination,
     SortingParams Sorting,

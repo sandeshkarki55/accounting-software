@@ -1,8 +1,10 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using AccountingApi.Models;
-using AccountingApi.Infrastructure.Configurations;
 using System.Linq.Expressions;
+
+using AccountingApi.Infrastructure.Configurations;
+using AccountingApi.Models;
+
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace AccountingApi.Infrastructure;
 
@@ -37,7 +39,7 @@ public class AccountingDbContext(DbContextOptions<AccountingDbContext> options) 
                 modelBuilder.Entity(entityType.ClrType)
                     .Property<DateTime>("CreatedAt")
                     .HasDefaultValueSql("GETUTCDATE()");
-                    
+
                 modelBuilder.Entity(entityType.ClrType)
                     .Property<DateTime>("UpdatedAt")
                     .HasDefaultValueSql("GETUTCDATE()");

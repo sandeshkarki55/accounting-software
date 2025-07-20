@@ -6,6 +6,7 @@ namespace AccountingApi.Features.Authentication;
 
 // Command to handle password change
 using MyMediator;
+
 public record ChangePasswordCommand(string UserId, ChangePasswordRequestDto ChangePasswordRequest) : IRequest<ApiResponseDto<string>>;
 
 // Handler for ChangePassword
@@ -27,7 +28,7 @@ public class ChangePasswordHandler(
         }
 
         var result = await userManager.ChangePasswordAsync(user, request.ChangePasswordRequest.CurrentPassword, request.ChangePasswordRequest.NewPassword);
-        
+
         if (!result.Succeeded)
         {
             return new ApiResponseDto<string>

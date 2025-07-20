@@ -1,11 +1,13 @@
-using Microsoft.AspNetCore.Identity;
 using AccountingApi.DTOs.Authentication;
 using AccountingApi.Models;
+
+using Microsoft.AspNetCore.Identity;
 
 namespace AccountingApi.Features.Authentication;
 
 // Command to handle user profile update
 using MyMediator;
+
 public record UpdateUserProfileCommand(string UserId, UpdateUserProfileDto UpdateProfileRequest) : IRequest<ApiResponseDto<UserInfoDto>>;
 
 // Handler for UpdateUserProfileCommand
@@ -52,9 +54,9 @@ public class UpdateUserProfileHandler(
         var result = await userManager.UpdateAsync(user);
         if (!result.Succeeded)
         {
-            logger.LogError("Failed to update user profile for user {UserId}. Errors: {Errors}", 
+            logger.LogError("Failed to update user profile for user {UserId}. Errors: {Errors}",
                 request.UserId, string.Join(", ", result.Errors.Select(e => e.Description)));
-            
+
             return new ApiResponseDto<UserInfoDto>
             {
                 Success = false,

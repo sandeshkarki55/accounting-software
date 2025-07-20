@@ -1,6 +1,7 @@
+using AccountingApi.Models;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using AccountingApi.Models;
 
 namespace AccountingApi.Infrastructure.Configurations;
 
@@ -44,8 +45,8 @@ public class JournalEntryLineConfiguration : IEntityTypeConfiguration<JournalEnt
             .HasDatabaseName("IX_JournalEntryLine_AccountId");
 
         // Table configuration with check constraint
-        builder.ToTable("JournalEntryLines", t => 
-            t.HasCheckConstraint("CK_JournalEntryLine_DebitOrCredit", 
+        builder.ToTable("JournalEntryLines", t =>
+            t.HasCheckConstraint("CK_JournalEntryLine_DebitOrCredit",
                 "(DebitAmount = 0 AND CreditAmount > 0) OR (DebitAmount > 0 AND CreditAmount = 0)")
         );
     }

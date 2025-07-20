@@ -1,8 +1,10 @@
-using MyMediator;
-using Microsoft.EntityFrameworkCore;
 using AccountingApi.Infrastructure;
 using AccountingApi.Models;
 using AccountingApi.Services.CurrentUserService;
+
+using Microsoft.EntityFrameworkCore;
+
+using MyMediator;
 
 namespace AccountingApi.Features.Invoices;
 
@@ -29,8 +31,8 @@ public class DeleteInvoiceItemCommandHandler(AccountingDbContext context, ICurre
 
         // Business rule: Must have at least one item on an invoice
         var remainingItems = await context.InvoiceItems
-            .Where(ii => ii.InvoiceId == invoiceItem.InvoiceId && 
-                        ii.Id != request.Id && 
+            .Where(ii => ii.InvoiceId == invoiceItem.InvoiceId &&
+                        ii.Id != request.Id &&
                         !ii.IsDeleted)
             .CountAsync(cancellationToken);
 

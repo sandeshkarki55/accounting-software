@@ -1,9 +1,10 @@
-using MyMediator;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
-using AccountingApi.Services.NumberGenerationService;
-using AccountingApi.Services.CurrentUserService;
 using AccountingApi.Mappings;
+using AccountingApi.Services.CurrentUserService;
+using AccountingApi.Services.NumberGenerationService;
+
+using MyMediator;
 
 namespace AccountingApi.Features.Customers;
 
@@ -12,10 +13,10 @@ public record CreateCustomerCommand(CreateCustomerDto Customer) : IRequest<Custo
 
 // Handler for CreateCustomerCommand
 public class CreateCustomerCommandHandler(
-    AccountingDbContext context, 
-    INumberGenerationService numberGenerationService, 
+    AccountingDbContext context,
+    INumberGenerationService numberGenerationService,
     ICurrentUserService currentUserService,
-    CustomerMapper customerMapper) 
+    CustomerMapper customerMapper)
     : IRequestHandler<CreateCustomerCommand, CustomerDto>
 {
     public async Task<CustomerDto> Handle(CreateCustomerCommand request, CancellationToken cancellationToken)

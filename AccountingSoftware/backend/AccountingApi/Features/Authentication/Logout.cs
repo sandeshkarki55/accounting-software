@@ -1,11 +1,13 @@
-using Microsoft.AspNetCore.Identity;
 using AccountingApi.DTOs.Authentication;
 using AccountingApi.Models;
+
+using Microsoft.AspNetCore.Identity;
 
 namespace AccountingApi.Features.Authentication;
 
 // Command to handle user logout
 using MyMediator;
+
 public record LogoutCommand(string UserId) : IRequest<ApiResponseDto<string>>;
 
 // Handler for Logout

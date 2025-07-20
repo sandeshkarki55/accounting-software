@@ -1,9 +1,11 @@
-using MyMediator;
-using Microsoft.EntityFrameworkCore;
 using AccountingApi.DTOs;
 using AccountingApi.Infrastructure;
-using AccountingApi.Services.CurrentUserService;
 using AccountingApi.Mappings;
+using AccountingApi.Services.CurrentUserService;
+
+using Microsoft.EntityFrameworkCore;
+
+using MyMediator;
 
 namespace AccountingApi.Features.Customers;
 
@@ -12,9 +14,9 @@ public record UpdateCustomerCommand(int Id, UpdateCustomerDto Customer) : IReque
 
 // Handler for UpdateCustomerCommand
 public class UpdateCustomerCommandHandler(
-    AccountingDbContext context, 
+    AccountingDbContext context,
     ICurrentUserService currentUserService,
-    CustomerMapper customerMapper) 
+    CustomerMapper customerMapper)
     : IRequestHandler<UpdateCustomerCommand, CustomerDto?>
 {
     public async Task<CustomerDto?> Handle(UpdateCustomerCommand request, CancellationToken cancellationToken)
