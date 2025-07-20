@@ -66,8 +66,10 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddDefaultTokenProviders();
 
 // Configure JWT Authentication
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"] ?? "YourSecretKeyHere123456789MustBe32CharactersOrMore!";
+        // Register JwtSettings with IOptions pattern
+        builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+        var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+        var secretKey = jwtSettings["SecretKey"] ?? "YourSecretKeyHere123456789MustBe32CharactersOrMore!";
 
 builder.Services.AddAuthentication(options =>
 {

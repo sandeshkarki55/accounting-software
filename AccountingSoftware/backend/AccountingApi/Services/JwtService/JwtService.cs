@@ -10,18 +10,22 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace AccountingApi.Services.JwtService;
 
+using Microsoft.Extensions.Options;
+
 public class JwtService(
-    IConfiguration configuration,
+    IOptions<JwtSettings> jwtOptions,
     UserManager<ApplicationUser> userManager,
     ILogger<JwtService> logger) : IJwtService
 {
+
+    private readonly JwtSettings _jwtSettings = jwtOptions.Value;
+
     public async Task<string> GenerateAccessTokenAsync(ApplicationUser user)
     {
-        var jwtSettings = configuration.GetSection("JwtSettings");
-        var key = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"] ?? "YourSecretKeyHere123456789");
-        var issuer = jwtSettings["Issuer"] ?? "AccountingApi";
-        var audience = jwtSettings["Audience"] ?? "AccountingClient";
-        var expirationMinutes = int.Parse(jwtSettings["ExpirationMinutes"] ?? "60");
+        var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey);
+        var issuer = _jwtSettings.Issuer;
+        var audience = _jwtSettings.Audience;
+        var expirationMinutes = _jwtSettings.ExpirationMinutes;
 
         var userRoles = await userManager.GetRolesAsync(user);
 
@@ -68,8 +72,7 @@ public class JwtService(
 
     public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
     {
-        var jwtSettings = configuration.GetSection("JwtSettings");
-        var key = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"] ?? "YourSecretKeyHere123456789");
+        var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey);
 
         var tokenValidationParameters = new TokenValidationParameters
         {
