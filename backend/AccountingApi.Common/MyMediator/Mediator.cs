@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+
 namespace MyMediator
 {
     public class Mediator : IMediator

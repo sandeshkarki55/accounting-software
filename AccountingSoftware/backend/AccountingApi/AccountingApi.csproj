@@ -33,6 +33,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Accounting.ServiceDefaults\Accounting.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\..\backend\AccountingApi.Common\AccountingApi.Common.csproj" />
   </ItemGroup>
 
 </Project>

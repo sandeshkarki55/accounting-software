@@ -8,13 +8,15 @@ var accountingDb = builder.AddSqlServer("accounting-server")
 // Configure for Azure deployment with proper health checks and observability
 var accountingApi = builder.AddProject<Projects.AccountingApi>("accountingapi")
     .WithReference(accountingDb)
-    .WithExternalHttpEndpoints(); // Enable external access for frontend
+    .WithExternalHttpEndpoints()
+    .WaitFor(accountingDb); // Enable external access for frontend
 
 // Add the React frontend as an npm project
 // Configure for development and production scenarios
 var frontend = builder.AddNpmApp("frontend", "../AccountingSoftware/frontend/accounting-frontend")
     .WithReference(accountingApi)
     .WithExternalHttpEndpoints()
-    .PublishAsDockerFile();
+    .PublishAsDockerFile()
+    .WaitFor(accountingApi);
 
 builder.Build().Run();
