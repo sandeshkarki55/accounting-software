@@ -3,10 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AccountingSoftware", "AccountingSoftware", "{1EE6A3E2-EB38-52CD-E975-F2B09F7FCAE6}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "backend", "backend", "{D5E61668-5D88-4C41-938A-9771027C3B26}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccountingApi", "AccountingSoftware\backend\AccountingApi\AccountingApi.csproj", "{A2B45FE5-5FE3-1DD5-C720-46F7AC5420B1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Accounting.AppHost", "Accounting.AppHost\Accounting.AppHost.csproj", "{8DB81BA5-7743-44BD-BE61-DC79D3554636}"
@@ -62,10 +58,6 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{D5E61668-5D88-4C41-938A-9771027C3B26} = {1EE6A3E2-EB38-52CD-E975-F2B09F7FCAE6}
-		{A2B45FE5-5FE3-1DD5-C720-46F7AC5420B1} = {D5E61668-5D88-4C41-938A-9771027C3B26}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {37A2319B-CF73-4DDF-86D9-7B09859753B3}
