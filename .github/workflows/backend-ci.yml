@@ -1,0 +1,230 @@
+name: Backend API CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'AccountingSoftware/backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'AccountingSoftware/backend/**'
+      - '.github/workflows/backend-ci.yml'
+
+jobs:
+  build-and-test:
+    name: Build and Test Backend API
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+          
+    - name: Restore dependencies
+      run: dotnet restore AccountingSoftware/backend/AccountingApi/AccountingApi.csproj
+      
+    - name: Restore test dependencies
+      run: dotnet restore AccountingSoftware/backend/AccountingApi.Tests/AccountingApi.Tests.csproj
+      
+    - name: Build API
+      run: dotnet build AccountingSoftware/backend/AccountingApi/AccountingApi.csproj --no-restore --configuration Release
+      
+    - name: Build Tests
+      run: dotnet build AccountingSoftware/backend/AccountingApi.Tests/AccountingApi.Tests.csproj --no-restore --configuration Release
+      
+    - name: Run unit tests
+      run: dotnet test AccountingSoftware/backend/AccountingApi.Tests/AccountingApi.Tests.csproj --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage
+      
+    - name: Generate test report
+      uses: dorny/test-reporter@v1
+      if: success() || failure()
+      with:
+        name: Backend API Tests
+        path: '**/*.trx'
+        reporter: dotnet-trx
+        fail-on-error: true
+        
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v4
+      if: success()
+      with:
+        directory: ./coverage
+        fail_ci_if_error: false
+        verbose: true
+        
+    - name: Publish test results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: |
+          **/*.trx
+          **/*.xml
+        check_name: "Backend API Test Results"
+        
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore AccountingSoftware/backend/AccountingApi/AccountingApi.csproj
+      
+    - name: Run code analysis
+      run: dotnet build AccountingSoftware/backend/AccountingApi/AccountingApi.csproj --configuration Release --verbosity normal
+      
+    - name: Install dotnet format tool
+      run: dotnet tool install -g dotnet-format
+      
+    - name: Check code formatting
+      run: dotnet format AccountingSoftware/backend/AccountingApi/AccountingApi.csproj --verify-no-changes --verbosity diagnostic
+      
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore AccountingSoftware/backend/AccountingApi/AccountingApi.csproj
+      
+    - name: Install security scan tools
+      run: |
+        dotnet tool install --global security-scan
+        dotnet tool install --global dotnet-retire
+        
+    - name: Run security scan
+      run: security-scan AccountingSoftware/backend/AccountingApi/AccountingApi.csproj --excl-dev=true
+      continue-on-error: true
+      
+    - name: Check for known vulnerabilities
+      run: dotnet retire --packages
+      continue-on-error: true
+
+  docker-build:
+    name: Docker Build Test
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Create Dockerfile for API
+      run: |
+        cat > AccountingSoftware/backend/AccountingApi/Dockerfile << 'EOF'
+        FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+        WORKDIR /app
+        EXPOSE 80
+        EXPOSE 443
+        
+        FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+        WORKDIR /src
+        COPY ["AccountingSoftware/backend/AccountingApi/AccountingApi.csproj", "AccountingSoftware/backend/AccountingApi/"]
+        COPY ["AccountingSoftware/backend/AccountingApi.Common/AccountingApi.Common.csproj", "AccountingSoftware/backend/AccountingApi.Common/"]
+        COPY ["AccountingSoftware/aspire/Accounting.ServiceDefaults/Accounting.ServiceDefaults.csproj", "AccountingSoftware/aspire/Accounting.ServiceDefaults/"]
+        RUN dotnet restore "AccountingSoftware/backend/AccountingApi/AccountingApi.csproj"
+        COPY . .
+        WORKDIR "/src/AccountingSoftware/backend/AccountingApi"
+        RUN dotnet build "AccountingApi.csproj" -c Release -o /app/build
+        
+        FROM build AS publish
+        RUN dotnet publish "AccountingApi.csproj" -c Release -o /app/publish /p:UseAppHost=false
+        
+        FROM base AS final
+        WORKDIR /app
+        COPY --from=publish /app/publish .
+        ENTRYPOINT ["dotnet", "AccountingApi.dll"]
+        EOF
+        
+    - name: Build Docker image
+      run: docker build -f AccountingSoftware/backend/AccountingApi/Dockerfile -t accounting-api:test .
+      
+    - name: Test Docker image
+      run: |
+        docker run -d --name test-container -p 8080:80 accounting-api:test
+        sleep 10
+        docker ps | grep test-container
+        docker stop test-container
+        docker rm test-container
+
+  performance-test:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Install performance testing tools
+      run: dotnet tool install -g NBomber.Templates
+      
+    - name: Run basic performance validation
+      run: |
+        echo "Performance testing placeholder - would run load tests here"
+        echo "Testing API startup time and basic endpoint response times"
+        
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [build-and-test, code-quality, security-scan]
+    if: always()
+    
+    steps:
+    - name: Notify success
+      if: needs.build-and-test.result == 'success' && needs.code-quality.result == 'success'
+      run: |
+        echo "✅ Backend API CI/CD completed successfully!"
+        echo "- Build: ${{ needs.build-and-test.result }}"
+        echo "- Code Quality: ${{ needs.code-quality.result }}"
+        echo "- Security Scan: ${{ needs.security-scan.result }}"
+        
+    - name: Notify failure
+      if: needs.build-and-test.result == 'failure' || needs.code-quality.result == 'failure'
+      run: |
+        echo "❌ Backend API CI/CD failed!"
+        echo "- Build: ${{ needs.build-and-test.result }}"
+        echo "- Code Quality: ${{ needs.code-quality.result }}"
+        echo "- Security Scan: ${{ needs.security-scan.result }}"
+        exit 1
