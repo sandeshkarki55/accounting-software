@@ -13,7 +13,7 @@ var accountingApi = builder.AddProject<Projects.AccountingApi>("accountingapi")
 
 // Add the React frontend as an npm project
 // Configure for development and production scenarios
-var frontend = builder.AddNpmApp("frontend", "../AccountingSoftware/frontend/accounting-frontend")
+var frontend = builder.AddNpmApp("frontend", "../../frontend/accounting-frontend")
     .WithReference(accountingApi)
     .WithExternalHttpEndpoints()
     .PublishAsDockerFile()

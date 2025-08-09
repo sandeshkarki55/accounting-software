@@ -32,8 +32,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Accounting.ServiceDefaults\Accounting.ServiceDefaults.csproj" />
-    <ProjectReference Include="..\..\..\backend\AccountingApi.Common\AccountingApi.Common.csproj" />
+    <ProjectReference Include="..\..\aspire\Accounting.ServiceDefaults\Accounting.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\AccountingApi.Common\AccountingApi.Common.csproj" />
   </ItemGroup>
 
 </Project>
