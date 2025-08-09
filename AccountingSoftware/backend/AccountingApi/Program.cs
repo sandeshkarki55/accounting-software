@@ -118,9 +118,8 @@ builder.Services.AddAuthorization();
 // Health checks are automatically added by AddSqlServerDbContext
 // No need to manually add them again
 
-// Add MediatR - Register all handlers from the current assembly
-// Add MyMediator and register all handlers
-builder.Services.AddMediator();
+// Add MyMediator and register handlers from this assembly explicitly
+builder.Services.AddMediatorFromAssemblyContaining<Program>();
 
 // Add FluentValidation
 builder.Services.AddFluentValidationAutoValidation();
