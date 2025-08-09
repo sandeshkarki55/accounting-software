@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Pagination from '../../components/common/Pagination';
 import SortableTableHeader, { SortableColumn } from '../../components/common/SortableTableHeader';
@@ -7,8 +6,8 @@ import { CompanyInfo, PaginationParams, SortingParams, CompanyInfoFilteringParam
 import { companyInfoService } from '../../services/companyInfoService';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import usePagedData from '../../hooks/usePagedData';
-import AddCompanyModal from '../../components/modals/AddCompanyModal';
-import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
+import AddCompanyModal from './components/AddCompanyModal';
+import GenericDeleteConfirmationModal from '../../components/shared/GenericDeleteConfirmationModal';
 import './CompaniesPage.scss';
 
 

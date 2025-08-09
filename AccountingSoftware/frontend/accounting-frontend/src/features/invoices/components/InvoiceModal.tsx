@@ -1,9 +1,9 @@
 
 import React, { useEffect } from 'react';
-import { Invoice, CreateInvoiceDto, CreateInvoiceItemDto, Customer, CompanyInfo } from '../../types';
-import BaseModal from './BaseModal';
-import { useFormState } from '../../hooks/useFormState';
-import { useValidation } from '../../hooks/useValidation';
+import { Invoice, CreateInvoiceDto, CreateInvoiceItemDto, Customer, CompanyInfo } from '../../../types';
+import BaseModal from '../../../components/shared/BaseModal';
+import { useFormState } from '../../../hooks/useFormState';
+import { useValidation } from '../../../hooks/useValidation';
 
 interface InvoiceModalProps {
   show: boolean;

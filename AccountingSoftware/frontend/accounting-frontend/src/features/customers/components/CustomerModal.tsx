@@ -1,9 +1,9 @@
 
 import React, { useEffect } from 'react';
-import { Customer, CreateCustomerDto, UpdateCustomerDto } from '../../types';
-import BaseModal from './BaseModal';
-import { useFormState } from '../../hooks/useFormState';
-import { useValidation } from '../../hooks/useValidation';
+import { Customer, CreateCustomerDto, UpdateCustomerDto } from '../../../types';
+import BaseModal from '../../../components/shared/BaseModal';
+import { useFormState } from '../../../hooks/useFormState';
+import { useValidation } from '../../../hooks/useValidation';
 
 interface CustomerModalProps {
   show: boolean;

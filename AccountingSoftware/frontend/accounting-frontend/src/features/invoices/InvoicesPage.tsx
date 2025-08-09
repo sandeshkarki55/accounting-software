@@ -7,10 +7,10 @@ import { InvoiceFilteringParams } from '../../types/invoices';
 import { invoiceService, customerService, companyInfoService } from '../../services/api';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import usePagedData from '../../hooks/usePagedData';
-import InvoiceModal from '../../components/modals/InvoiceModal';
-import InvoicePrintModal from '../../components/modals/InvoicePrintModal';
-import MarkAsPaidModal from '../../components/MarkAsPaidModal';
-import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
+import InvoiceModal from './components/InvoiceModal';
+import InvoicePrintModal from './components/InvoicePrintModal';
+import MarkAsPaidModal from './components/MarkAsPaidModal';
+import GenericDeleteConfirmationModal from '../../components/shared/GenericDeleteConfirmationModal';
 
 const InvoicesPage: React.FC = () => {
   usePageTitle('Invoices');

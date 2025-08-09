@@ -3,23 +3,23 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.scss';
 
 // Import pages
-import AccountsPage from './pages/accounts/AccountsPage';
-import InvoicesPage from './pages/invoices/InvoicesPage';
-import CustomersPage from './pages/customers/CustomersPage';
-import CompaniesPage from './pages/companies/CompaniesPage';
-import DashboardPage from './pages/dashboard/DashboardPage';
-import UserProfilePage from './pages/profile/UserProfilePage';
-import JournalEntriesPage from './pages/journalEntries/JournalEntriesPage';
+import AccountsPage from './features/accounts/AccountsPage';
+import InvoicesPage from './features/invoices/InvoicesPage';
+import CustomersPage from './features/customers/CustomersPage';
+import CompaniesPage from './features/companies/CompaniesPage';
+import DashboardPage from './features/dashboard/DashboardPage';
+import UserProfilePage from './features/profile/UserProfilePage';
+import JournalEntriesPage from './features/journalEntries/JournalEntriesPage';
 
 // Import layout components
 import SideNavigation from './components/layout/SideNavigation';
 import TopNavbar from './components/layout/TopNavbar';
 
 // Import auth components
-import { AuthProvider } from './components/auth/AuthContext';
-import ProtectedRoute from './components/auth/ProtectedRoute';
-import LoginPage from './components/auth/LoginPage';
-import RegisterPage from './components/auth/RegisterPage';
+import { AuthProvider } from './features/auth/AuthContext';
+import ProtectedRoute from './features/auth/ProtectedRoute';
+import LoginPage from './features/auth/LoginPage';
+import RegisterPage from './features/auth/RegisterPage';
 
 // Import hooks
 import { usePageTitle } from './hooks/usePageTitle';

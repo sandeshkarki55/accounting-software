@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Account, AccountType } from '../../types';
+import { Account, AccountType } from '../../../types';
 import './ChartOfAccountsTree.scss';
 
 interface ChartOfAccountsTreeProps {

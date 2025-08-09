@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../components/auth/AuthContext';
+import { useAuth } from '../auth/AuthContext';
 import { authService } from '../../services/authService';
 import { ChangePasswordRequest, UpdateUserProfileRequest } from '../../types/auth';
 import { usePageTitle } from '../../hooks/usePageTitle';

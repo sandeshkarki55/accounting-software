@@ -1,6 +1,6 @@
 import React from 'react';
-import { Invoice, CompanyInfo, Customer } from '../../types';
-import InvoicePrintView from '../invoicePrintView/InvoicePrintView';
+import { Invoice, CompanyInfo, Customer } from '../../../types';
+import InvoicePrintView from './InvoicePrintView';
 
 interface InvoicePrintModalProps {
   show: boolean;

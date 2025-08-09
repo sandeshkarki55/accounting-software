@@ -7,8 +7,8 @@ import { Customer, CreateCustomerDto, UpdateCustomerDto, PaginationParams, Sorti
 import { customerService } from '../../services/customerService';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import usePagedData from '../../hooks/usePagedData';
-import CustomerModal from '../../components/modals/CustomerModal';
-import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
+import CustomerModal from './components/CustomerModal';
+import GenericDeleteConfirmationModal from '../../components/shared/GenericDeleteConfirmationModal';
 
 
 const CustomersPage: React.FC = () => {

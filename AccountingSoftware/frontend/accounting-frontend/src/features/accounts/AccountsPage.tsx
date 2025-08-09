@@ -4,9 +4,9 @@ import { Account, AccountType, CreateAccountDto, UpdateAccountDto, PaginationPar
 import { accountService } from '../../services/accountService';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import usePagedData from '../../hooks/usePagedData';
-import AccountModal from '../../components/modals/AccountModal';
-import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
-import ChartOfAccountsTree from '../../components/charts/ChartOfAccountsTree';
+import AccountModal from './components/AccountModal';
+import GenericDeleteConfirmationModal from '../../components/shared/GenericDeleteConfirmationModal';
+import ChartOfAccountsTree from './components/ChartOfAccountsTree';
 import Pagination from '../../components/common/Pagination';
 import SortableTableHeader, { SortableColumn } from '../../components/common/SortableTableHeader';
 import DebouncedSearchInput from '../../components/common/DebouncedSearchInput';

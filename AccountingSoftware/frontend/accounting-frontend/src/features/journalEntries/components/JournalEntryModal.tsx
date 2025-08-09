@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import { JournalEntry, CreateJournalEntryDto, UpdateJournalEntryDto, CreateJournalEntryLineDto, Account } from '../../types';
-import BaseModal from './BaseModal';
-import { useFormState } from '../../hooks/useFormState';
-import { useValidation } from '../../hooks/useValidation';
+import { JournalEntry, CreateJournalEntryDto, UpdateJournalEntryDto, CreateJournalEntryLineDto, Account } from '../../../types';
+import BaseModal from '../../../components/shared/BaseModal';
+import { useFormState } from '../../../hooks/useFormState';
+import { useValidation } from '../../../hooks/useValidation';
 
 interface JournalEntryModalProps {
   show: boolean;

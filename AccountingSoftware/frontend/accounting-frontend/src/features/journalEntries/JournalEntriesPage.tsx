@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import Pagination from '../../components/common/Pagination';
 import DebouncedSearchInput from '../../components/common/DebouncedSearchInput';
-import SortableTableHeader, { SortableColumn } from '../../components/common/SortableTableHeader';
-import { JournalEntry, JournalEntryLine, CreateJournalEntryDto, UpdateJournalEntryDto, Account, PaginationParams, SortingParams, JournalEntryFilteringParams, PagedResult } from '../../types/index';
+import SortableTableHeader from '../../components/common/SortableTableHeader';
+import { JournalEntry, JournalEntryLine, CreateJournalEntryDto, UpdateJournalEntryDto, Account, PaginationParams, SortingParams, JournalEntryFilteringParams } from '../../types/index';
 import { journalEntryService, accountService } from '../../services/api';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import usePagedData from '../../hooks/usePagedData'; // Import the reusable hook
-import JournalEntryModal from '../../components/modals/JournalEntryModal';
-import PostJournalEntryModal from '../../components/modals/PostJournalEntryModal';
-import GenericDeleteConfirmationModal from '../../components/modals/GenericDeleteConfirmationModal';
+import JournalEntryModal from './components/JournalEntryModal';
+import PostJournalEntryModal from './components/PostJournalEntryModal';
+import GenericDeleteConfirmationModal from '../../components/shared/GenericDeleteConfirmationModal';
 
 const JournalEntriesPage: React.FC = () => {
   usePageTitle('Journal Entries');

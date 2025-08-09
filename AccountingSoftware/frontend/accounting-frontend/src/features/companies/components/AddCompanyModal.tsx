@@ -1,10 +1,9 @@
-
 import React, { useEffect } from 'react';
-import { CompanyInfo, CreateCompanyInfoDto } from '../../types/customers';
-import { companyInfoService } from '../../services/api';
-import BaseModal from './BaseModal';
-import { useFormState } from '../../hooks/useFormState';
-import { useValidation } from '../../hooks/useValidation';
+import { CompanyInfo, CreateCompanyInfoDto } from '../../../types/customers';
+import { companyInfoService } from '../../../services/companyInfoService';
+import BaseModal from '../../../components/shared/BaseModal';
+import { useFormState } from '../../../hooks/useFormState';
+import { useValidation } from '../../../hooks/useValidation';
 
 interface AddCompanyModalProps {
   show: boolean;

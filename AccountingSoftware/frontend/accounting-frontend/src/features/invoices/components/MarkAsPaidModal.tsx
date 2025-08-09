@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MarkInvoiceAsPaidDto, Invoice } from '../types';
+import { MarkInvoiceAsPaidDto, Invoice } from '../../../types';
 
 interface MarkAsPaidModalProps {
   show: boolean;

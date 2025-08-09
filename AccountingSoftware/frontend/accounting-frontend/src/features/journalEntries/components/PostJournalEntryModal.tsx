@@ -1,6 +1,6 @@
 import React from 'react';
-import { JournalEntry } from '../../types';
-import BaseModal from './BaseModal';
+import { JournalEntry } from '../../../types';
+import BaseModal from '../../../components/shared/BaseModal';
 
 interface PostJournalEntryModalProps {
   show: boolean;
