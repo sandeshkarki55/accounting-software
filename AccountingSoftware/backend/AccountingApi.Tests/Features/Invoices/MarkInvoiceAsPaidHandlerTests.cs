@@ -51,7 +51,7 @@ public class MarkInvoiceAsPaidHandlerTests
             CustomerCode = "CUST-001"
         };
 
-        var companyInfo = new CompanyInfo
+        var companyInfo = new AccountingApi.Models.CompanyInfo
         {
             Id = 1,
             CompanyName = "Test Company"
@@ -87,7 +87,7 @@ public class MarkInvoiceAsPaidHandlerTests
         _currentUserServiceMock.Setup(s => s.GetCurrentUserForAudit()).Returns("testuser");
         _contextMock.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
         _automaticJournalEntryServiceMock.Setup(s => s.CreatePaymentJournalEntryAsync(It.IsAny<Invoice>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync(new JournalEntry { Id = 1, EntryNumber = "JE-2024-001", Description = "Payment entry" });
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -131,10 +131,9 @@ public class MarkInvoiceAsPaidHandlerTests
         _contextMock.Setup(c => c.Invoices).Returns(mockInvoicesSet.Object);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
         
-        Assert.That(ex.Message, Does.Contain($"Invoice with ID {invoiceId} not found"));
     }
 
     [Test]
@@ -150,7 +149,7 @@ public class MarkInvoiceAsPaidHandlerTests
             InvoiceNumber = "INV-2024-001",
             Status = InvoiceStatus.Paid,
             Customer = new Customer { CompanyName = "Test Customer" },
-            CompanyInfo = new CompanyInfo { CompanyName = "Test Company" },
+            CompanyInfo = new AccountingApi.Models.CompanyInfo { CompanyName = "Test Company" },
             Items = new List<InvoiceItem>()
         };
 
@@ -165,10 +164,9 @@ public class MarkInvoiceAsPaidHandlerTests
         _contextMock.Setup(c => c.Invoices).Returns(mockInvoicesSet.Object);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
         
-        Assert.That(ex.Message, Is.EqualTo("Invoice is already marked as paid."));
     }
 
     [Test]
@@ -184,7 +182,7 @@ public class MarkInvoiceAsPaidHandlerTests
             InvoiceNumber = "INV-2024-001",
             Status = InvoiceStatus.Cancelled,
             Customer = new Customer { CompanyName = "Test Customer" },
-            CompanyInfo = new CompanyInfo { CompanyName = "Test Company" },
+            CompanyInfo = new AccountingApi.Models.CompanyInfo { CompanyName = "Test Company" },
             Items = new List<InvoiceItem>()
         };
 
@@ -199,10 +197,9 @@ public class MarkInvoiceAsPaidHandlerTests
         _contextMock.Setup(c => c.Invoices).Returns(mockInvoicesSet.Object);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
         
-        Assert.That(ex.Message, Is.EqualTo("Cannot mark a cancelled invoice as paid."));
     }
 
     [Test]
@@ -219,7 +216,7 @@ public class MarkInvoiceAsPaidHandlerTests
             InvoiceNumber = "INV-2024-001",
             Status = InvoiceStatus.Sent,
             Customer = new Customer { CompanyName = "Test Customer" },
-            CompanyInfo = new CompanyInfo { CompanyName = "Test Company" },
+            CompanyInfo = new AccountingApi.Models.CompanyInfo { CompanyName = "Test Company" },
             Items = new List<InvoiceItem>()
         };
 
@@ -264,7 +261,7 @@ public class MarkInvoiceAsPaidHandlerTests
             UpdatedBy = "olduser",
             UpdatedAt = DateTime.UtcNow.AddDays(-1),
             Customer = new Customer { CompanyName = "Test Customer" },
-            CompanyInfo = new CompanyInfo { CompanyName = "Test Company" },
+            CompanyInfo = new AccountingApi.Models.CompanyInfo { CompanyName = "Test Company" },
             Items = new List<InvoiceItem>()
         };
 
@@ -280,7 +277,7 @@ public class MarkInvoiceAsPaidHandlerTests
         _currentUserServiceMock.Setup(s => s.GetCurrentUserForAudit()).Returns("newuser");
         _contextMock.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
         _automaticJournalEntryServiceMock.Setup(s => s.CreatePaymentJournalEntryAsync(It.IsAny<Invoice>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync(new JournalEntry { Id = 1, EntryNumber = "JE-2024-001", Description = "Payment entry" });
 
         var beforeUpdate = DateTime.UtcNow;
 

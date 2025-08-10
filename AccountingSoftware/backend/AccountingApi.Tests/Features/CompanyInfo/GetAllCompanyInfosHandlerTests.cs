@@ -35,7 +35,7 @@ public class GetAllCompanyInfosHandlerTests
     {
         // Arrange
         var paginationParams = new PaginationParams { PageNumber = 1, PageSize = 2 };
-        var sortingParams = new SortingParams { OrderBy = "CompanyName", IsDescending = false };
+        var sortingParams = new SortingParams { OrderBy = "CompanyName", Descending = false };
         var filteringParams = new CompanyInfoFilteringParams { SearchTerm = null };
         
         var query = new GetAllCompanyInfosQuery(paginationParams, sortingParams, filteringParams);

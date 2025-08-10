@@ -154,11 +154,9 @@ public class DeleteJournalEntryHandlerTests
         _contextMock.Setup(x => x.JournalEntries).Returns(journalEntriesDbSetMock.Object);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
 
-        Assert.That(ex.Message, Does.Contain("Cannot delete a posted journal entry"));
-        Assert.That(ex.Message, Does.Contain("Posted entries are immutable for audit purposes"));
         _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 

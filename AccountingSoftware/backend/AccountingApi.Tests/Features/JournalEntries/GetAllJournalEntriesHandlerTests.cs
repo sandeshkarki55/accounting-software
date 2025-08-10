@@ -36,7 +36,7 @@ public class GetAllJournalEntriesHandlerTests
     {
         // Arrange
         var paginationParams = new PaginationParams { PageNumber = 1, PageSize = 2 };
-        var sortingParams = new SortingParams { OrderBy = "TransactionDate", IsDescending = false };
+        var sortingParams = new SortingParams { OrderBy = "TransactionDate", Descending = false };
         var filteringParams = new JournalEntryFilteringParams { SearchTerm = null, StatusFilter = null };
         
         var query = new GetAllJournalEntriesQuery(paginationParams, sortingParams, filteringParams);

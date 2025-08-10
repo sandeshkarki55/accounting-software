@@ -27,7 +27,7 @@ public class JournalEntriesControllerTests
     {
         // Arrange
         var pagination = new PaginationParams { PageNumber = 1, PageSize = 10 };
-        var sorting = new SortingParams { SortField = "EntryDate", SortOrder = "desc" };
+        var sorting = new SortingParams { OrderBy = "EntryDate", Descending = true };
         var filtering = new JournalEntryFilteringParams { SearchTerm = "JE-2024" };
         
         var expectedResult = new PagedResult<JournalEntryDto>
@@ -55,9 +55,9 @@ public class JournalEntriesControllerTests
         
         _mediatorMock.Verify(m => m.Send(
             It.Is<GetAllJournalEntriesQuery>(q => 
-                q.PaginationParams == pagination && 
-                q.SortingParams == sorting && 
-                q.FilteringParams == filtering), 
+                q.Pagination == pagination && 
+                q.Sorting == sorting && 
+                q.Filtering == filtering), 
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -68,8 +68,8 @@ public class JournalEntriesControllerTests
         var createJournalEntryDto = new CreateJournalEntryDto
         {
             Description = "Test journal entry",
-            EntryDate = DateTime.UtcNow,
-            Lines = new List<JournalEntryLineDto>
+            TransactionDate = DateTime.UtcNow,
+            Lines = new List<CreateJournalEntryLineDto>
             {
                 new() { AccountId = 1, DebitAmount = 1000, CreditAmount = 0, Description = "Debit entry" },
                 new() { AccountId = 2, DebitAmount = 0, CreditAmount = 1000, Description = "Credit entry" }
@@ -81,9 +81,13 @@ public class JournalEntriesControllerTests
             Id = 1,
             EntryNumber = "JE-2024-001",
             Description = "Test journal entry",
-            EntryDate = createJournalEntryDto.EntryDate,
-            Status = JournalEntryStatus.Draft,
-            Lines = createJournalEntryDto.Lines
+            TransactionDate = createJournalEntryDto.TransactionDate,
+            IsPosted = false,
+            Lines = new List<JournalEntryLineDto>
+            {
+                new() { Id = 1, AccountId = 1, DebitAmount = 1000, CreditAmount = 0, Description = "Debit entry" },
+                new() { Id = 2, AccountId = 2, DebitAmount = 0, CreditAmount = 1000, Description = "Credit entry" }
+            }
         };
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<CreateJournalEntryCommand>(), It.IsAny<CancellationToken>()))
@@ -202,8 +206,8 @@ public class JournalEntriesControllerTests
         var updateJournalEntryDto = new UpdateJournalEntryDto
         {
             Description = "Updated journal entry",
-            EntryDate = DateTime.UtcNow,
-            Lines = new List<JournalEntryLineDto>
+            TransactionDate = DateTime.UtcNow,
+            Lines = new List<CreateJournalEntryLineDto>
             {
                 new() { AccountId = 1, DebitAmount = 1500, CreditAmount = 0, Description = "Updated debit entry" },
                 new() { AccountId = 2, DebitAmount = 0, CreditAmount = 1500, Description = "Updated credit entry" }
@@ -215,9 +219,13 @@ public class JournalEntriesControllerTests
             Id = journalEntryId,
             EntryNumber = "JE-2024-001",
             Description = "Updated journal entry",
-            EntryDate = updateJournalEntryDto.EntryDate,
-            Status = JournalEntryStatus.Draft,
-            Lines = updateJournalEntryDto.Lines
+            TransactionDate = updateJournalEntryDto.TransactionDate,
+            IsPosted = false,
+            Lines = new List<JournalEntryLineDto>
+            {
+                new() { Id = 1, AccountId = 1, DebitAmount = 1500, CreditAmount = 0, Description = "Updated debit entry" },
+                new() { Id = 2, AccountId = 2, DebitAmount = 0, CreditAmount = 1500, Description = "Updated credit entry" }
+            }
         };
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<UpdateJournalEntryCommand>(), It.IsAny<CancellationToken>()))
@@ -256,7 +264,7 @@ public class JournalEntriesControllerTests
         Assert.That(response, Is.Not.Null);
         
         _mediatorMock.Verify(m => m.Send(
-            It.Is<PostJournalEntryCommand>(c => c.Id == journalEntryId), 
+            It.Is<PostJournalEntryCommand>(c => c.JournalEntryId == journalEntryId), 
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -280,7 +288,7 @@ public class JournalEntriesControllerTests
         Assert.That(response, Is.Not.Null);
         
         _mediatorMock.Verify(m => m.Send(
-            It.Is<PostJournalEntryCommand>(c => c.Id == journalEntryId), 
+            It.Is<PostJournalEntryCommand>(c => c.JournalEntryId == journalEntryId), 
             It.IsAny<CancellationToken>()), Times.Once);
     }
 }

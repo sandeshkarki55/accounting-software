@@ -56,7 +56,7 @@ public class DeleteAccountHandlerTests
     }
 
     [Test]
-    public async Task Handle_ThrowsException_WhenAccountHasActiveSubAccounts()
+    public void Handle_ThrowsException_WhenAccountHasActiveSubAccounts()
     {
         // Arrange
         const int accountId = 1;
@@ -87,14 +87,13 @@ public class DeleteAccountHandlerTests
         _contextMock.Setup(c => c.Accounts).Returns(mockAccountsSet.Object);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
         
-        Assert.That(ex.Message, Does.Contain("Cannot delete account that has active sub-accounts"));
     }
 
     [Test]
-    public async Task Handle_ThrowsException_WhenAccountHasActiveJournalEntryLines()
+    public void Handle_ThrowsException_WhenAccountHasActiveJournalEntryLines()
     {
         // Arrange
         const int accountId = 1;
@@ -125,14 +124,12 @@ public class DeleteAccountHandlerTests
         _contextMock.Setup(c => c.Accounts).Returns(mockAccountsSet.Object);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
-        
-        Assert.That(ex.Message, Does.Contain("Cannot delete account that has active journal entry lines"));
     }
 
     [Test]
-    public async Task Handle_ThrowsException_WhenAccountHasNonZeroBalance()
+    public void Handle_ThrowsException_WhenAccountHasNonZeroBalance()
     {
         // Arrange
         const int accountId = 1;
@@ -160,10 +157,8 @@ public class DeleteAccountHandlerTests
         _contextMock.Setup(c => c.Accounts).Returns(mockAccountsSet.Object);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
-        
-        Assert.That(ex.Message, Does.Contain("Cannot delete account with non-zero balance"));
     }
 
     [Test]

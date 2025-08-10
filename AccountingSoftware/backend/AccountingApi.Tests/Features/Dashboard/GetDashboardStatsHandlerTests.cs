@@ -70,12 +70,12 @@ public class GetDashboardStatsHandlerTests
         // Assert
         Assert.That(result, Is.Not.Null);
         Assert.That(result.TotalRevenue, Is.EqualTo(2500)); // Two paid invoices: 1000 + 1500
-        Assert.That(result.OutstandingAmount, Is.EqualTo(2500)); // Two unpaid invoices: 2000 + 500
+        Assert.That(result.OutstandingInvoices, Is.EqualTo(2500)); // Two unpaid invoices: 2000 + 500
         Assert.That(result.OverdueAmount, Is.EqualTo(500)); // One overdue invoice
         Assert.That(result.ActiveCustomers, Is.EqualTo(2)); // Two active customers
         Assert.That(result.AverageInvoiceValue, Is.EqualTo(1250)); // (1000+2000+1500+500)/4
-        Assert.That(result.TotalInvoices, Is.EqualTo(4));
-        Assert.That(result.PaidInvoices, Is.EqualTo(2));
+        Assert.That(result.TotalInvoiceCount, Is.EqualTo(4));
+        Assert.That(result.PaidInvoicesCount, Is.EqualTo(2));
         Assert.That(result.PaymentRate, Is.EqualTo(50)); // 2/4 * 100
     }
 
@@ -111,12 +111,12 @@ public class GetDashboardStatsHandlerTests
         // Assert
         Assert.That(result, Is.Not.Null);
         Assert.That(result.TotalRevenue, Is.EqualTo(0));
-        Assert.That(result.OutstandingAmount, Is.EqualTo(0));
+        Assert.That(result.OutstandingInvoices, Is.EqualTo(0));
         Assert.That(result.OverdueAmount, Is.EqualTo(0));
         Assert.That(result.ActiveCustomers, Is.EqualTo(0));
         Assert.That(result.AverageInvoiceValue, Is.EqualTo(0));
-        Assert.That(result.TotalInvoices, Is.EqualTo(0));
-        Assert.That(result.PaidInvoices, Is.EqualTo(0));
+        Assert.That(result.TotalInvoiceCount, Is.EqualTo(0));
+        Assert.That(result.PaidInvoicesCount, Is.EqualTo(0));
         Assert.That(result.PaymentRate, Is.EqualTo(0));
     }
 
@@ -202,6 +202,6 @@ public class GetDashboardStatsHandlerTests
 
         // Assert
         Assert.That(result.OverdueAmount, Is.EqualTo(1000)); // Only the first invoice is overdue and unpaid
-        Assert.That(result.OutstandingAmount, Is.EqualTo(3000)); // First two invoices are outstanding: 1000 + 2000
+        Assert.That(result.OutstandingInvoices, Is.EqualTo(3000)); // First two invoices are outstanding: 1000 + 2000
     }
 }

@@ -27,7 +27,7 @@ public class CompanyInfoControllerTests
     {
         // Arrange
         var pagination = new PaginationParams { PageNumber = 1, PageSize = 10 };
-        var sorting = new SortingParams { SortField = "CompanyName", SortOrder = "asc" };
+        var sorting = new SortingParams { OrderBy = "CompanyName", Descending = false };
         var filtering = new CompanyInfoFilteringParams { SearchTerm = "test" };
         
         var expectedResult = new PagedResult<CompanyInfoDto>

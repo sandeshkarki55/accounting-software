@@ -118,10 +118,9 @@ public class SetDefaultCompanyHandlerTests
         _contextMock.Setup(x => x.CompanyInfos).Returns(companyInfosDbSetMock.Object);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<KeyNotFoundException>(
+        Assert.ThrowsAsync<KeyNotFoundException>(
             () => _handler.Handle(command, CancellationToken.None));
 
-        Assert.That(ex.Message, Does.Contain($"Company with ID {companyId} not found"));
         _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 

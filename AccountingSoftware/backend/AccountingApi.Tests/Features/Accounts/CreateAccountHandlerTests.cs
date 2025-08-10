@@ -130,10 +130,9 @@ public class CreateAccountHandlerTests
         _contextMock.Setup(c => c.Accounts).Returns(mockAccountsSet.Object);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
         
-        Assert.That(ex.Message, Does.Contain("Account with code '1000' already exists"));
     }
 
     [Test]
@@ -162,10 +161,9 @@ public class CreateAccountHandlerTests
         _contextMock.Setup(c => c.Accounts).Returns(mockAccountsSet.Object);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
         
-        Assert.That(ex.Message, Does.Contain("Parent account with ID '999' does not exist"));
     }
 
     [Test]

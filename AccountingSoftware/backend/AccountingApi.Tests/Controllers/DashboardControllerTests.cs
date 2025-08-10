@@ -29,11 +29,11 @@ public class DashboardControllerTests
         var expectedStats = new DashboardStatsDto
         {
             TotalRevenue = 50000,
-            TotalExpenses = 30000,
-            NetProfit = 20000,
-            TotalCustomers = 150,
-            TotalInvoices = 300,
-            PendingInvoices = 25
+            OutstandingInvoices = 30000,
+            ActiveCustomers = 150,
+            TotalInvoiceCount = 300,
+            PaidInvoicesCount = 275,
+            OverdueAmount = 25000
         };
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetDashboardStatsQuery>(), It.IsAny<CancellationToken>()))
@@ -56,10 +56,9 @@ public class DashboardControllerTests
         // Arrange
         var expectedData = new InvoiceStatusDistributionDto
         {
-            PaidInvoices = 200,
-            PendingInvoices = 50,
-            OverdueInvoices = 15,
-            DraftInvoices = 10
+            Labels = new List<string> { "Paid", "Pending", "Overdue", "Draft" },
+            Data = new List<int> { 200, 50, 15, 10 },
+            BackgroundColors = new List<string> { "#28a745", "#ffc107", "#dc3545", "#6c757d" }
         };
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetInvoiceStatusDistributionQuery>(), It.IsAny<CancellationToken>()))
@@ -82,12 +81,8 @@ public class DashboardControllerTests
         // Arrange
         var expectedData = new MonthlyRevenueTrendDto
         {
-            MonthlyData = new List<MonthlyRevenueData>
-            {
-                new() { Month = "January", Revenue = 10000 },
-                new() { Month = "February", Revenue = 12000 },
-                new() { Month = "March", Revenue = 15000 }
-            }
+            Labels = new List<string> { "January", "February", "March" },
+            Data = new List<decimal> { 10000, 12000, 15000 }
         };
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetMonthlyRevenueTrendQuery>(), It.IsAny<CancellationToken>()))
@@ -111,12 +106,9 @@ public class DashboardControllerTests
         const int defaultLimit = 5;
         var expectedData = new TopCustomersDto
         {
-            Customers = new List<TopCustomerData>
-            {
-                new() { CustomerName = "Customer 1", Revenue = 25000 },
-                new() { CustomerName = "Customer 2", Revenue = 20000 },
-                new() { CustomerName = "Customer 3", Revenue = 15000 }
-            }
+            Labels = new List<string> { "Customer 1", "Customer 2", "Customer 3" },
+            Data = new List<decimal> { 25000, 20000, 15000 },
+            BackgroundColors = new List<string> { "#ff6384", "#36a2eb", "#ffce56" }
         };
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetTopCustomersQuery>(), It.IsAny<CancellationToken>()))
@@ -142,10 +134,9 @@ public class DashboardControllerTests
         const int customLimit = 10;
         var expectedData = new TopCustomersDto
         {
-            Customers = new List<TopCustomerData>
-            {
-                new() { CustomerName = "Customer 1", Revenue = 25000 }
-            }
+            Labels = new List<string> { "Customer 1" },
+            Data = new List<decimal> { 25000 },
+            BackgroundColors = new List<string> { "#ff6384" }
         };
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetTopCustomersQuery>(), It.IsAny<CancellationToken>()))
@@ -170,14 +161,9 @@ public class DashboardControllerTests
         // Arrange
         var expectedData = new RevenueVsExpensesDto
         {
-            TotalRevenue = 100000,
-            TotalExpenses = 75000,
-            NetProfit = 25000,
-            MonthlyComparison = new List<MonthlyComparisonData>
-            {
-                new() { Month = "January", Revenue = 8000, Expenses = 6000 },
-                new() { Month = "February", Revenue = 9000, Expenses = 6500 }
-            }
+            Labels = new List<string> { "January", "February" },
+            RevenueData = new List<decimal> { 8000, 9000 },
+            ExpensesData = new List<decimal> { 6000, 6500 }
         };
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetRevenueVsExpensesQuery>(), It.IsAny<CancellationToken>()))
@@ -201,11 +187,8 @@ public class DashboardControllerTests
         const int defaultMonths = 6;
         var expectedData = new PaymentTrendDto
         {
-            PaymentData = new List<PaymentTrendData>
-            {
-                new() { Month = "January", TotalPayments = 15000, PaymentCount = 25 },
-                new() { Month = "February", TotalPayments = 18000, PaymentCount = 30 }
-            }
+            Labels = new List<string> { "January", "February" },
+            Data = new List<decimal> { 15000, 18000 }
         };
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetPaymentTrendQuery>(), It.IsAny<CancellationToken>()))
@@ -231,10 +214,8 @@ public class DashboardControllerTests
         const int customMonths = 12;
         var expectedData = new PaymentTrendDto
         {
-            PaymentData = new List<PaymentTrendData>
-            {
-                new() { Month = "January", TotalPayments = 15000, PaymentCount = 25 }
-            }
+            Labels = new List<string> { "January" },
+            Data = new List<decimal> { 15000 }
         };
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetPaymentTrendQuery>(), It.IsAny<CancellationToken>()))
@@ -259,15 +240,9 @@ public class DashboardControllerTests
         // Arrange
         var expectedData = new AccountBalanceOverviewDto
         {
-            AccountBalances = new List<AccountBalanceData>
-            {
-                new() { AccountName = "Cash", AccountType = "Asset", Balance = 50000 },
-                new() { AccountName = "Accounts Receivable", AccountType = "Asset", Balance = 25000 },
-                new() { AccountName = "Accounts Payable", AccountType = "Liability", Balance = -15000 }
-            },
-            TotalAssets = 75000,
-            TotalLiabilities = 15000,
-            TotalEquity = 60000
+            Labels = new List<string> { "Cash", "Accounts Receivable", "Accounts Payable" },
+            Data = new List<decimal> { 50000, 25000, 15000 },
+            BackgroundColors = new List<string> { "#28a745", "#17a2b8", "#dc3545" }
         };
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetAccountBalanceOverviewQuery>(), It.IsAny<CancellationToken>()))

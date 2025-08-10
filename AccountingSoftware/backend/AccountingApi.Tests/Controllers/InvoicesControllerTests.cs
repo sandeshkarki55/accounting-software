@@ -1,6 +1,7 @@
 using AccountingApi.Controllers;
 using AccountingApi.DTOs;
 using AccountingApi.Features.Invoices;
+using AccountingApi.Models;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,7 +28,7 @@ public class InvoicesControllerTests
     {
         // Arrange
         var pagination = new PaginationParams { PageNumber = 1, PageSize = 10 };
-        var sorting = new SortingParams { SortField = "InvoiceNumber", SortOrder = "desc" };
+        var sorting = new SortingParams { OrderBy = "InvoiceNumber", Descending = true };
         var filtering = new InvoiceFilteringParams { SearchTerm = "INV-2024" };
         
         var expectedResult = new PagedResult<InvoiceDto>
@@ -121,9 +122,9 @@ public class InvoicesControllerTests
             CustomerId = 1,
             InvoiceDate = DateTime.UtcNow,
             DueDate = DateTime.UtcNow.AddDays(30),
-            Items = new List<InvoiceItemDto>
+            Items = new List<CreateInvoiceItemDto>
             {
-                new() { Description = "Service 1", Quantity = 1, Rate = 1000 }
+                new() { Description = "Service 1", Quantity = 1, UnitPrice = 1000 }
             }
         };
 
@@ -190,7 +191,7 @@ public class InvoicesControllerTests
         
         _mediatorMock.Verify(m => m.Send(
             It.Is<MarkInvoiceAsPaidCommand>(c => 
-                c.Id == invoiceId && 
+                c.InvoiceId == invoiceId && 
                 c.PaidDate == markAsPaidDto.PaidDate && 
                 c.PaymentReference == markAsPaidDto.PaymentReference), 
             It.IsAny<CancellationToken>()), Times.Once);

@@ -28,8 +28,8 @@ public class AccountsControllerTests
     {
         // Arrange
         var pagination = new PaginationParams { PageNumber = 1, PageSize = 10 };
-        var sorting = new SortingParams { SortField = "AccountName", SortOrder = "asc" };
-        var filtering = new AccountFilteringParams { AccountType = AccountType.Asset };
+        var sorting = new SortingParams { OrderBy = "asc" };
+        var filtering = new AccountFilteringParams { AccountType = (int?)AccountType.Asset };
         
         var expectedResult = new PagedResult<AccountDto>
         {
@@ -195,7 +195,7 @@ public class AccountsControllerTests
         Assert.That(noContentResult, Is.Not.Null);
         
         _mediatorMock.Verify(m => m.Send(
-            It.Is<UpdateAccountCommand>(c => c.Id == accountId && c.UpdateAccount == updateAccountDto), 
+            It.Is<UpdateAccountCommand>(c => c.Id == accountId && c.Account == updateAccountDto), 
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -225,7 +225,7 @@ public class AccountsControllerTests
         Assert.That(response, Is.Not.Null);
         
         _mediatorMock.Verify(m => m.Send(
-            It.Is<UpdateAccountCommand>(c => c.Id == accountId && c.UpdateAccount == updateAccountDto), 
+            It.Is<UpdateAccountCommand>(c => c.Id == accountId && c.Account == updateAccountDto), 
             It.IsAny<CancellationToken>()), Times.Once);
     }
 

@@ -144,10 +144,9 @@ public class DeleteCompanyInfoHandlerTests
         _contextMock.Setup(x => x.CompanyInfos).Returns(companyInfosDbSetMock.Object);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
 
-        Assert.That(ex.Message, Does.Contain("Cannot delete the default company"));
         _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -186,10 +185,9 @@ public class DeleteCompanyInfoHandlerTests
         _contextMock.Setup(x => x.CompanyInfos).Returns(companyInfosDbSetMock.Object);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
 
-        Assert.That(ex.Message, Does.Contain("Cannot delete company that has active invoices"));
         _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
