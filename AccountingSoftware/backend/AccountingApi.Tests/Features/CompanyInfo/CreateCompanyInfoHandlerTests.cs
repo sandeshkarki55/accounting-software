@@ -1,38 +1,28 @@
 using AccountingApi.DTOs;
 using AccountingApi.Features.CompanyInfo;
-using AccountingApi.Infrastructure;
-using AccountingApi.Mappings;
 using AccountingApi.Models;
-using AccountingApi.Services.CurrentUserService;
-
-using Microsoft.EntityFrameworkCore;
-
-using Moq;
+using AccountingApi.Tests.TestHelpers;
 
 namespace AccountingApi.Tests.Features.CompanyInfo;
 
-public class CreateCompanyInfoHandlerTests
+public class CreateCompanyInfoHandlerTests : BaseTestWithInMemoryDb
 {
-    private Mock<AccountingDbContext> _contextMock = null!;
-    private Mock<CompanyInfoMapper> _mapperMock = null!;
-    private Mock<ICurrentUserService> _currentUserServiceMock = null!;
     private CreateCompanyInfoCommandHandler _handler = null!;
 
     [SetUp]
-    public void SetUp()
+    public override void SetUp()
     {
-        var options = new DbContextOptionsBuilder<AccountingDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        
-        _contextMock = new Mock<AccountingDbContext>(options);
-        _mapperMock = new Mock<CompanyInfoMapper>();
-        _currentUserServiceMock = new Mock<ICurrentUserService>();
+        base.SetUp();
         
         _handler = new CreateCompanyInfoCommandHandler(
-            _contextMock.Object,
-            _mapperMock.Object,
-            _currentUserServiceMock.Object);
+            Context,
+            CompanyInfoMapper,
+            CurrentUserServiceMock.Object);
+    }
+
+    protected override void SeedTestData()
+    {
+        AddTestCompanies();
     }
 
     [Test]
@@ -55,51 +45,6 @@ public class CreateCompanyInfoHandlerTests
         };
 
         var command = new CreateCompanyInfoCommand(createCompanyInfoDto);
-        var currentUser = "test-user";
-        
-        var companyInfoEntity = new AccountingApi.Models.CompanyInfo
-        {
-            Id = 1,
-            CompanyName = "Test Company",
-            LegalName = "Test Company LLC",
-            Email = "info@testcompany.com",
-            Phone = "123-456-7890",
-            Address = "123 Main St",
-            City = "Anytown",
-            State = "Test State",
-            PostalCode = "12345",
-            Country = "Test Country",
-            TaxNumber = "123456789",
-            IsDefault = false,
-            CreatedBy = currentUser,
-            UpdatedBy = currentUser,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        var expectedDto = new CompanyInfoDto
-        {
-            Id = 1,
-            CompanyName = "Test Company",
-            LegalName = "Test Company LLC",
-            Email = "info@testcompany.com",
-            Phone = "123-456-7890",
-            Address = "123 Main St",
-            City = "Anytown",
-            State = "Test State",
-            PostalCode = "12345",
-            Country = "Test Country",
-            TaxNumber = "123456789",
-            IsDefault = false
-        };
-
-        _currentUserServiceMock.Setup(x => x.GetCurrentUserForAudit()).Returns(currentUser);
-        _mapperMock.Setup(x => x.ToEntity(createCompanyInfoDto)).Returns(companyInfoEntity);
-        _mapperMock.Setup(x => x.ToDto(It.IsAny<AccountingApi.Models.CompanyInfo>())).Returns(expectedDto);
-
-        var companyInfosDbSetMock = new Mock<DbSet<AccountingApi.Models.CompanyInfo>>();
-        _contextMock.Setup(x => x.CompanyInfos).Returns(companyInfosDbSetMock.Object);
-        _contextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -108,16 +53,29 @@ public class CreateCompanyInfoHandlerTests
         Assert.That(result, Is.Not.Null);
         Assert.That(result.CompanyName, Is.EqualTo("Test Company"));
         Assert.That(result.Email, Is.EqualTo("info@testcompany.com"));
+        Assert.That(result.LegalName, Is.EqualTo("Test Company LLC"));
+        Assert.That(result.IsDefault, Is.False);
         
-        companyInfosDbSetMock.Verify(x => x.Add(It.IsAny<AccountingApi.Models.CompanyInfo>()), Times.Once);
-        _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _currentUserServiceMock.Verify(x => x.GetCurrentUserForAudit(), Times.Once);
+        // Verify the company was created in the database
+        var createdCompany = Context.CompanyInfos.FirstOrDefault(c => c.CompanyName == "Test Company");
+        Assert.That(createdCompany, Is.Not.Null);
+        Assert.That(createdCompany.CreatedBy, Is.EqualTo("test-user-id"));
+        Assert.That(createdCompany.UpdatedBy, Is.EqualTo("test-user-id"));
     }
 
     [Test]
     public async Task Handle_UnsetsOtherDefaults_WhenSettingAsDefault()
     {
         // Arrange
+        // Modify existing test companies to have some as default
+        var existingCompanies = Context.CompanyInfos.ToList();
+        foreach (var company in existingCompanies)
+        {
+            company.IsDefault = true;
+            company.UpdatedBy = "old-user";
+        }
+        Context.SaveChanges();
+
         var createCompanyInfoDto = new CreateCompanyInfoDto
         {
             CompanyName = "New Default Company",
@@ -125,48 +83,6 @@ public class CreateCompanyInfoHandlerTests
         };
 
         var command = new CreateCompanyInfoCommand(createCompanyInfoDto);
-        var currentUser = "test-user";
-
-        var existingDefaultCompanies = new List<AccountingApi.Models.CompanyInfo>
-        {
-            new() { Id = 1, CompanyName = "Old Default 1", IsDefault = true },
-            new() { Id = 2, CompanyName = "Old Default 2", IsDefault = true }
-        };
-
-        var newCompanyEntity = new AccountingApi.Models.CompanyInfo
-        {
-            Id = 3,
-            CompanyName = "New Default Company",
-            IsDefault = true,
-            CreatedBy = currentUser,
-            UpdatedBy = currentUser
-        };
-
-        var expectedDto = new CompanyInfoDto
-        {
-            Id = 3,
-            CompanyName = "New Default Company",
-            IsDefault = true
-        };
-
-        _currentUserServiceMock.Setup(x => x.GetCurrentUserForAudit()).Returns(currentUser);
-        _mapperMock.Setup(x => x.ToEntity(createCompanyInfoDto)).Returns(newCompanyEntity);
-        _mapperMock.Setup(x => x.ToDto(It.IsAny<AccountingApi.Models.CompanyInfo>())).Returns(expectedDto);
-
-        var companyInfosDbSetMock = new Mock<DbSet<AccountingApi.Models.CompanyInfo>>();
-        var queryableCompanies = existingDefaultCompanies.AsQueryable();
-        
-        companyInfosDbSetMock.As<IQueryable<AccountingApi.Models.CompanyInfo>>()
-            .Setup(m => m.Provider).Returns(queryableCompanies.Provider);
-        companyInfosDbSetMock.As<IQueryable<AccountingApi.Models.CompanyInfo>>()
-            .Setup(m => m.Expression).Returns(queryableCompanies.Expression);
-        companyInfosDbSetMock.As<IQueryable<AccountingApi.Models.CompanyInfo>>()
-            .Setup(m => m.ElementType).Returns(queryableCompanies.ElementType);
-        companyInfosDbSetMock.As<IQueryable<AccountingApi.Models.CompanyInfo>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableCompanies.GetEnumerator());
-
-        _contextMock.Setup(x => x.CompanyInfos).Returns(companyInfosDbSetMock.Object);
-        _contextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -174,17 +90,30 @@ public class CreateCompanyInfoHandlerTests
         // Assert
         Assert.That(result, Is.Not.Null);
         Assert.That(result.IsDefault, Is.True);
-        Assert.That(existingDefaultCompanies.All(c => !c.IsDefault), Is.True);
-        Assert.That(existingDefaultCompanies.All(c => c.UpdatedBy == currentUser), Is.True);
         
-        companyInfosDbSetMock.Verify(x => x.Add(It.IsAny<AccountingApi.Models.CompanyInfo>()), Times.Once);
-        _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        // Verify the new company was created and set as default
+        var newCompany = Context.CompanyInfos.FirstOrDefault(c => c.CompanyName == "New Default Company");
+        Assert.That(newCompany, Is.Not.Null);
+        Assert.That(newCompany.IsDefault, Is.True);
+        
+        // Verify existing companies are no longer default
+        var otherCompanies = Context.CompanyInfos.Where(c => c.CompanyName != "New Default Company").ToList();
+        Assert.That(otherCompanies.All(c => !c.IsDefault), Is.True);
+        Assert.That(otherCompanies.All(c => c.UpdatedBy == "test-user-id"), Is.True);
     }
 
     [Test]
     public async Task Handle_DoesNotUnsetDefaults_WhenNotSettingAsDefault()
     {
         // Arrange
+        // Set existing companies as default
+        var existingCompanies = Context.CompanyInfos.ToList();
+        foreach (var company in existingCompanies)
+        {
+            company.IsDefault = true;
+        }
+        Context.SaveChanges();
+
         var createCompanyInfoDto = new CreateCompanyInfoDto
         {
             CompanyName = "Non-Default Company",
@@ -192,31 +121,6 @@ public class CreateCompanyInfoHandlerTests
         };
 
         var command = new CreateCompanyInfoCommand(createCompanyInfoDto);
-        var currentUser = "test-user";
-
-        var companyInfoEntity = new AccountingApi.Models.CompanyInfo
-        {
-            Id = 1,
-            CompanyName = "Non-Default Company",
-            IsDefault = false,
-            CreatedBy = currentUser,
-            UpdatedBy = currentUser
-        };
-
-        var expectedDto = new CompanyInfoDto
-        {
-            Id = 1,
-            CompanyName = "Non-Default Company",
-            IsDefault = false
-        };
-
-        _currentUserServiceMock.Setup(x => x.GetCurrentUserForAudit()).Returns(currentUser);
-        _mapperMock.Setup(x => x.ToEntity(createCompanyInfoDto)).Returns(companyInfoEntity);
-        _mapperMock.Setup(x => x.ToDto(It.IsAny<AccountingApi.Models.CompanyInfo>())).Returns(expectedDto);
-
-        var companyInfosDbSetMock = new Mock<DbSet<AccountingApi.Models.CompanyInfo>>();
-        _contextMock.Setup(x => x.CompanyInfos).Returns(companyInfosDbSetMock.Object);
-        _contextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -225,9 +129,14 @@ public class CreateCompanyInfoHandlerTests
         Assert.That(result, Is.Not.Null);
         Assert.That(result.IsDefault, Is.False);
         
-        // Verify no query was made to find existing defaults
-        companyInfosDbSetMock.Verify(x => x.Add(It.IsAny<AccountingApi.Models.CompanyInfo>()), Times.Once);
-        _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        // Verify the new company was created as non-default
+        var newCompany = Context.CompanyInfos.FirstOrDefault(c => c.CompanyName == "Non-Default Company");
+        Assert.That(newCompany, Is.Not.Null);
+        Assert.That(newCompany.IsDefault, Is.False);
+        
+        // Verify existing companies remain default (should not be affected)
+        var existingCompaniesAfter = Context.CompanyInfos.Where(c => c.CompanyName != "Non-Default Company").ToList();
+        Assert.That(existingCompaniesAfter.All(c => c.IsDefault), Is.True);
     }
 
     [Test]
@@ -240,33 +149,16 @@ public class CreateCompanyInfoHandlerTests
         };
 
         var command = new CreateCompanyInfoCommand(createCompanyInfoDto);
-        var currentUser = "audit-user";
-
-        var companyInfoEntity = new AccountingApi.Models.CompanyInfo
-        {
-            CompanyName = "Audit Test Company"
-        };
-
-        var expectedDto = new CompanyInfoDto
-        {
-            CompanyName = "Audit Test Company"
-        };
-
-        _currentUserServiceMock.Setup(x => x.GetCurrentUserForAudit()).Returns(currentUser);
-        _mapperMock.Setup(x => x.ToEntity(createCompanyInfoDto)).Returns(companyInfoEntity);
-        _mapperMock.Setup(x => x.ToDto(It.IsAny<AccountingApi.Models.CompanyInfo>())).Returns(expectedDto);
-
-        var companyInfosDbSetMock = new Mock<DbSet<AccountingApi.Models.CompanyInfo>>();
-        _contextMock.Setup(x => x.CompanyInfos).Returns(companyInfosDbSetMock.Object);
-        _contextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
         // Act
-        await _handler.Handle(command, CancellationToken.None);
+        var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.That(companyInfoEntity.CreatedBy, Is.EqualTo(currentUser));
-        Assert.That(companyInfoEntity.UpdatedBy, Is.EqualTo(currentUser));
-        
-        _currentUserServiceMock.Verify(x => x.GetCurrentUserForAudit(), Times.Once);
+        var createdCompany = Context.CompanyInfos.FirstOrDefault(c => c.CompanyName == "Audit Test Company");
+        Assert.That(createdCompany, Is.Not.Null);
+        Assert.That(createdCompany.CreatedBy, Is.EqualTo("test-user-id"));
+        Assert.That(createdCompany.UpdatedBy, Is.EqualTo("test-user-id"));
+        Assert.That(createdCompany.CreatedAt, Is.Not.Null);
+        Assert.That(createdCompany.UpdatedAt, Is.Not.Null);
     }
 }
