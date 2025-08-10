@@ -1,41 +1,28 @@
 using AccountingApi.DTOs;
 using AccountingApi.Features.Accounts;
-using AccountingApi.Infrastructure;
-using AccountingApi.Mappings;
 using AccountingApi.Models;
-using AccountingApi.Services.CurrentUserService;
-
-using Microsoft.EntityFrameworkCore;
+using AccountingApi.Tests.TestHelpers;
 using Microsoft.Extensions.Logging;
-
 using Moq;
 
 namespace AccountingApi.Tests.Features.Accounts;
 
-public class CreateAccountHandlerTests
+public class CreateAccountHandlerTests : BaseTestWithInMemoryDb
 {
-    private Mock<AccountingDbContext> _contextMock = null!;
-    private Mock<AccountMapper> _mapperMock = null!;
-    private Mock<ICurrentUserService> _currentUserServiceMock = null!;
     private Mock<ILogger<CreateAccountCommandHandler>> _loggerMock = null!;
     private CreateAccountCommandHandler _handler = null!;
 
     [SetUp]
-    public void SetUp()
+    public override void SetUp()
     {
-        var options = new DbContextOptionsBuilder<AccountingDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
+        base.SetUp();
         
-        _contextMock = new Mock<AccountingDbContext>(options);
-        _mapperMock = new Mock<AccountMapper>();
-        _currentUserServiceMock = new Mock<ICurrentUserService>();
         _loggerMock = new Mock<ILogger<CreateAccountCommandHandler>>();
         
         _handler = new CreateAccountCommandHandler(
-            _contextMock.Object,
-            _mapperMock.Object,
-            _currentUserServiceMock.Object,
+            Context,
+            AccountMapper,
+            CurrentUserServiceMock.Object,
             _loggerMock.Object);
     }
 
@@ -52,49 +39,22 @@ public class CreateAccountHandlerTests
         };
 
         var command = new CreateAccountCommand(createAccountDto);
-        
-        var accountEntity = new Account
-        {
-            Id = 1,
-            AccountCode = "1000",
-            AccountName = "Cash",
-            AccountType = AccountType.Asset,
-            Description = "Cash account"
-        };
-
-        var expectedDto = new AccountDto
-        {
-            Id = 1,
-            AccountCode = "1000",
-            AccountName = "Cash",
-            AccountType = AccountType.Asset,
-            Description = "Cash account"
-        };
-
-        var mockAccountsSet = new Mock<DbSet<Account>>();
-        var accountsList = new List<Account>().AsQueryable();
-        
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.Provider).Returns(accountsList.Provider);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.Expression).Returns(accountsList.Expression);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.ElementType).Returns(accountsList.ElementType);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.GetEnumerator()).Returns(accountsList.GetEnumerator());
-
-        _contextMock.Setup(c => c.Accounts).Returns(mockAccountsSet.Object);
-        _mapperMock.Setup(m => m.ToEntity(createAccountDto)).Returns(accountEntity);
-        _mapperMock.Setup(m => m.ToDto(accountEntity)).Returns(expectedDto);
-        _currentUserServiceMock.Setup(s => s.GetCurrentUserForAudit()).Returns("testuser");
-        _contextMock.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        CurrentUserServiceMock.Setup(s => s.GetCurrentUserForAudit()).Returns("testuser");
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.That(result, Is.EqualTo(expectedDto));
-        _mapperMock.Verify(m => m.ToEntity(createAccountDto), Times.Once);
-        _mapperMock.Verify(m => m.ToDto(accountEntity), Times.Once);
-        _currentUserServiceMock.Verify(s => s.GetCurrentUserForAudit(), Times.Once);
-        _contextMock.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        mockAccountsSet.Verify(s => s.Add(accountEntity), Times.Once);
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.AccountCode, Is.EqualTo("1000"));
+        Assert.That(result.AccountName, Is.EqualTo("Cash"));
+        Assert.That(result.AccountType, Is.EqualTo(AccountType.Asset));
+        Assert.That(result.Description, Is.EqualTo("Cash account"));
+
+        // Verify the account was actually created in the database
+        var createdAccount = Context.Accounts.FirstOrDefault(a => a.AccountCode == "1000");
+        Assert.That(createdAccount, Is.Not.Null);
+        Assert.That(createdAccount!.CreatedBy, Is.EqualTo("testuser"));
     }
 
     [Test]
@@ -111,28 +71,24 @@ public class CreateAccountHandlerTests
 
         var command = new CreateAccountCommand(createAccountDto);
 
+        // Create an existing account with the same code in the database
         var existingAccount = new Account
         {
-            Id = 1,
             AccountCode = "1000",
             AccountName = "Existing Cash",
-            AccountType = AccountType.Asset
+            AccountType = AccountType.Asset,
+            CreatedBy = "existing-user",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedBy = "existing-user",
+            UpdatedAt = DateTime.UtcNow
         };
 
-        var mockAccountsSet = new Mock<DbSet<Account>>();
-        var accountsList = new List<Account> { existingAccount }.AsQueryable();
-        
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.Provider).Returns(accountsList.Provider);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.Expression).Returns(accountsList.Expression);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.ElementType).Returns(accountsList.ElementType);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.GetEnumerator()).Returns(accountsList.GetEnumerator());
-
-        _contextMock.Setup(c => c.Accounts).Returns(mockAccountsSet.Object);
+        Context.Accounts.Add(existingAccount);
+        Context.SaveChanges();
 
         // Act & Assert
         Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
-        
     }
 
     [Test]
@@ -145,25 +101,16 @@ public class CreateAccountHandlerTests
             AccountName = "Checking Account",
             AccountType = AccountType.Asset,
             Description = "Checking account",
-            ParentAccountId = 999
+            ParentAccountId = 999 // Non-existent parent ID
         };
 
         var command = new CreateAccountCommand(createAccountDto);
 
-        var mockAccountsSet = new Mock<DbSet<Account>>();
-        var accountsList = new List<Account>().AsQueryable();
-        
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.Provider).Returns(accountsList.Provider);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.Expression).Returns(accountsList.Expression);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.ElementType).Returns(accountsList.ElementType);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.GetEnumerator()).Returns(accountsList.GetEnumerator());
-
-        _contextMock.Setup(c => c.Accounts).Returns(mockAccountsSet.Object);
+        // Don't add any accounts to the database, so parent won't exist
 
         // Act & Assert
         Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
-        
     }
 
     [Test]
@@ -181,54 +128,38 @@ public class CreateAccountHandlerTests
 
         var command = new CreateAccountCommand(createAccountDto);
 
+        // Create a parent account in the database
         var parentAccount = new Account
         {
             Id = 1,
             AccountCode = "1000",
             AccountName = "Cash",
-            AccountType = AccountType.Asset
-        };
-
-        var accountEntity = new Account
-        {
-            Id = 2,
-            AccountCode = "1100",
-            AccountName = "Checking Account",
             AccountType = AccountType.Asset,
-            Description = "Checking account",
-            ParentAccountId = 1
+            CreatedBy = "test-user",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedBy = "test-user",
+            UpdatedAt = DateTime.UtcNow
         };
 
-        var expectedDto = new AccountDto
-        {
-            Id = 2,
-            AccountCode = "1100",
-            AccountName = "Checking Account",
-            AccountType = AccountType.Asset,
-            Description = "Checking account",
-            ParentAccountId = 1
-        };
+        Context.Accounts.Add(parentAccount);
+        Context.SaveChanges();
 
-        var mockAccountsSet = new Mock<DbSet<Account>>();
-        var accountsList = new List<Account> { parentAccount }.AsQueryable();
-        
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.Provider).Returns(accountsList.Provider);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.Expression).Returns(accountsList.Expression);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.ElementType).Returns(accountsList.ElementType);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.GetEnumerator()).Returns(accountsList.GetEnumerator());
-
-        _contextMock.Setup(c => c.Accounts).Returns(mockAccountsSet.Object);
-        _mapperMock.Setup(m => m.ToEntity(createAccountDto)).Returns(accountEntity);
-        _mapperMock.Setup(m => m.ToDto(accountEntity)).Returns(expectedDto);
-        _currentUserServiceMock.Setup(s => s.GetCurrentUserForAudit()).Returns("testuser");
-        _contextMock.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        CurrentUserServiceMock.Setup(s => s.GetCurrentUserForAudit()).Returns("testuser");
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.That(result, Is.EqualTo(expectedDto));
-        Assert.That(accountEntity.CreatedBy, Is.EqualTo("testuser"));
-        Assert.That(accountEntity.UpdatedBy, Is.EqualTo("testuser"));
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.AccountCode, Is.EqualTo("1100"));
+        Assert.That(result.AccountName, Is.EqualTo("Checking Account"));
+        Assert.That(result.ParentAccountId, Is.EqualTo(1));
+
+        // Verify the account was actually created in the database
+        var createdAccount = Context.Accounts.FirstOrDefault(a => a.AccountCode == "1100");
+        Assert.That(createdAccount, Is.Not.Null);
+        Assert.That(createdAccount!.CreatedBy, Is.EqualTo("testuser"));
+        Assert.That(createdAccount.UpdatedBy, Is.EqualTo("testuser"));
+        Assert.That(createdAccount.ParentAccountId, Is.EqualTo(1));
     }
 }

@@ -1,38 +1,28 @@
 using AccountingApi.DTOs;
 using AccountingApi.Features.JournalEntries;
-using AccountingApi.Infrastructure;
-using AccountingApi.Mappings;
 using AccountingApi.Models;
-using AccountingApi.Services.CurrentUserService;
-
-using Microsoft.EntityFrameworkCore;
-
-using Moq;
+using AccountingApi.Tests.TestHelpers;
 
 namespace AccountingApi.Tests.Features.JournalEntries;
 
-public class UpdateJournalEntryHandlerTests
+public class UpdateJournalEntryHandlerTests : BaseTestWithInMemoryDb
 {
-    private Mock<AccountingDbContext> _contextMock = null!;
-    private Mock<JournalEntryMapper> _mapperMock = null!;
-    private Mock<ICurrentUserService> _currentUserServiceMock = null!;
     private UpdateJournalEntryCommandHandler _handler = null!;
 
     [SetUp]
-    public void SetUp()
+    public override void SetUp()
     {
-        var options = new DbContextOptionsBuilder<AccountingDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        
-        _contextMock = new Mock<AccountingDbContext>(options);
-        _mapperMock = new Mock<JournalEntryMapper>();
-        _currentUserServiceMock = new Mock<ICurrentUserService>();
+        base.SetUp();
         
         _handler = new UpdateJournalEntryCommandHandler(
-            _contextMock.Object,
-            _mapperMock.Object,
-            _currentUserServiceMock.Object);
+            Context,
+            JournalEntryMapper,
+            CurrentUserServiceMock.Object);
+    }
+
+    protected override void SeedTestData()
+    {
+        AddTestAccounts();
     }
 
     [Test]
@@ -55,63 +45,30 @@ public class UpdateJournalEntryHandlerTests
         var command = new UpdateJournalEntryCommand(journalEntryId, updateJournalEntryDto);
         var currentUser = "test-user";
 
+        // Create existing journal entry in database
         var existingJournalEntry = new JournalEntry
         {
             Id = journalEntryId,
+            EntryNumber = "JE-001",
+            TransactionDate = DateTime.UtcNow.Date.AddDays(-1),
             Description = "Original Journal Entry",
             Reference = "REF-001",
             IsPosted = false,
-            IsDeleted = false,
+            CreatedBy = currentUser,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedBy = currentUser,
+            UpdatedAt = DateTime.UtcNow,
             Lines = new List<JournalEntryLine>
             {
-                new() { Id = 1, AccountId = 1, DebitAmount = 1000, CreditAmount = 0 },
-                new() { Id = 2, AccountId = 2, DebitAmount = 0, CreditAmount = 1000 }
+                new() { Id = 1, AccountId = 1, DebitAmount = 1000, CreditAmount = 0, Description = "Original debit" },
+                new() { Id = 2, AccountId = 2, DebitAmount = 0, CreditAmount = 1000, Description = "Original credit" }
             }
         };
 
-        var expectedDto = new JournalEntryDto
-        {
-            Id = journalEntryId,
-            Description = "Updated Journal Entry",
-            Reference = "REF-001-UPDATED"
-        };
+        Context.JournalEntries.Add(existingJournalEntry);
+        Context.SaveChanges();
 
-        var accounts = new List<Account>
-        {
-            new() { Id = 1, AccountName = "Cash", IsDeleted = false },
-            new() { Id = 2, AccountName = "Revenue", IsDeleted = false }
-        };
-
-        var journalEntries = new List<JournalEntry> { existingJournalEntry };
-        var queryableJournalEntries = journalEntries.AsQueryable();
-
-        var journalEntriesDbSetMock = new Mock<DbSet<JournalEntry>>();
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Provider).Returns(queryableJournalEntries.Provider);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Expression).Returns(queryableJournalEntries.Expression);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.ElementType).Returns(queryableJournalEntries.ElementType);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableJournalEntries.GetEnumerator());
-
-        var queryableAccounts = accounts.AsQueryable();
-        var accountsDbSetMock = new Mock<DbSet<Account>>();
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Provider).Returns(queryableAccounts.Provider);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Expression).Returns(queryableAccounts.Expression);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.ElementType).Returns(queryableAccounts.ElementType);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableAccounts.GetEnumerator());
-
-        _contextMock.Setup(x => x.JournalEntries).Returns(journalEntriesDbSetMock.Object);
-        _contextMock.Setup(x => x.Accounts).Returns(accountsDbSetMock.Object);
-        _contextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
-        _currentUserServiceMock.Setup(x => x.GetCurrentUserForAudit()).Returns(currentUser);
-        _mapperMock.Setup(x => x.UpdateEntity(existingJournalEntry, updateJournalEntryDto));
-        _mapperMock.Setup(x => x.ToDto(existingJournalEntry)).Returns(expectedDto);
+        CurrentUserServiceMock.Setup(x => x.GetCurrentUserForAudit()).Returns(currentUser);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -120,11 +77,13 @@ public class UpdateJournalEntryHandlerTests
         Assert.That(result, Is.Not.Null);
         Assert.That(result.Description, Is.EqualTo("Updated Journal Entry"));
         Assert.That(result.Reference, Is.EqualTo("REF-001-UPDATED"));
-        Assert.That(existingJournalEntry.UpdatedBy, Is.EqualTo(currentUser));
         
-        _mapperMock.Verify(x => x.UpdateEntity(existingJournalEntry, updateJournalEntryDto), Times.Once);
-        _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _currentUserServiceMock.Verify(x => x.GetCurrentUserForAudit(), Times.Once);
+        // Verify the entity was actually updated in the database
+        var updatedEntry = await Context.JournalEntries.FindAsync(journalEntryId);
+        Assert.That(updatedEntry, Is.Not.Null);
+        Assert.That(updatedEntry!.UpdatedBy, Is.EqualTo(currentUser));
+        Assert.That(updatedEntry.Description, Is.EqualTo("Updated Journal Entry"));
+        Assert.That(updatedEntry.Reference, Is.EqualTo("REF-001-UPDATED"));
     }
 
     [Test]
@@ -144,26 +103,11 @@ public class UpdateJournalEntryHandlerTests
 
         var command = new UpdateJournalEntryCommand(journalEntryId, updateJournalEntryDto);
 
-        var journalEntries = new List<JournalEntry>();
-        var queryableJournalEntries = journalEntries.AsQueryable();
-
-        var journalEntriesDbSetMock = new Mock<DbSet<JournalEntry>>();
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Provider).Returns(queryableJournalEntries.Provider);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Expression).Returns(queryableJournalEntries.Expression);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.ElementType).Returns(queryableJournalEntries.ElementType);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableJournalEntries.GetEnumerator());
-
-        _contextMock.Setup(x => x.JournalEntries).Returns(journalEntriesDbSetMock.Object);
+        // Don't add any journal entries to the database, so the requested ID won't be found
 
         // Act & Assert
         Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
-
-        _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Test]
@@ -179,34 +123,28 @@ public class UpdateJournalEntryHandlerTests
 
         var command = new UpdateJournalEntryCommand(journalEntryId, updateJournalEntryDto);
 
-        var existingJournalEntry = new JournalEntry
+        // Create a deleted journal entry in database
+        var deletedJournalEntry = new JournalEntry
         {
             Id = journalEntryId,
+            EntryNumber = "JE-DEL",
+            TransactionDate = DateTime.UtcNow.Date,
             Description = "Deleted Entry",
             IsPosted = false,
             IsDeleted = true, // Entry is deleted
+            CreatedBy = "test-user",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedBy = "test-user",
+            UpdatedAt = DateTime.UtcNow,
             Lines = new List<JournalEntryLine>()
         };
 
-        var journalEntries = new List<JournalEntry> { existingJournalEntry };
-        var queryableJournalEntries = journalEntries.Where(je => !je.IsDeleted).AsQueryable();
-
-        var journalEntriesDbSetMock = new Mock<DbSet<JournalEntry>>();
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Provider).Returns(queryableJournalEntries.Provider);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Expression).Returns(queryableJournalEntries.Expression);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.ElementType).Returns(queryableJournalEntries.ElementType);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableJournalEntries.GetEnumerator());
-
-        _contextMock.Setup(x => x.JournalEntries).Returns(journalEntriesDbSetMock.Object);
+        Context.JournalEntries.Add(deletedJournalEntry);
+        Context.SaveChanges();
 
         // Act & Assert
         Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
-
     }
 
     [Test]
@@ -222,35 +160,30 @@ public class UpdateJournalEntryHandlerTests
 
         var command = new UpdateJournalEntryCommand(journalEntryId, updateJournalEntryDto);
 
-        var existingJournalEntry = new JournalEntry
+        // Create a posted journal entry in database
+        var postedJournalEntry = new JournalEntry
         {
             Id = journalEntryId,
+            EntryNumber = "JE-POST",
+            TransactionDate = DateTime.UtcNow.Date,
             Description = "Posted Entry",
             IsPosted = true, // Entry is posted
             IsDeleted = false,
+            PostedAt = DateTime.UtcNow,
+            PostedBy = "test-user",
+            CreatedBy = "test-user",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedBy = "test-user",
+            UpdatedAt = DateTime.UtcNow,
             Lines = new List<JournalEntryLine>()
         };
 
-        var journalEntries = new List<JournalEntry> { existingJournalEntry };
-        var queryableJournalEntries = journalEntries.AsQueryable();
-
-        var journalEntriesDbSetMock = new Mock<DbSet<JournalEntry>>();
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Provider).Returns(queryableJournalEntries.Provider);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Expression).Returns(queryableJournalEntries.Expression);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.ElementType).Returns(queryableJournalEntries.ElementType);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableJournalEntries.GetEnumerator());
-
-        _contextMock.Setup(x => x.JournalEntries).Returns(journalEntriesDbSetMock.Object);
+        Context.JournalEntries.Add(postedJournalEntry);
+        Context.SaveChanges();
 
         // Act & Assert
         Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
-
-        _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Test]
@@ -270,35 +203,28 @@ public class UpdateJournalEntryHandlerTests
 
         var command = new UpdateJournalEntryCommand(journalEntryId, updateJournalEntryDto);
 
+        // Create an unposted journal entry in database
         var existingJournalEntry = new JournalEntry
         {
             Id = journalEntryId,
+            EntryNumber = "JE-UNBAL",
+            TransactionDate = DateTime.UtcNow.Date,
             Description = "Original Entry",
             IsPosted = false,
             IsDeleted = false,
+            CreatedBy = "test-user",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedBy = "test-user",
+            UpdatedAt = DateTime.UtcNow,
             Lines = new List<JournalEntryLine>()
         };
 
-        var journalEntries = new List<JournalEntry> { existingJournalEntry };
-        var queryableJournalEntries = journalEntries.AsQueryable();
-
-        var journalEntriesDbSetMock = new Mock<DbSet<JournalEntry>>();
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Provider).Returns(queryableJournalEntries.Provider);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Expression).Returns(queryableJournalEntries.Expression);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.ElementType).Returns(queryableJournalEntries.ElementType);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableJournalEntries.GetEnumerator());
-
-        _contextMock.Setup(x => x.JournalEntries).Returns(journalEntriesDbSetMock.Object);
+        Context.JournalEntries.Add(existingJournalEntry);
+        Context.SaveChanges();
 
         // Act & Assert
         Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
-
-        _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Test]
@@ -318,34 +244,27 @@ public class UpdateJournalEntryHandlerTests
 
         var command = new UpdateJournalEntryCommand(journalEntryId, updateJournalEntryDto);
 
+        // Create an unposted journal entry in database
         var existingJournalEntry = new JournalEntry
         {
             Id = journalEntryId,
+            EntryNumber = "JE-INVALID",
+            TransactionDate = DateTime.UtcNow.Date,
             IsPosted = false,
             IsDeleted = false,
+            CreatedBy = "test-user",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedBy = "test-user",
+            UpdatedAt = DateTime.UtcNow,
             Lines = new List<JournalEntryLine>()
         };
 
-        var journalEntries = new List<JournalEntry> { existingJournalEntry };
-        var queryableJournalEntries = journalEntries.AsQueryable();
-
-        var journalEntriesDbSetMock = new Mock<DbSet<JournalEntry>>();
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Provider).Returns(queryableJournalEntries.Provider);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Expression).Returns(queryableJournalEntries.Expression);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.ElementType).Returns(queryableJournalEntries.ElementType);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableJournalEntries.GetEnumerator());
-
-        _contextMock.Setup(x => x.JournalEntries).Returns(journalEntriesDbSetMock.Object);
+        Context.JournalEntries.Add(existingJournalEntry);
+        Context.SaveChanges();
 
         // Act & Assert
         Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
-
-        _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Test]
@@ -365,34 +284,27 @@ public class UpdateJournalEntryHandlerTests
 
         var command = new UpdateJournalEntryCommand(journalEntryId, updateJournalEntryDto);
 
+        // Create an unposted journal entry in database
         var existingJournalEntry = new JournalEntry
         {
             Id = journalEntryId,
+            EntryNumber = "JE-ZERO",
+            TransactionDate = DateTime.UtcNow.Date,
             IsPosted = false,
             IsDeleted = false,
+            CreatedBy = "test-user",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedBy = "test-user",
+            UpdatedAt = DateTime.UtcNow,
             Lines = new List<JournalEntryLine>()
         };
 
-        var journalEntries = new List<JournalEntry> { existingJournalEntry };
-        var queryableJournalEntries = journalEntries.AsQueryable();
-
-        var journalEntriesDbSetMock = new Mock<DbSet<JournalEntry>>();
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Provider).Returns(queryableJournalEntries.Provider);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Expression).Returns(queryableJournalEntries.Expression);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.ElementType).Returns(queryableJournalEntries.ElementType);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableJournalEntries.GetEnumerator());
-
-        _contextMock.Setup(x => x.JournalEntries).Returns(journalEntriesDbSetMock.Object);
+        Context.JournalEntries.Add(existingJournalEntry);
+        Context.SaveChanges();
 
         // Act & Assert
         Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
-
-        _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Test]
@@ -412,51 +324,27 @@ public class UpdateJournalEntryHandlerTests
 
         var command = new UpdateJournalEntryCommand(journalEntryId, updateJournalEntryDto);
 
+        // Create an unposted journal entry in database
         var existingJournalEntry = new JournalEntry
         {
             Id = journalEntryId,
+            EntryNumber = "JE-MISSING",
+            TransactionDate = DateTime.UtcNow.Date,
             IsPosted = false,
             IsDeleted = false,
+            CreatedBy = "test-user",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedBy = "test-user",
+            UpdatedAt = DateTime.UtcNow,
             Lines = new List<JournalEntryLine>()
         };
 
-        var accounts = new List<Account>
-        {
-            new() { Id = 1, AccountName = "Cash", IsDeleted = false }
-        };
-
-        var journalEntries = new List<JournalEntry> { existingJournalEntry };
-        var queryableJournalEntries = journalEntries.AsQueryable();
-
-        var journalEntriesDbSetMock = new Mock<DbSet<JournalEntry>>();
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Provider).Returns(queryableJournalEntries.Provider);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Expression).Returns(queryableJournalEntries.Expression);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.ElementType).Returns(queryableJournalEntries.ElementType);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableJournalEntries.GetEnumerator());
-
-        var queryableAccounts = accounts.AsQueryable();
-        var accountsDbSetMock = new Mock<DbSet<Account>>();
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Provider).Returns(queryableAccounts.Provider);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Expression).Returns(queryableAccounts.Expression);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.ElementType).Returns(queryableAccounts.ElementType);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableAccounts.GetEnumerator());
-
-        _contextMock.Setup(x => x.JournalEntries).Returns(journalEntriesDbSetMock.Object);
-        _contextMock.Setup(x => x.Accounts).Returns(accountsDbSetMock.Object);
+        Context.JournalEntries.Add(existingJournalEntry);
+        Context.SaveChanges();
 
         // Act & Assert
         Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
-
-        _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Test]
@@ -477,57 +365,26 @@ public class UpdateJournalEntryHandlerTests
         var command = new UpdateJournalEntryCommand(journalEntryId, updateJournalEntryDto);
         var currentUser = "test-user";
 
+        // Create an unposted journal entry in database
         var existingJournalEntry = new JournalEntry
         {
             Id = journalEntryId,
+            EntryNumber = "JE-ROUND",
+            TransactionDate = DateTime.UtcNow.Date,
             Description = "Original Entry",
             IsPosted = false,
             IsDeleted = false,
+            CreatedBy = currentUser,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedBy = currentUser,
+            UpdatedAt = DateTime.UtcNow,
             Lines = new List<JournalEntryLine>()
         };
 
-        var expectedDto = new JournalEntryDto
-        {
-            Id = journalEntryId,
-            Description = "Entry with Small Rounding"
-        };
+        Context.JournalEntries.Add(existingJournalEntry);
+        Context.SaveChanges();
 
-        var accounts = new List<Account>
-        {
-            new() { Id = 1, AccountName = "Cash", IsDeleted = false },
-            new() { Id = 2, AccountName = "Revenue", IsDeleted = false }
-        };
-
-        var journalEntries = new List<JournalEntry> { existingJournalEntry };
-        var queryableJournalEntries = journalEntries.AsQueryable();
-
-        var journalEntriesDbSetMock = new Mock<DbSet<JournalEntry>>();
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Provider).Returns(queryableJournalEntries.Provider);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Expression).Returns(queryableJournalEntries.Expression);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.ElementType).Returns(queryableJournalEntries.ElementType);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableJournalEntries.GetEnumerator());
-
-        var queryableAccounts = accounts.AsQueryable();
-        var accountsDbSetMock = new Mock<DbSet<Account>>();
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Provider).Returns(queryableAccounts.Provider);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Expression).Returns(queryableAccounts.Expression);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.ElementType).Returns(queryableAccounts.ElementType);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableAccounts.GetEnumerator());
-
-        _contextMock.Setup(x => x.JournalEntries).Returns(journalEntriesDbSetMock.Object);
-        _contextMock.Setup(x => x.Accounts).Returns(accountsDbSetMock.Object);
-        _contextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
-        _currentUserServiceMock.Setup(x => x.GetCurrentUserForAudit()).Returns(currentUser);
-        _mapperMock.Setup(x => x.UpdateEntity(existingJournalEntry, updateJournalEntryDto));
-        _mapperMock.Setup(x => x.ToDto(existingJournalEntry)).Returns(expectedDto);
+        CurrentUserServiceMock.Setup(x => x.GetCurrentUserForAudit()).Returns(currentUser);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -536,8 +393,10 @@ public class UpdateJournalEntryHandlerTests
         Assert.That(result, Is.Not.Null);
         Assert.That(result.Description, Is.EqualTo("Entry with Small Rounding"));
         
-        _mapperMock.Verify(x => x.UpdateEntity(existingJournalEntry, updateJournalEntryDto), Times.Once);
-        _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        // Verify the entity was actually updated in the database
+        var updatedEntry = await Context.JournalEntries.FindAsync(journalEntryId);
+        Assert.That(updatedEntry, Is.Not.Null);
+        Assert.That(updatedEntry!.UpdatedBy, Is.EqualTo(currentUser));
     }
 
     [Test]
@@ -558,64 +417,33 @@ public class UpdateJournalEntryHandlerTests
         var command = new UpdateJournalEntryCommand(journalEntryId, updateJournalEntryDto);
         var currentUser = "audit-user";
 
+        // Create an unposted journal entry in database
         var existingJournalEntry = new JournalEntry
         {
             Id = journalEntryId,
+            EntryNumber = "JE-AUDIT",
+            TransactionDate = DateTime.UtcNow.Date,
             Description = "Original Entry",
             IsPosted = false,
             IsDeleted = false,
+            CreatedBy = "original-user",
+            CreatedAt = DateTime.UtcNow.AddDays(-1),
+            UpdatedBy = "original-user",
+            UpdatedAt = DateTime.UtcNow.AddDays(-1),
             Lines = new List<JournalEntryLine>()
         };
 
-        var expectedDto = new JournalEntryDto
-        {
-            Id = journalEntryId,
-            Description = "Audit Test Entry"
-        };
+        Context.JournalEntries.Add(existingJournalEntry);
+        Context.SaveChanges();
 
-        var accounts = new List<Account>
-        {
-            new() { Id = 1, AccountName = "Cash", IsDeleted = false },
-            new() { Id = 2, AccountName = "Revenue", IsDeleted = false }
-        };
-
-        var journalEntries = new List<JournalEntry> { existingJournalEntry };
-        var queryableJournalEntries = journalEntries.AsQueryable();
-
-        var journalEntriesDbSetMock = new Mock<DbSet<JournalEntry>>();
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Provider).Returns(queryableJournalEntries.Provider);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.Expression).Returns(queryableJournalEntries.Expression);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.ElementType).Returns(queryableJournalEntries.ElementType);
-        journalEntriesDbSetMock.As<IQueryable<JournalEntry>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableJournalEntries.GetEnumerator());
-
-        var queryableAccounts = accounts.AsQueryable();
-        var accountsDbSetMock = new Mock<DbSet<Account>>();
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Provider).Returns(queryableAccounts.Provider);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Expression).Returns(queryableAccounts.Expression);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.ElementType).Returns(queryableAccounts.ElementType);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableAccounts.GetEnumerator());
-
-        _contextMock.Setup(x => x.JournalEntries).Returns(journalEntriesDbSetMock.Object);
-        _contextMock.Setup(x => x.Accounts).Returns(accountsDbSetMock.Object);
-        _contextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
-        _currentUserServiceMock.Setup(x => x.GetCurrentUserForAudit()).Returns(currentUser);
-        _mapperMock.Setup(x => x.UpdateEntity(existingJournalEntry, updateJournalEntryDto));
-        _mapperMock.Setup(x => x.ToDto(existingJournalEntry)).Returns(expectedDto);
+        CurrentUserServiceMock.Setup(x => x.GetCurrentUserForAudit()).Returns(currentUser);
 
         // Act
         await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.That(existingJournalEntry.UpdatedBy, Is.EqualTo(currentUser));
-        
-        _currentUserServiceMock.Verify(x => x.GetCurrentUserForAudit(), Times.Once);
+        var updatedEntry = await Context.JournalEntries.FindAsync(journalEntryId);
+        Assert.That(updatedEntry, Is.Not.Null);
+        Assert.That(updatedEntry!.UpdatedBy, Is.EqualTo(currentUser));
     }
 }
