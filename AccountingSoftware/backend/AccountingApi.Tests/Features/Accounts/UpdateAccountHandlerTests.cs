@@ -1,45 +1,35 @@
 using AccountingApi.DTOs;
 using AccountingApi.Features.Accounts;
-using AccountingApi.Infrastructure;
-using AccountingApi.Mappings;
 using AccountingApi.Models;
-using AccountingApi.Services.CurrentUserService;
-
-using Microsoft.EntityFrameworkCore;
-
-using Moq;
+using AccountingApi.Tests.TestHelpers;
 
 namespace AccountingApi.Tests.Features.Accounts;
 
-public class UpdateAccountHandlerTests
+public class UpdateAccountHandlerTests : BaseTestWithInMemoryDb
 {
-    private Mock<AccountingDbContext> _contextMock = null!;
-    private Mock<AccountMapper> _mapperMock = null!;
-    private Mock<ICurrentUserService> _currentUserServiceMock = null!;
     private UpdateAccountCommandHandler _handler = null!;
 
     [SetUp]
-    public void SetUp()
+    public override void SetUp()
     {
-        var options = new DbContextOptionsBuilder<AccountingDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        
-        _contextMock = new Mock<AccountingDbContext>(options);
-        _mapperMock = new Mock<AccountMapper>();
-        _currentUserServiceMock = new Mock<ICurrentUserService>();
+        base.SetUp();
         
         _handler = new UpdateAccountCommandHandler(
-            _contextMock.Object,
-            _mapperMock.Object,
-            _currentUserServiceMock.Object);
+            Context,
+            AccountMapper,
+            CurrentUserServiceMock.Object);
+    }
+
+    protected override void SeedTestData()
+    {
+        AddTestAccounts();
     }
 
     [Test]
     public async Task Handle_ReturnsFalse_WhenAccountNotFound()
     {
         // Arrange
-        const int accountId = 999;
+        const int accountId = 999; // Account that doesn't exist
         var updateAccountDto = new UpdateAccountDto
         {
             AccountName = "Updated Name",
@@ -48,30 +38,18 @@ public class UpdateAccountHandlerTests
         };
         var command = new UpdateAccountCommand(accountId, updateAccountDto);
 
-        var mockAccountsSet = new Mock<DbSet<Account>>();
-        var accountsList = new List<Account>().AsQueryable();
-        
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.Provider).Returns(accountsList.Provider);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.Expression).Returns(accountsList.Expression);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.ElementType).Returns(accountsList.ElementType);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.GetEnumerator()).Returns(accountsList.GetEnumerator());
-
-        _contextMock.Setup(c => c.Accounts).Returns(mockAccountsSet.Object);
-
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         Assert.That(result, Is.False);
-        _mapperMock.Verify(m => m.UpdateEntity(It.IsAny<Account>(), It.IsAny<UpdateAccountDto>()), Times.Never);
-        _contextMock.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Test]
     public async Task Handle_UpdatesAccountSuccessfully_WhenAccountExists()
     {
         // Arrange
-        const int accountId = 1;
+        const int accountId = 1; // Use existing test account
         var updateAccountDto = new UpdateAccountDto
         {
             AccountName = "Updated Cash Account",
@@ -80,46 +58,31 @@ public class UpdateAccountHandlerTests
         };
         var command = new UpdateAccountCommand(accountId, updateAccountDto);
 
-        var account = new Account
-        {
-            Id = accountId,
-            AccountCode = "1000",
-            AccountName = "Cash",
-            AccountType = AccountType.Asset,
-            Description = "Original description",
-            IsActive = true
-        };
-
-        var mockAccountsSet = new Mock<DbSet<Account>>();
-        var accountsList = new List<Account> { account }.AsQueryable();
-        
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.Provider).Returns(accountsList.Provider);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.Expression).Returns(accountsList.Expression);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.ElementType).Returns(accountsList.ElementType);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.GetEnumerator()).Returns(accountsList.GetEnumerator());
-
-        _contextMock.Setup(c => c.Accounts).Returns(mockAccountsSet.Object);
-        _currentUserServiceMock.Setup(s => s.GetCurrentUserForAudit()).Returns("testuser");
-        _contextMock.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        // Get the account before update
+        var accountBefore = Context.Accounts.Find(accountId);
+        Assert.That(accountBefore, Is.Not.Null);
+        var originalName = accountBefore.AccountName;
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         Assert.That(result, Is.True);
-        Assert.That(account.UpdatedBy, Is.EqualTo("testuser"));
-        Assert.That(account.UpdatedAt, Is.Not.Null);
         
-        _mapperMock.Verify(m => m.UpdateEntity(account, updateAccountDto), Times.Once);
-        _currentUserServiceMock.Verify(s => s.GetCurrentUserForAudit(), Times.Once);
-        _contextMock.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        // Reload the account to check changes
+        Context.Entry(accountBefore).Reload();
+        Assert.That(accountBefore.AccountName, Is.EqualTo("Updated Cash Account"));
+        Assert.That(accountBefore.Description, Is.EqualTo("Updated cash account description"));
+        Assert.That(accountBefore.IsActive, Is.False);
+        Assert.That(accountBefore.UpdatedBy, Is.EqualTo("test-user-id"));
+        Assert.That(accountBefore.UpdatedAt, Is.Not.Null);
     }
 
     [Test]
     public async Task Handle_SetsAuditInformation_WhenUpdatingAccount()
     {
         // Arrange
-        const int accountId = 1;
+        const int accountId = 2; // Use a different test account
         var updateAccountDto = new UpdateAccountDto
         {
             AccountName = "Updated Name",
@@ -128,28 +91,6 @@ public class UpdateAccountHandlerTests
         };
         var command = new UpdateAccountCommand(accountId, updateAccountDto);
 
-        var account = new Account
-        {
-            Id = accountId,
-            AccountCode = "1000",
-            AccountName = "Original Name",
-            AccountType = AccountType.Asset,
-            UpdatedBy = "olduser",
-            UpdatedAt = DateTime.UtcNow.AddDays(-1)
-        };
-
-        var mockAccountsSet = new Mock<DbSet<Account>>();
-        var accountsList = new List<Account> { account }.AsQueryable();
-        
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.Provider).Returns(accountsList.Provider);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.Expression).Returns(accountsList.Expression);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.ElementType).Returns(accountsList.ElementType);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.GetEnumerator()).Returns(accountsList.GetEnumerator());
-
-        _contextMock.Setup(c => c.Accounts).Returns(mockAccountsSet.Object);
-        _currentUserServiceMock.Setup(s => s.GetCurrentUserForAudit()).Returns("newuser");
-        _contextMock.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
-
         var beforeUpdate = DateTime.UtcNow;
 
         // Act
@@ -157,55 +98,43 @@ public class UpdateAccountHandlerTests
 
         // Assert
         Assert.That(result, Is.True);
-        Assert.That(account.UpdatedBy, Is.EqualTo("newuser"));
-        Assert.That(account.UpdatedAt, Is.GreaterThanOrEqualTo(beforeUpdate));
-        Assert.That(account.UpdatedAt, Is.LessThanOrEqualTo(DateTime.UtcNow));
+        
+        // Reload the account to check audit information
+        var updatedAccount = Context.Accounts.Find(accountId);
+        Context.Entry(updatedAccount!).Reload();
+        Assert.That(updatedAccount.UpdatedBy, Is.EqualTo("test-user-id"));
+        Assert.That(updatedAccount.UpdatedAt, Is.GreaterThanOrEqualTo(beforeUpdate));
+        Assert.That(updatedAccount.UpdatedAt, Is.LessThanOrEqualTo(DateTime.UtcNow));
     }
 
     [Test]
-    public async Task Handle_CallsMapperUpdateEntity_WithCorrectParameters()
+    public async Task Handle_UpdatesEntityFields_WithCorrectValues()
     {
         // Arrange
-        const int accountId = 1;
+        const int accountId = 3; // Use another test account
         var updateAccountDto = new UpdateAccountDto
         {
-            AccountName = "Test Account",
-            Description = "Test description",
-            IsActive = true
+            AccountName = "Test Account Updated",
+            Description = "Test description updated",
+            IsActive = false
         };
         var command = new UpdateAccountCommand(accountId, updateAccountDto);
 
-        var account = new Account
-        {
-            Id = accountId,
-            AccountCode = "1000",
-            AccountName = "Original Name",
-            AccountType = AccountType.Asset
-        };
-
-        var mockAccountsSet = new Mock<DbSet<Account>>();
-        var accountsList = new List<Account> { account }.AsQueryable();
-        
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.Provider).Returns(accountsList.Provider);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.Expression).Returns(accountsList.Expression);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.ElementType).Returns(accountsList.ElementType);
-        mockAccountsSet.As<IQueryable<Account>>().Setup(m => m.GetEnumerator()).Returns(accountsList.GetEnumerator());
-
-        _contextMock.Setup(c => c.Accounts).Returns(mockAccountsSet.Object);
-        _currentUserServiceMock.Setup(s => s.GetCurrentUserForAudit()).Returns("testuser");
-        _contextMock.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        // Get original values
+        var originalAccount = Context.Accounts.Find(accountId);
+        var originalName = originalAccount!.AccountName;
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         Assert.That(result, Is.True);
-        _mapperMock.Verify(m => m.UpdateEntity(
-            It.Is<Account>(a => a.Id == accountId),
-            It.Is<UpdateAccountDto>(dto => 
-                dto.AccountName == updateAccountDto.AccountName &&
-                dto.Description == updateAccountDto.Description &&
-                dto.IsActive == updateAccountDto.IsActive)), 
-            Times.Once);
+        
+        // Verify the account was updated with correct values
+        Context.Entry(originalAccount).Reload();
+        Assert.That(originalAccount.AccountName, Is.EqualTo("Test Account Updated"));
+        Assert.That(originalAccount.Description, Is.EqualTo("Test description updated"));
+        Assert.That(originalAccount.IsActive, Is.False);
+        Assert.That(originalAccount.AccountName, Is.Not.EqualTo(originalName));
     }
 }

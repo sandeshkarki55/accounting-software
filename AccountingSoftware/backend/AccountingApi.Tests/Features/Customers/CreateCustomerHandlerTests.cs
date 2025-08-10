@@ -1,42 +1,34 @@
 using AccountingApi.DTOs;
 using AccountingApi.Features.Customers;
-using AccountingApi.Infrastructure;
-using AccountingApi.Mappings;
 using AccountingApi.Models;
-using AccountingApi.Services.CurrentUserService;
 using AccountingApi.Services.NumberGenerationService;
-
-using Microsoft.EntityFrameworkCore;
-
+using AccountingApi.Tests.TestHelpers;
 using Moq;
 
 namespace AccountingApi.Tests.Features.Customers;
 
-public class CreateCustomerHandlerTests
+public class CreateCustomerHandlerTests : BaseTestWithInMemoryDb
 {
-    private Mock<AccountingDbContext> _contextMock = null!;
     private Mock<INumberGenerationService> _numberGenerationServiceMock = null!;
-    private Mock<ICurrentUserService> _currentUserServiceMock = null!;
-    private Mock<CustomerMapper> _mapperMock = null!;
     private CreateCustomerCommandHandler _handler = null!;
 
     [SetUp]
-    public void SetUp()
+    public override void SetUp()
     {
-        var options = new DbContextOptionsBuilder<AccountingDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
+        base.SetUp();
         
-        _contextMock = new Mock<AccountingDbContext>(options);
         _numberGenerationServiceMock = new Mock<INumberGenerationService>();
-        _currentUserServiceMock = new Mock<ICurrentUserService>();
-        _mapperMock = new Mock<CustomerMapper>();
         
         _handler = new CreateCustomerCommandHandler(
-            _contextMock.Object,
+            Context,
             _numberGenerationServiceMock.Object,
-            _currentUserServiceMock.Object,
-            _mapperMock.Object);
+            CurrentUserServiceMock.Object,
+            CustomerMapper);
+    }
+
+    protected override void SeedTestData()
+    {
+        AddTestCustomers();
     }
 
     [Test]
@@ -59,62 +51,23 @@ public class CreateCustomerHandlerTests
 
         var command = new CreateCustomerCommand(createCustomerDto);
         
-        var customerEntity = new Customer
-        {
-            Id = 1,
-            CompanyName = "Test Company",
-            ContactPersonName = "John Doe",
-            Email = "john@testcompany.com",
-            Phone = "123-456-7890",
-            Address = "123 Main St",
-            City = "Anytown",
-            State = "State",
-            PostalCode = "12345",
-            Country = "Country",
-            Notes = "Test notes"
-        };
-
-        var expectedDto = new CustomerDto
-        {
-            Id = 1,
-            CustomerCode = "CUST-001",
-            CompanyName = "Test Company",
-            ContactPersonName = "John Doe",
-            Email = "john@testcompany.com",
-            Phone = "123-456-7890",
-            Address = "123 Main St",
-            City = "Anytown",
-            State = "State",
-            PostalCode = "12345",
-            Country = "Country",
-            Notes = "Test notes",
-            IsActive = true
-        };
-
-        var mockCustomersSet = new Mock<DbSet<Customer>>();
-        
-        _contextMock.Setup(c => c.Customers).Returns(mockCustomersSet.Object);
         _numberGenerationServiceMock.Setup(s => s.GenerateCustomerCodeAsync()).ReturnsAsync("CUST-001");
-        _currentUserServiceMock.Setup(s => s.GetCurrentUserForAudit()).Returns("testuser");
-        _mapperMock.Setup(m => m.ToEntity(createCustomerDto)).Returns(customerEntity);
-        _mapperMock.Setup(m => m.ToDto(customerEntity)).Returns(expectedDto);
-        _contextMock.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.That(result, Is.EqualTo(expectedDto));
-        Assert.That(customerEntity.CustomerCode, Is.EqualTo("CUST-001"));
-        Assert.That(customerEntity.CreatedBy, Is.EqualTo("testuser"));
-        Assert.That(customerEntity.UpdatedBy, Is.EqualTo("testuser"));
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.CompanyName, Is.EqualTo("Test Company"));
+        Assert.That(result.CustomerCode, Is.EqualTo("CUST-001"));
+        Assert.That(result.Email, Is.EqualTo("john@testcompany.com"));
         
-        _numberGenerationServiceMock.Verify(s => s.GenerateCustomerCodeAsync(), Times.Once);
-        _currentUserServiceMock.Verify(s => s.GetCurrentUserForAudit(), Times.Once);
-        _mapperMock.Verify(m => m.ToEntity(createCustomerDto), Times.Once);
-        _mapperMock.Verify(m => m.ToDto(customerEntity), Times.Once);
-        _contextMock.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        mockCustomersSet.Verify(s => s.Add(customerEntity), Times.Once);
+        // Verify the customer was created in the database
+        var createdCustomer = Context.Customers.FirstOrDefault(c => c.CompanyName == "Test Company");
+        Assert.That(createdCustomer, Is.Not.Null);
+        Assert.That(createdCustomer.CustomerCode, Is.EqualTo("CUST-001"));
+        Assert.That(createdCustomer.CreatedBy, Is.EqualTo("test-user-id"));
+        Assert.That(createdCustomer.UpdatedBy, Is.EqualTo("test-user-id"));
     }
 
     [Test]
@@ -130,40 +83,19 @@ public class CreateCustomerHandlerTests
 
         var command = new CreateCustomerCommand(createCustomerDto);
         
-        var customerEntity = new Customer
-        {
-            CompanyName = "Audit Test Company",
-            ContactPersonName = "Audit User",
-            Email = "audit@test.com"
-        };
-
-        var expectedDto = new CustomerDto
-        {
-            Id = 1,
-            CustomerCode = "CUST-002",
-            CompanyName = "Audit Test Company",
-            ContactPersonName = "Audit User",
-            Email = "audit@test.com"
-        };
-
-        var mockCustomersSet = new Mock<DbSet<Customer>>();
-        
-        _contextMock.Setup(c => c.Customers).Returns(mockCustomersSet.Object);
         _numberGenerationServiceMock.Setup(s => s.GenerateCustomerCodeAsync()).ReturnsAsync("CUST-002");
-        _currentUserServiceMock.Setup(s => s.GetCurrentUserForAudit()).Returns("audituser");
-        _mapperMock.Setup(m => m.ToEntity(createCustomerDto)).Returns(customerEntity);
-        _mapperMock.Setup(m => m.ToDto(customerEntity)).Returns(expectedDto);
-        _contextMock.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.That(customerEntity.CustomerCode, Is.EqualTo("CUST-002"));
-        Assert.That(customerEntity.CreatedBy, Is.EqualTo("audituser"));
-        Assert.That(customerEntity.UpdatedBy, Is.EqualTo("audituser"));
-        
-        _currentUserServiceMock.Verify(s => s.GetCurrentUserForAudit(), Times.Once);
+        var createdCustomer = Context.Customers.FirstOrDefault(c => c.CompanyName == "Audit Test Company");
+        Assert.That(createdCustomer, Is.Not.Null);
+        Assert.That(createdCustomer.CustomerCode, Is.EqualTo("CUST-002"));
+        Assert.That(createdCustomer.CreatedBy, Is.EqualTo("test-user-id"));
+        Assert.That(createdCustomer.UpdatedBy, Is.EqualTo("test-user-id"));
+        Assert.That(createdCustomer.CreatedAt, Is.Not.Null);
+        Assert.That(createdCustomer.UpdatedAt, Is.Not.Null);
     }
 
     [Test]
@@ -179,71 +111,56 @@ public class CreateCustomerHandlerTests
 
         var command = new CreateCustomerCommand(createCustomerDto);
         
-        var customerEntity = new Customer
-        {
-            CompanyName = "Unique Code Company",
-            ContactPersonName = "Code User",
-            Email = "code@test.com"
-        };
-
-        var expectedDto = new CustomerDto
-        {
-            CustomerCode = "CUST-12345",
-            CompanyName = "Unique Code Company",
-            ContactPersonName = "Code User",
-            Email = "code@test.com"
-        };
-
-        var mockCustomersSet = new Mock<DbSet<Customer>>();
-        
-        _contextMock.Setup(c => c.Customers).Returns(mockCustomersSet.Object);
         _numberGenerationServiceMock.Setup(s => s.GenerateCustomerCodeAsync()).ReturnsAsync("CUST-12345");
-        _currentUserServiceMock.Setup(s => s.GetCurrentUserForAudit()).Returns("testuser");
-        _mapperMock.Setup(m => m.ToEntity(createCustomerDto)).Returns(customerEntity);
-        _mapperMock.Setup(m => m.ToDto(customerEntity)).Returns(expectedDto);
-        _contextMock.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.That(customerEntity.CustomerCode, Is.EqualTo("CUST-12345"));
+        var createdCustomer = Context.Customers.FirstOrDefault(c => c.CompanyName == "Unique Code Company");
+        Assert.That(createdCustomer, Is.Not.Null);
+        Assert.That(createdCustomer.CustomerCode, Is.EqualTo("CUST-12345"));
         
+        // Verify the number generation service was called
         _numberGenerationServiceMock.Verify(s => s.GenerateCustomerCodeAsync(), Times.Once);
     }
 
     [Test]
-    public async Task Handle_CallsMapperCorrectly_WithEntityAndDto()
+    public async Task Handle_StoresCustomerWithAllFields_WhenProvided()
     {
         // Arrange
         var createCustomerDto = new CreateCustomerDto
         {
-            CompanyName = "Mapper Test Company",
-            ContactPersonName = "Mapper User",
-            Email = "mapper@test.com"
+            CompanyName = "Complete Test Company",
+            ContactPersonName = "Complete User",
+            Email = "complete@test.com",
+            Phone = "555-1234",
+            Address = "123 Complete St",
+            City = "Complete City",
+            State = "Complete State",
+            PostalCode = "12345",
+            Country = "Complete Country",
+            Notes = "Complete test notes"
         };
 
         var command = new CreateCustomerCommand(createCustomerDto);
         
-        var customerEntity = new Customer();
-        var expectedDto = new CustomerDto();
-
-        var mockCustomersSet = new Mock<DbSet<Customer>>();
-        
-        _contextMock.Setup(c => c.Customers).Returns(mockCustomersSet.Object);
-        _numberGenerationServiceMock.Setup(s => s.GenerateCustomerCodeAsync()).ReturnsAsync("CUST-001");
-        _currentUserServiceMock.Setup(s => s.GetCurrentUserForAudit()).Returns("testuser");
-        _mapperMock.Setup(m => m.ToEntity(createCustomerDto)).Returns(customerEntity);
-        _mapperMock.Setup(m => m.ToDto(customerEntity)).Returns(expectedDto);
-        _contextMock.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        _numberGenerationServiceMock.Setup(s => s.GenerateCustomerCodeAsync()).ReturnsAsync("CUST-FULL");
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        _mapperMock.Verify(m => m.ToEntity(
-            It.Is<CreateCustomerDto>(dto => dto == createCustomerDto)), Times.Once);
-        _mapperMock.Verify(m => m.ToDto(
-            It.Is<Customer>(c => c == customerEntity)), Times.Once);
+        var createdCustomer = Context.Customers.FirstOrDefault(c => c.CompanyName == "Complete Test Company");
+        Assert.That(createdCustomer, Is.Not.Null);
+        Assert.That(createdCustomer.ContactPersonName, Is.EqualTo("Complete User"));
+        Assert.That(createdCustomer.Email, Is.EqualTo("complete@test.com"));
+        Assert.That(createdCustomer.Phone, Is.EqualTo("555-1234"));
+        Assert.That(createdCustomer.Address, Is.EqualTo("123 Complete St"));
+        Assert.That(createdCustomer.City, Is.EqualTo("Complete City"));
+        Assert.That(createdCustomer.State, Is.EqualTo("Complete State"));
+        Assert.That(createdCustomer.PostalCode, Is.EqualTo("12345"));
+        Assert.That(createdCustomer.Country, Is.EqualTo("Complete Country"));
+        Assert.That(createdCustomer.Notes, Is.EqualTo("Complete test notes"));
     }
 }
