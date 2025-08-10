@@ -41,6 +41,7 @@ public abstract class BaseTestWithInMemoryDb
         // Setup current user service mock
         CurrentUserServiceMock = new Mock<ICurrentUserService>();
         CurrentUserServiceMock.Setup(x => x.UserId).Returns("test-user-id");
+        CurrentUserServiceMock.Setup(x => x.GetCurrentUserForAudit()).Returns("test-user-id");
 
         // Create real mapper instances
         SetupMappers();

@@ -42,52 +42,6 @@ public class CreateJournalEntryHandlerTests : BaseTestWithInMemoryDb
         };
 
         var command = new CreateJournalEntryCommand(createJournalEntryDto);
-        var currentUser = "test-user";
-
-        var journalEntryEntity = new JournalEntry
-        {
-            Id = 1,
-            TransactionDate = createJournalEntryDto.TransactionDate,
-            Description = createJournalEntryDto.Description,
-            Reference = createJournalEntryDto.Reference,
-            CreatedBy = currentUser,
-            UpdatedBy = currentUser
-        };
-
-        var expectedDto = new JournalEntryDto
-        {
-            Id = 1,
-            TransactionDate = createJournalEntryDto.TransactionDate,
-            Description = createJournalEntryDto.Description,
-            Reference = createJournalEntryDto.Reference
-        };
-
-        var accounts = new List<Account>
-        {
-            new() { Id = 1, AccountName = "Cash", IsDeleted = false },
-            new() { Id = 2, AccountName = "Revenue", IsDeleted = false }
-        };
-
-        var queryableAccounts = accounts.AsQueryable();
-        var accountsDbSetMock = new Mock<DbSet<Account>>();
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Provider).Returns(queryableAccounts.Provider);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Expression).Returns(queryableAccounts.Expression);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.ElementType).Returns(queryableAccounts.ElementType);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableAccounts.GetEnumerator());
-
-        var journalEntriesDbSetMock = new Mock<DbSet<JournalEntry>>();
-
-        _currentUserServiceMock.Setup(x => x.GetCurrentUserForAudit()).Returns(currentUser);
-        _mapperMock.Setup(x => x.ToEntity(createJournalEntryDto)).Returns(journalEntryEntity);
-        _mapperMock.Setup(x => x.ToDto(It.IsAny<JournalEntry>())).Returns(expectedDto);
-
-        _contextMock.Setup(x => x.Accounts).Returns(accountsDbSetMock.Object);
-        _contextMock.Setup(x => x.JournalEntries).Returns(journalEntriesDbSetMock.Object);
-        _contextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -97,9 +51,10 @@ public class CreateJournalEntryHandlerTests : BaseTestWithInMemoryDb
         Assert.That(result.Description, Is.EqualTo("Test Journal Entry"));
         Assert.That(result.Reference, Is.EqualTo("REF-001"));
         
-        journalEntriesDbSetMock.Verify(x => x.Add(It.IsAny<JournalEntry>()), Times.Once);
-        _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _currentUserServiceMock.Verify(x => x.GetCurrentUserForAudit(), Times.Once);
+        // Verify the journal entry was created in the database
+        var createdEntry = Context.JournalEntries.FirstOrDefault(j => j.Description == "Test Journal Entry");
+        Assert.That(createdEntry, Is.Not.Null);
+        Assert.That(createdEntry.Lines.Count, Is.EqualTo(2));
     }
 
     [Test]
@@ -188,29 +143,9 @@ public class CreateJournalEntryHandlerTests : BaseTestWithInMemoryDb
 
         var command = new CreateJournalEntryCommand(createJournalEntryDto);
 
-        // Only account ID 1 exists
-        var accounts = new List<Account>
-        {
-            new() { Id = 1, AccountName = "Cash", IsDeleted = false }
-        };
-
-        var queryableAccounts = accounts.AsQueryable();
-        var accountsDbSetMock = new Mock<DbSet<Account>>();
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Provider).Returns(queryableAccounts.Provider);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Expression).Returns(queryableAccounts.Expression);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.ElementType).Returns(queryableAccounts.ElementType);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableAccounts.GetEnumerator());
-
-        _contextMock.Setup(x => x.Accounts).Returns(accountsDbSetMock.Object);
-
         // Act & Assert
         Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
-
     }
 
     [Test]
@@ -230,30 +165,14 @@ public class CreateJournalEntryHandlerTests : BaseTestWithInMemoryDb
 
         var command = new CreateJournalEntryCommand(createJournalEntryDto);
 
-        // Account 2 is deleted
-        var accounts = new List<Account>
-        {
-            new() { Id = 1, AccountName = "Cash", IsDeleted = false },
-            new() { Id = 2, AccountName = "Revenue", IsDeleted = true }
-        };
-
-        var queryableAccounts = accounts.Where(a => !a.IsDeleted).AsQueryable();
-        var accountsDbSetMock = new Mock<DbSet<Account>>();
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Provider).Returns(queryableAccounts.Provider);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Expression).Returns(queryableAccounts.Expression);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.ElementType).Returns(queryableAccounts.ElementType);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableAccounts.GetEnumerator());
-
-        _contextMock.Setup(x => x.Accounts).Returns(accountsDbSetMock.Object);
+        // Soft delete account 2
+        var account2 = Context.Accounts.Find(2);
+        account2!.IsDeleted = true;
+        Context.SaveChanges();
 
         // Act & Assert
         Assert.ThrowsAsync<InvalidOperationException>(
             () => _handler.Handle(command, CancellationToken.None));
-
     }
 
     [Test]
@@ -272,48 +191,6 @@ public class CreateJournalEntryHandlerTests : BaseTestWithInMemoryDb
         };
 
         var command = new CreateJournalEntryCommand(createJournalEntryDto);
-        var currentUser = "test-user";
-
-        var journalEntryEntity = new JournalEntry
-        {
-            Id = 1,
-            Description = createJournalEntryDto.Description,
-            CreatedBy = currentUser,
-            UpdatedBy = currentUser
-        };
-
-        var expectedDto = new JournalEntryDto
-        {
-            Id = 1,
-            Description = createJournalEntryDto.Description
-        };
-
-        var accounts = new List<Account>
-        {
-            new() { Id = 1, AccountName = "Cash", IsDeleted = false },
-            new() { Id = 2, AccountName = "Revenue", IsDeleted = false }
-        };
-
-        var queryableAccounts = accounts.AsQueryable();
-        var accountsDbSetMock = new Mock<DbSet<Account>>();
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Provider).Returns(queryableAccounts.Provider);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Expression).Returns(queryableAccounts.Expression);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.ElementType).Returns(queryableAccounts.ElementType);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableAccounts.GetEnumerator());
-
-        var journalEntriesDbSetMock = new Mock<DbSet<JournalEntry>>();
-
-        _currentUserServiceMock.Setup(x => x.GetCurrentUserForAudit()).Returns(currentUser);
-        _mapperMock.Setup(x => x.ToEntity(createJournalEntryDto)).Returns(journalEntryEntity);
-        _mapperMock.Setup(x => x.ToDto(It.IsAny<JournalEntry>())).Returns(expectedDto);
-
-        _contextMock.Setup(x => x.Accounts).Returns(accountsDbSetMock.Object);
-        _contextMock.Setup(x => x.JournalEntries).Returns(journalEntriesDbSetMock.Object);
-        _contextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -322,8 +199,10 @@ public class CreateJournalEntryHandlerTests : BaseTestWithInMemoryDb
         Assert.That(result, Is.Not.Null);
         Assert.That(result.Description, Is.EqualTo("Journal Entry with Small Rounding"));
         
-        journalEntriesDbSetMock.Verify(x => x.Add(It.IsAny<JournalEntry>()), Times.Once);
-        _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        // Verify the journal entry was created in the database
+        var createdEntry = Context.JournalEntries.FirstOrDefault(j => j.Description == "Journal Entry with Small Rounding");
+        Assert.That(createdEntry, Is.Not.Null);
+        Assert.That(createdEntry.Lines.Count, Is.EqualTo(2));
     }
 
     [Test]
@@ -342,52 +221,20 @@ public class CreateJournalEntryHandlerTests : BaseTestWithInMemoryDb
         };
 
         var command = new CreateJournalEntryCommand(createJournalEntryDto);
-        var currentUser = "audit-user";
-
-        var journalEntryEntity = new JournalEntry
-        {
-            Description = createJournalEntryDto.Description
-        };
-
-        var expectedDto = new JournalEntryDto
-        {
-            Description = createJournalEntryDto.Description
-        };
-
-        var accounts = new List<Account>
-        {
-            new() { Id = 1, AccountName = "Cash", IsDeleted = false },
-            new() { Id = 2, AccountName = "Revenue", IsDeleted = false }
-        };
-
-        var queryableAccounts = accounts.AsQueryable();
-        var accountsDbSetMock = new Mock<DbSet<Account>>();
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Provider).Returns(queryableAccounts.Provider);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.Expression).Returns(queryableAccounts.Expression);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.ElementType).Returns(queryableAccounts.ElementType);
-        accountsDbSetMock.As<IQueryable<Account>>()
-            .Setup(m => m.GetEnumerator()).Returns(queryableAccounts.GetEnumerator());
-
-        var journalEntriesDbSetMock = new Mock<DbSet<JournalEntry>>();
-
-        _currentUserServiceMock.Setup(x => x.GetCurrentUserForAudit()).Returns(currentUser);
-        _mapperMock.Setup(x => x.ToEntity(createJournalEntryDto)).Returns(journalEntryEntity);
-        _mapperMock.Setup(x => x.ToDto(It.IsAny<JournalEntry>())).Returns(expectedDto);
-
-        _contextMock.Setup(x => x.Accounts).Returns(accountsDbSetMock.Object);
-        _contextMock.Setup(x => x.JournalEntries).Returns(journalEntriesDbSetMock.Object);
-        _contextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
         // Act
-        await _handler.Handle(command, CancellationToken.None);
+        var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.That(journalEntryEntity.CreatedBy, Is.EqualTo(currentUser));
-        Assert.That(journalEntryEntity.UpdatedBy, Is.EqualTo(currentUser));
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.Description, Is.EqualTo("Audit Test Journal Entry"));
         
-        _currentUserServiceMock.Verify(x => x.GetCurrentUserForAudit(), Times.Once);
+        // Verify the journal entry was created in the database
+        var createdEntry = Context.JournalEntries.FirstOrDefault(j => j.Description == "Audit Test Journal Entry");
+        Assert.That(createdEntry, Is.Not.Null);
+        Assert.That(createdEntry.CreatedBy, Is.EqualTo("test-user-id"));
+        Assert.That(createdEntry.UpdatedBy, Is.EqualTo("test-user-id"));
+        Assert.That(createdEntry.CreatedAt, Is.Not.Null);
+        Assert.That(createdEntry.UpdatedAt, Is.Not.Null);
     }
 }
