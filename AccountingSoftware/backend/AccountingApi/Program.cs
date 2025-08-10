@@ -33,7 +33,7 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddOpenApi();
+builder.Services.AddSwaggerGen();
 
 // Add Entity Framework with Aspire SQL Server integration
 builder.AddSqlServerDbContext<AccountingDbContext>("accountingdb");
@@ -241,8 +241,8 @@ app.MapHealthChecks("/health");
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference(); // Scalar API documentation
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseMiddleware<RequestResponseLoggingMiddleware>();
