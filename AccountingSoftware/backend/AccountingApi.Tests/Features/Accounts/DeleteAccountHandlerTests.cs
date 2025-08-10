@@ -1,33 +1,27 @@
 using AccountingApi.Features.Accounts;
-using AccountingApi.Infrastructure;
 using AccountingApi.Models;
-using AccountingApi.Services.CurrentUserService;
-
-using Microsoft.EntityFrameworkCore;
-
-using Moq;
+using AccountingApi.Tests.TestHelpers;
 
 namespace AccountingApi.Tests.Features.Accounts;
 
-public class DeleteAccountHandlerTests
+public class DeleteAccountHandlerTests : BaseTestWithInMemoryDb
 {
-    private Mock<AccountingDbContext> _contextMock = null!;
-    private Mock<ICurrentUserService> _currentUserServiceMock = null!;
     private DeleteAccountCommandHandler _handler = null!;
 
     [SetUp]
-    public void SetUp()
+    public override void SetUp()
     {
-        var options = new DbContextOptionsBuilder<AccountingDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        
-        _contextMock = new Mock<AccountingDbContext>(options);
-        _currentUserServiceMock = new Mock<ICurrentUserService>();
+        base.SetUp();
         
         _handler = new DeleteAccountCommandHandler(
-            _contextMock.Object,
-            _currentUserServiceMock.Object);
+            Context,
+            CurrentUserServiceMock.Object);
+    }
+
+    protected override void SeedTestData()
+    {
+        AddTestAccounts();
+    }
     }
 
     [Test]

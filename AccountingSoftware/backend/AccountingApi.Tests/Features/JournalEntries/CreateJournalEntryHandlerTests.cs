@@ -1,38 +1,28 @@
 using AccountingApi.DTOs;
 using AccountingApi.Features.JournalEntries;
-using AccountingApi.Infrastructure;
-using AccountingApi.Mappings;
 using AccountingApi.Models;
-using AccountingApi.Services.CurrentUserService;
-
-using Microsoft.EntityFrameworkCore;
-
-using Moq;
+using AccountingApi.Tests.TestHelpers;
 
 namespace AccountingApi.Tests.Features.JournalEntries;
 
-public class CreateJournalEntryHandlerTests
+public class CreateJournalEntryHandlerTests : BaseTestWithInMemoryDb
 {
-    private Mock<AccountingDbContext> _contextMock = null!;
-    private Mock<JournalEntryMapper> _mapperMock = null!;
-    private Mock<ICurrentUserService> _currentUserServiceMock = null!;
     private CreateJournalEntryCommandHandler _handler = null!;
 
     [SetUp]
-    public void SetUp()
+    public override void SetUp()
     {
-        var options = new DbContextOptionsBuilder<AccountingDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        
-        _contextMock = new Mock<AccountingDbContext>(options);
-        _mapperMock = new Mock<JournalEntryMapper>();
-        _currentUserServiceMock = new Mock<ICurrentUserService>();
+        base.SetUp();
         
         _handler = new CreateJournalEntryCommandHandler(
-            _contextMock.Object,
-            _mapperMock.Object,
-            _currentUserServiceMock.Object);
+            Context,
+            JournalEntryMapper,
+            CurrentUserServiceMock.Object);
+    }
+
+    protected override void SeedTestData()
+    {
+        AddTestAccounts();
     }
 
     [Test]
