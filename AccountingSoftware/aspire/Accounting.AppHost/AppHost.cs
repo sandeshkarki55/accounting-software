@@ -11,12 +11,11 @@ var accountingApi = builder.AddProject<Projects.AccountingApi>("accountingapi")
     .WithExternalHttpEndpoints()
     .WaitFor(accountingDb); // Enable external access for frontend
 
-// Add the React frontend as an npm project
+// Add the React frontend as a JavaScript project
 // Configure for development and production scenarios
-var frontend = builder.AddNpmApp("frontend", "../../frontend/accounting-frontend")
+var frontend = builder.AddJavaScriptApp("frontend", "../../frontend/accounting-frontend", "start")
     .WithReference(accountingApi)
     .WithExternalHttpEndpoints()
-    .PublishAsDockerFile()
     .WaitFor(accountingApi);
 
 builder.Build().Run();
