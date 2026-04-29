@@ -43,15 +43,16 @@ public class MarkInvoiceAsPaidCommandHandler(
         invoice.UpdatedAt = DateTime.UtcNow;
         invoice.UpdatedBy = currentUserService.GetCurrentUserForAudit();
 
-        // Use a transaction to ensure atomicity: invoice status + journal entry
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        // Use retry execution strategy to ensure atomicity
+        var strategy = context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            // Save invoice status change
+            await context.SaveChangesAsync(cancellationToken);
 
-        await context.SaveChangesAsync(cancellationToken);
-
-        // Create automatic journal entry for the payment
-        await automaticJournalEntryService.CreatePaymentJournalEntryAsync(invoice, cancellationToken);
-
-        await transaction.CommitAsync(cancellationToken);
+            // Create automatic journal entry for the payment
+            await automaticJournalEntryService.CreatePaymentJournalEntryAsync(invoice, cancellationToken);
+        });
 
         // Return updated invoice DTO
         return new InvoiceDto

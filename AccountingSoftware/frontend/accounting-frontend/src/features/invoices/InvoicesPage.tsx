@@ -52,12 +52,12 @@ const InvoicesPage: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const [cust, coPaged] = await Promise.all([
-          customerService.getCustomers(),
-          companyInfoService.getCompanyInfos({ pageNumber: 1, pageSize: 1000 }, { orderBy: 'companyName', descending: false }, { searchTerm: '' }),
+        const [custPaged, coPaged] = await Promise.all([
+          customerService.getCustomersPaged({ pageNumber: 1, pageSize: 50 }, { orderBy: 'companyName', descending: false }, { searchTerm: '' }),
+          companyInfoService.getCompanyInfos({ pageNumber: 1, pageSize: 50 }, { orderBy: 'companyName', descending: false }, { searchTerm: '' }),
         ]);
-        setCustomers(Array.isArray(cust) ? cust : (cust as any)?.items || []);
-        setCompanyInfos(Array.isArray(coPaged) ? coPaged as any : (coPaged as any)?.items || []);
+        setCustomers(custPaged.items || []);
+        setCompanyInfos(coPaged.items || []);
       } catch { /* ignore */ }
     })();
   }, []);
