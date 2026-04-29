@@ -3,7 +3,6 @@ import { useAuth } from '../auth/AuthContext';
 import { authService } from '../../services/authService';
 import { ChangePasswordRequest, UpdateUserProfileRequest } from '../../types/auth';
 import { usePageTitle } from '../../hooks/usePageTitle';
-import './UserProfilePage.scss';
 
 interface Message {
   type: 'success' | 'error';

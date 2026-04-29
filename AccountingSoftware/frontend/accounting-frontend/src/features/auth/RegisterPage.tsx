@@ -1,5 +1,21 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import {
+  TextInput,
+  PasswordInput,
+  Button,
+  Paper,
+  Title,
+  Text,
+  Alert,
+  Divider,
+  Container,
+  Center,
+  Stack,
+  Anchor,
+  SimpleGrid,
+} from '@mantine/core';
+import { IconExclamationCircle, IconCircleCheck } from '@tabler/icons-react';
 import { useAuth } from './AuthContext';
 import { usePageTitle } from '../../hooks/usePageTitle';
 
@@ -11,7 +27,7 @@ const RegisterPage: React.FC = () => {
     lastName: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
   const [errors, setErrors] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,78 +36,42 @@ const RegisterPage: React.FC = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    // Clear errors and success message when user starts typing
-    if (errors.length > 0) {
-      setErrors([]);
-    }
-    if (successMessage) {
-      setSuccessMessage('');
-    }
+  const updateField = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors.length > 0) setErrors([]);
+    if (successMessage) setSuccessMessage('');
   };
 
   const validateForm = (): boolean => {
     const newErrors: string[] = [];
-
-    if (!formData.firstName.trim()) {
-      newErrors.push('First name is required.');
-    }
-
-    if (!formData.lastName.trim()) {
-      newErrors.push('Last name is required.');
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.push('Email is required.');
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.push('Email format is invalid.');
-    }
-
-    if (!formData.password) {
-      newErrors.push('Password is required.');
-    } else if (formData.password.length < 8) {
-      newErrors.push('Password must be at least 8 characters long.');
-    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/.test(formData.password)) {
-      newErrors.push('Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character.');
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.push('Passwords do not match.');
-    }
-
+    if (!formData.firstName.trim()) newErrors.push('First name is required.');
+    if (!formData.lastName.trim()) newErrors.push('Last name is required.');
+    if (!formData.email.trim()) newErrors.push('Email is required.');
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.push('Email format is invalid.');
+    if (!formData.password) newErrors.push('Password is required.');
+    else if (formData.password.length < 8) newErrors.push('Password must be at least 8 characters.');
+    else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/.test(formData.password))
+      newErrors.push('Password must contain uppercase, lowercase, digit, and special character.');
+    if (formData.password !== formData.confirmPassword) newErrors.push('Passwords do not match.');
     setErrors(newErrors);
     return newErrors.length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-
+    if (!validateForm()) return;
     setIsLoading(true);
     setErrors([]);
 
     try {
       const result = await register(formData);
-      
       if (result.success) {
-        setSuccessMessage('Registration successful! You can now sign in with your credentials.');
-        // Optionally redirect to login after a delay
-        setTimeout(() => {
-          navigate('/login');
-        }, 2000);
+        setSuccessMessage('Registration successful! Redirecting to login...');
+        setTimeout(() => navigate('/login'), 2000);
       } else {
         setErrors(result.errors || [result.message]);
       }
-    } catch (error) {
+    } catch {
       setErrors(['An unexpected error occurred. Please try again.']);
     } finally {
       setIsLoading(false);
@@ -99,154 +79,89 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
-      <div className="container">
-        <div className="row justify-content-center">
-          <div className="col-md-6 col-lg-5">
-            <div className="card shadow-sm">
-              <div className="card-body p-4">
-                <div className="text-center mb-4">
-                  <h2 className="h4 mb-1">Create Account</h2>
-                  <p className="text-muted">Sign up for a new account</p>
-                </div>
+    <Center h="100vh" bg="gray.0">
+      <Container size={520} w="100%">
+        <Paper shadow="md" radius="md" p="xl" withBorder>
+          <Stack align="center" mb="lg">
+            <Title order={2}>Create Account</Title>
+            <Text c="dimmed" size="sm">Sign up for a new account</Text>
+          </Stack>
 
-                {errors.length > 0 && (
-                  <div className="alert alert-danger" role="alert">
-                    <div className="d-flex align-items-start">
-                      <i className="bi bi-exclamation-triangle-fill me-2 mt-1"></i>
-                      <div>
-                        {errors.map((error, index) => (
-                          <div key={index} className="small">{error}</div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
+          {errors.length > 0 && (
+            <Alert icon={<IconExclamationCircle size="1rem" />} color="red" mb="md" variant="light">
+              {errors.map((err, i) => <Text key={i} size="sm">{err}</Text>)}
+            </Alert>
+          )}
 
-                {successMessage && (
-                  <div className="alert alert-success" role="alert">
-                    <div className="d-flex align-items-center">
-                      <i className="bi bi-check-circle-fill me-2"></i>
-                      <div>{successMessage}</div>
-                    </div>
-                  </div>
-                )}
+          {successMessage && (
+            <Alert icon={<IconCircleCheck size="1rem" />} color="green" mb="md" variant="light">
+              {successMessage}
+            </Alert>
+          )}
 
-                <form onSubmit={handleSubmit}>
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label htmlFor="firstName" className="form-label">First Name</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="firstName"
-                        name="firstName"
-                        value={formData.firstName}
-                        onChange={handleChange}
-                        required
-                        placeholder="Enter first name"
-                      />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label htmlFor="lastName" className="form-label">Last Name</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="lastName"
-                        name="lastName"
-                        value={formData.lastName}
-                        onChange={handleChange}
-                        required
-                        placeholder="Enter last name"
-                      />
-                    </div>
-                  </div>
+          <form onSubmit={handleSubmit}>
+            <SimpleGrid cols={2} mb="md">
+              <TextInput
+                label="First Name"
+                placeholder="First name"
+                value={formData.firstName}
+                onChange={e => updateField('firstName', e.currentTarget.value)}
+                required
+              />
+              <TextInput
+                label="Last Name"
+                placeholder="Last name"
+                value={formData.lastName}
+                onChange={e => updateField('lastName', e.currentTarget.value)}
+                required
+              />
+            </SimpleGrid>
 
-                  <div className="mb-3">
-                    <label htmlFor="email" className="form-label">Email Address</label>
-                    <input
-                      type="email"
-                      className="form-control"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      autoComplete="email"
-                      placeholder="Enter your email"
-                    />
-                  </div>
+            <TextInput
+              label="Email Address"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={e => updateField('email', e.currentTarget.value)}
+              required
+              autoComplete="email"
+              mb="md"
+            />
 
-                  <div className="mb-3">
-                    <label htmlFor="password" className="form-label">Password</label>
-                    <input
-                      type="password"
-                      className="form-control"
-                      id="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      autoComplete="new-password"
-                      placeholder="Enter password"
-                    />
-                    <div className="form-text">
-                      <small>
-                        Password must be at least 8 characters and contain uppercase, lowercase, number, and special character.
-                      </small>
-                    </div>
-                  </div>
+            <PasswordInput
+              label="Password"
+              placeholder="Enter password"
+              value={formData.password}
+              onChange={e => updateField('password', e.currentTarget.value)}
+              required
+              autoComplete="new-password"
+              description="At least 8 chars with uppercase, lowercase, number, and special character."
+              mb="md"
+            />
 
-                  <div className="mb-4">
-                    <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
-                    <input
-                      type="password"
-                      className="form-control"
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      required
-                      autoComplete="new-password"
-                      placeholder="Confirm password"
-                    />
-                  </div>
+            <PasswordInput
+              label="Confirm Password"
+              placeholder="Confirm password"
+              value={formData.confirmPassword}
+              onChange={e => updateField('confirmPassword', e.currentTarget.value)}
+              required
+              autoComplete="new-password"
+              mb="lg"
+            />
 
-                  <button
-                    type="submit"
-                    className="btn btn-primary w-100"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                        Creating Account...
-                      </>
-                    ) : (
-                      <>
-                        <i className="bi bi-person-plus me-2"></i>
-                        Create Account
-                      </>
-                    )}
-                  </button>
-                </form>
+            <Button type="submit" fullWidth loading={isLoading} mb="md">
+              Create Account
+            </Button>
+          </form>
 
-                <hr className="my-4" />
+          <Divider my="md" />
 
-                <div className="text-center">
-                  <p className="mb-0">
-                    Already have an account?{' '}
-                    <Link to="/login" className="text-decoration-none">
-                      Sign in here
-                    </Link>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+          <Text ta="center" size="sm">
+            Already have an account?{' '}
+            <Anchor component={Link} to="/login">Sign in</Anchor>
+          </Text>
+        </Paper>
+      </Container>
+    </Center>
   );
 };
 

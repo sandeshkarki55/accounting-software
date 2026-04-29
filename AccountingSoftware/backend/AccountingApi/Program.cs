@@ -8,6 +8,7 @@ using AccountingApi.Infrastructure;
 using AccountingApi.Infrastructure.Seeds;
 using AccountingApi.Middleware;
 using AccountingApi.Mappings;
+using AccountingApi.Features.Reports;
 using AccountingApi.Services.NumberGenerationService;
 using AccountingApi.Services.AutomaticJournalEntryService;
 using AccountingApi.Services.AccountConfigurationService;
@@ -155,6 +156,9 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 // Add Dashboard Service
+
+// Add Report Service
+builder.Services.AddScoped<IReportService, ReportService>();
 
 // Add CORS for frontend development with Aspire support
 builder.Services.AddCors(options =>

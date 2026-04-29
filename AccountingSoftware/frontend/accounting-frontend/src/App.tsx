@@ -1,156 +1,220 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import './App.scss';
-
-// Import pages
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import {
+  AppShell,
+  Burger,
+  Group,
+  NavLink,
+  Title,
+  Text,
+  Menu,
+  UnstyledButton,
+  Avatar,
+  ActionIcon,
+  Stack,
+  Center,
+} from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import {
+  IconLayoutDashboard,
+  IconList,
+  IconUsers,
+  IconBuilding,
+  IconReceipt,
+  IconFileText,
+  IconChartBar,
+  IconUserCircle,
+  IconLogout,
+  IconSun,
+  IconMoon,
+  IconCalculator,
+} from '@tabler/icons-react';
+import { ThemeProvider } from './theme/ThemeProvider';
+import { AuthProvider, useAuth } from './features/auth/AuthContext';
+import ProtectedRoute from './features/auth/ProtectedRoute';
+import LoginPage from './features/auth/LoginPage';
+import RegisterPage from './features/auth/RegisterPage';
+import DashboardPage from './features/dashboard/DashboardPage';
 import AccountsPage from './features/accounts/AccountsPage';
 import InvoicesPage from './features/invoices/InvoicesPage';
 import CustomersPage from './features/customers/CustomersPage';
 import CompaniesPage from './features/companies/CompaniesPage';
-import DashboardPage from './features/dashboard/DashboardPage';
-import UserProfilePage from './features/profile/UserProfilePage';
 import JournalEntriesPage from './features/journalEntries/JournalEntriesPage';
+import ReportsPage from './features/reports/ReportsPage';
+import UserProfilePage from './features/profile/UserProfilePage';
+import { useMantineColorScheme } from '@mantine/core';
 
-// Import layout components
-import SideNavigation from './components/layout/SideNavigation';
-import TopNavbar from './components/layout/TopNavbar';
+// ─── Navigation Items ───────────────────────────────────────────────────────
 
-// Import auth components
-import { AuthProvider } from './features/auth/AuthContext';
-import ProtectedRoute from './features/auth/ProtectedRoute';
-import LoginPage from './features/auth/LoginPage';
-import RegisterPage from './features/auth/RegisterPage';
+interface NavItemData {
+  to: string;
+  label: string;
+  icon: React.ReactNode;
+}
 
-// Import hooks
-import { usePageTitle } from './hooks/usePageTitle';
+const navItems: NavItemData[] = [
+  { to: '/', label: 'Dashboard', icon: <IconLayoutDashboard size="1.25rem" /> },
+  { to: '/accounts', label: 'Chart of Accounts', icon: <IconList size="1.25rem" /> },
+  { to: '/invoices', label: 'Invoices', icon: <IconReceipt size="1.25rem" /> },
+  { to: '/customers', label: 'Customers', icon: <IconUsers size="1.25rem" /> },
+  { to: '/journal', label: 'Journal Entries', icon: <IconFileText size="1.25rem" /> },
+  { to: '/reports', label: 'Reports', icon: <IconChartBar size="1.25rem" /> },
+  { to: '/companies', label: 'Companies', icon: <IconBuilding size="1.25rem" /> },
+];
 
-// Coming Soon component for incomplete pages
-const ComingSoonPage: React.FC<{ title: string }> = ({ title }) => {
-  usePageTitle(title);
-  
+// ─── Color Scheme Toggle ────────────────────────────────────────────────────
+
+const ColorSchemeToggle: React.FC = () => {
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   return (
-    <div className="coming-soon-page">
-      <div className="coming-soon-content">
-        <div className="coming-soon-icon">
-          <i className="bi bi-tools"></i>
-        </div>
-        <h2 className="coming-soon-title">{title}</h2>
-        <p className="coming-soon-description">
-          This feature is currently under development and will be available soon.
-        </p>
-        <div className="coming-soon-progress">
-          <div className="progress">
-            <div className="progress-bar bg-vibrant-primary" role="progressbar" style={{ width: '75%' }}>
-              75% Complete
-            </div>
-          </div>
-        </div>
-        <Link to="/" className="btn btn-primary mt-3">
-          <i className="bi bi-house me-2"></i>
-          Back to Dashboard
-        </Link>
-      </div>
-    </div>
+    <ActionIcon
+      variant="subtle"
+      color="gray"
+      onClick={toggleColorScheme}
+      title={colorScheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      size="lg"
+    >
+      {colorScheme === 'dark' ? <IconSun size="1.25rem" /> : <IconMoon size="1.25rem" />}
+    </ActionIcon>
   );
 };
 
-// Main app layout component
-const AppLayout: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+// ─── Side Navigation ────────────────────────────────────────────────────────
 
-  // Handle responsive behavior
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 992) {
-        setSidebarOpen(false);
-      } else {
-        setSidebarOpen(true);
-      }
-    };
+const SideNavigation: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) => {
+  const location = useLocation();
 
-    // Set initial state
-    handleResize();
+  return (
+    <AppShell.Navbar p="xs">
+      <AppShell.Section grow mt="xs">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.to}
+            component={Link}
+            to={item.to}
+            label={item.label}
+            leftSection={<span style={{ display: 'flex', alignItems: 'center' }}>{item.icon}</span>}
+            active={location.pathname === item.to}
+            variant="filled"
+            mb={4}
+            onClick={onNavigate}
+          />
+        ))}
+      </AppShell.Section>
+    </AppShell.Navbar>
+  );
+};
 
-    // Add event listener
-    window.addEventListener('resize', handleResize);
+// ─── Header ─────────────────────────────────────────────────────────────────
 
-    // Cleanup
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+const AppHeader: React.FC<{ opened: boolean; toggle: () => void }> = ({ opened, toggle }) => {
+  const { user, logout } = useAuth();
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   return (
-    <div className="App">
-      <SideNavigation isOpen={sidebarOpen} onToggle={toggleSidebar} />
-      <TopNavbar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
+    <AppShell.Header p="sm">
+      <Group h="100%" justify="space-between">
+        <Group>
+          <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+          <IconCalculator size={28} color="var(--mantine-color-navy-7)" />
+          <Title order={4} visibleFrom="sm">Accounting Software</Title>
+        </Group>
 
-      <main className={`main-content ${sidebarOpen ? 'main-content-expanded' : 'main-content-collapsed'}`}>
-        <div className="main-content-inner">
-          <Routes>
-            <Route path="/" element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/accounts" element={
-              <ProtectedRoute>
-                <AccountsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/customers" element={
-              <ProtectedRoute>
-                <CustomersPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/companies" element={
-              <ProtectedRoute>
-                <CompaniesPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/invoices" element={
-              <ProtectedRoute>
-                <InvoicesPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/journal" element={
-              <ProtectedRoute>
-                <JournalEntriesPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/reports" element={
-              <ProtectedRoute>
-                <ComingSoonPage title="Reports" />
-              </ProtectedRoute>
-            } />
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <UserProfilePage />
-              </ProtectedRoute>
-            } />
-          </Routes>
-        </div>
-      </main>
-    </div>
+        <Group gap="xs">
+          <ColorSchemeToggle />
+          <Menu shadow="md" width={200} position="bottom-end">
+            <Menu.Target>
+              <UnstyledButton>
+                <Group gap="xs">
+                  <Avatar color="navy" radius="xl" size="sm">
+                    {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                  </Avatar>
+                  <Stack gap={0} visibleFrom="sm">
+                    <Text size="sm" fw={500}>{user?.fullName || 'User'}</Text>
+                    <Text size="xs" c="dimmed">{user?.roles?.join(', ') || 'User'}</Text>
+                  </Stack>
+                </Group>
+              </UnstyledButton>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Label>
+                <Text size="xs" c="dimmed">{user?.email}</Text>
+              </Menu.Label>
+              <Menu.Divider />
+              <Menu.Item
+                component={Link}
+                to="/profile"
+                leftSection={<IconUserCircle size="1rem" />}
+              >
+                Profile Settings
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item
+                color="red"
+                leftSection={<IconLogout size="1rem" />}
+                onClick={handleLogout}
+              >
+                Sign Out
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      </Group>
+    </AppShell.Header>
   );
 };
 
+// ─── App Shell ──────────────────────────────────────────────────────────────
+
+const AppShellLayout: React.FC = () => {
+  const [opened, { toggle, close }] = useDisclosure(false);
+
+  return (
+    <AppShell
+      header={{ height: 60 }}
+      navbar={{ width: 240, breakpoint: 'sm', collapsed: { mobile: !opened } }}
+      padding="md"
+    >
+      <AppHeader opened={opened} toggle={toggle} />
+      <SideNavigation onNavigate={close} />
+      <AppShell.Main>
+        <Routes>
+          <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+          <Route path="/accounts" element={<ProtectedRoute><AccountsPage /></ProtectedRoute>} />
+          <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
+          <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
+          <Route path="/companies" element={<ProtectedRoute><CompaniesPage /></ProtectedRoute>} />
+          <Route path="/journal" element={<ProtectedRoute><JournalEntriesPage /></ProtectedRoute>} />
+          <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><UserProfilePage /></ProtectedRoute>} />
+        </Routes>
+      </AppShell.Main>
+    </AppShell>
+  );
+};
+
+// ─── App ────────────────────────────────────────────────────────────────────
+
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          
-          {/* Protected routes */}
-          <Route path="/*" element={<AppLayout />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/*" element={<AppShellLayout />} />
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

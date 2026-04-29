@@ -1,6 +1,7 @@
 import React from 'react';
 import { JournalEntry } from '../../../types';
-import BaseModal from '../../../components/shared/BaseModal';
+import { Modal, Text, Group, Button, Table, Alert, Stack, Paper } from '@mantine/core';
+import { IconCheck, IconAlertTriangle, IconInfoCircle } from '@tabler/icons-react';
 
 interface PostJournalEntryModalProps {
   show: boolean;
@@ -10,184 +11,98 @@ interface PostJournalEntryModalProps {
   loading: boolean;
 }
 
-const PostJournalEntryModal: React.FC<PostJournalEntryModalProps> = ({
-  show,
-  onHide,
-  onConfirm,
-  journalEntry,
-  loading
-}) => {
-  if (!show || !journalEntry) return null;
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
-      currency: 'USD' 
-    }).format(amount);
-  };
+const formatDate = (dateString: string) =>
+  new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+const PostJournalEntryModal: React.FC<PostJournalEntryModalProps> = ({ show, onHide, onConfirm, journalEntry, loading }) => {
+  if (!journalEntry) return null;
 
   const handleConfirm = async () => {
     await onConfirm();
     onHide();
   };
 
-  const modalTitle = (
-    <>
-      <i className="bi bi-check-circle me-2 text-success"></i>
-      Post Journal Entry
-    </>
-  );
-
-  const modalFooter = (
-    <>
-      <button type="button" className="btn btn-secondary" onClick={onHide}>
-        Cancel
-      </button>
-      <button
-        type="button"
-        className="btn btn-success"
-        onClick={handleConfirm}
-        disabled={loading}
-      >
-        {loading ? (
-          <>
-            <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-            Posting Entry...
-          </>
-        ) : (
-          <>
-            <i className="bi bi-check-circle me-2"></i>
-            Post Entry
-          </>
-        )}
-      </button>
-    </>
-  );
-
   return (
-    <BaseModal
-      show={show}
-      onHide={onHide}
-      title={modalTitle}
-      footer={modalFooter}
-      size="md"
-      className="post-journal-entry-modal"
-      ariaLabel="Post Journal Entry Modal"
+    <Modal
+      opened={show}
+      onClose={onHide}
+      title={
+        <Group gap="xs">
+          <IconCheck size={20} color="var(--mantine-color-green-6)" />
+          <Text fw={700}>Post Journal Entry</Text>
+        </Group>
+      }
+      size="lg"
     >
-      <div className="modal-body">
-        <div className="alert alert-warning mb-3">
-          <i className="bi bi-exclamation-triangle me-2"></i>
-          <strong>Important:</strong> Once posted, this journal entry cannot be modified or deleted.
-        </div>
+      <Stack gap="md">
+        <Alert color="yellow" icon={<IconAlertTriangle size={16} />} title="Important">
+          Once posted, this journal entry cannot be modified or deleted.
+        </Alert>
 
-        <div className="mb-3">
-          <h6>Journal Entry Details:</h6>
-          <div className="card">
-            <div className="card-body">
-              <div className="row">
-                <div className="col-sm-4">
-                  <strong>Entry Number:</strong>
-                </div>
-                <div className="col-sm-8">
-                  {journalEntry.entryNumber}
-                </div>
-              </div>
-              <div className="row">
-                <div className="col-sm-4">
-                  <strong>Transaction Date:</strong>
-                </div>
-                <div className="col-sm-8">
-                  {formatDate(journalEntry.transactionDate)}
-                </div>
-              </div>
-              <div className="row">
-                <div className="col-sm-4">
-                  <strong>Description:</strong>
-                </div>
-                <div className="col-sm-8">
-                  {journalEntry.description}
-                </div>
-              </div>
-              {journalEntry.reference && (
-                <div className="row">
-                  <div className="col-sm-4">
-                    <strong>Reference:</strong>
-                  </div>
-                  <div className="col-sm-8">
-                    {journalEntry.reference}
-                  </div>
-                </div>
-              )}
-              <div className="row">
-                <div className="col-sm-4">
-                  <strong>Total Amount:</strong>
-                </div>
-                <div className="col-sm-8">
-                  {formatCurrency(journalEntry.totalAmount)}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <Stack gap="xs">
+          <Text fw={600} size="sm">Journal Entry Details:</Text>
+          <Paper p="md" withBorder>
+            <Table variant="verticalLayout" withRowBorders={false} data={{
+              body: [
+                [{ element: <Text size="sm" fw={600}>Entry Number:</Text> }, { element: <Text size="sm">{journalEntry.entryNumber}</Text> }],
+                [{ element: <Text size="sm" fw={600}>Transaction Date:</Text> }, { element: <Text size="sm">{formatDate(journalEntry.transactionDate)}</Text> }],
+                [{ element: <Text size="sm" fw={600}>Description:</Text> }, { element: <Text size="sm">{journalEntry.description}</Text> }],
+                ...(journalEntry.reference ? [[{ element: <Text size="sm" fw={600}>Reference:</Text> }, { element: <Text size="sm">{journalEntry.reference}</Text> }]] as any : []),
+                [{ element: <Text size="sm" fw={600}>Total Amount:</Text> }, { element: <Text size="sm" fw={700}>{formatCurrency(journalEntry.totalAmount)}</Text> }],
+              ]
+            }} />
+          </Paper>
+        </Stack>
 
-        <div className="mb-3">
-          <h6>Journal Entry Lines:</h6>
-          <div className="table-responsive">
-            <table className="table table-sm">
-              <thead>
-                <tr>
-                  <th>Account</th>
-                  <th>Description</th>
-                  <th className="text-end">Debit</th>
-                  <th className="text-end">Credit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {journalEntry.lines.map((line, index) => (
-                  <tr key={index}>
-                    <td>
-                      <small className="text-muted">{line.accountCode}</small><br />
-                      {line.accountName}
-                    </td>
-                    <td>{line.description}</td>
-                    <td className="text-end">
-                      {line.debitAmount > 0 ? formatCurrency(line.debitAmount) : '-'}
-                    </td>
-                    <td className="text-end">
-                      {line.creditAmount > 0 ? formatCurrency(line.creditAmount) : '-'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="table-secondary">
-                  <td colSpan={2} className="fw-bold">Totals:</td>
-                  <td className="text-end fw-bold">
-                    {formatCurrency(journalEntry.lines.reduce((sum, line) => sum + line.debitAmount, 0))}
-                  </td>
-                  <td className="text-end fw-bold">
-                    {formatCurrency(journalEntry.lines.reduce((sum, line) => sum + line.creditAmount, 0))}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
+        <Stack gap="xs">
+          <Text fw={600} size="sm">Journal Entry Lines:</Text>
+          <Table striped highlightOnHover withTableBorder>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Account</Table.Th>
+                <Table.Th>Description</Table.Th>
+                <Table.Th ta="right">Debit</Table.Th>
+                <Table.Th ta="right">Credit</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {journalEntry.lines.map((line, i) => (
+                <Table.Tr key={i}>
+                  <Table.Td>
+                    <Text size="xs" c="dimmed">{line.accountCode}</Text>
+                    <Text size="sm">{line.accountName}</Text>
+                  </Table.Td>
+                  <Table.Td>{line.description}</Table.Td>
+                  <Table.Td ta="right">{line.debitAmount > 0 ? formatCurrency(line.debitAmount) : '-'}</Table.Td>
+                  <Table.Td ta="right">{line.creditAmount > 0 ? formatCurrency(line.creditAmount) : '-'}</Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+            <Table.Tfoot>
+              <Table.Tr>
+                <Table.Td colSpan={2} fw={700}>Totals:</Table.Td>
+                <Table.Td ta="right" fw={700}>{formatCurrency(journalEntry.lines.reduce((s, l) => s + l.debitAmount, 0))}</Table.Td>
+                <Table.Td ta="right" fw={700}>{formatCurrency(journalEntry.lines.reduce((s, l) => s + l.creditAmount, 0))}</Table.Td>
+              </Table.Tr>
+            </Table.Tfoot>
+          </Table>
+        </Stack>
 
-        <div className="alert alert-info">
-          <i className="bi bi-info-circle me-2"></i>
+        <Alert color="blue" icon={<IconInfoCircle size={16} />}>
           Posting this entry will update the account balances and make the entry permanent.
-        </div>
-      </div>
-    </BaseModal>
+        </Alert>
+
+        <Group justify="flex-end" mt="md">
+          <Button variant="default" onClick={onHide}>Cancel</Button>
+          <Button color="green" onClick={handleConfirm} loading={loading}>
+            Post Entry
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
   );
 };
 

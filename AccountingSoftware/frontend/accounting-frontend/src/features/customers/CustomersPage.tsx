@@ -1,284 +1,148 @@
-
 import React, { useState } from 'react';
-import Pagination from '../../components/common/Pagination';
-import SortableTableHeader, { SortableColumn } from '../../components/common/SortableTableHeader';
-import DebouncedSearchInput from '../../components/common/DebouncedSearchInput';
 import { Customer, CreateCustomerDto, UpdateCustomerDto, PaginationParams, SortingParams, CustomerFilteringParams } from '../../types';
 import { customerService } from '../../services/customerService';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import usePagedData from '../../hooks/usePagedData';
 import CustomerModal from './components/CustomerModal';
-import GenericDeleteConfirmationModal from '../../components/shared/GenericDeleteConfirmationModal';
-
+import { Table, Pagination, TextInput, Group, Button, ActionIcon, Badge, Menu, Modal, Skeleton, Alert, Title, Paper, Stack, Text } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { IconPlus, IconEdit, IconTrash, IconSearch, IconDotsVertical } from '@tabler/icons-react';
+import { showNotification } from '@mantine/notifications';
 
 const CustomersPage: React.FC = () => {
   usePageTitle('Customers');
 
-  // Paged customers
-  const {
-    data: customers,
-    loading,
-    error,
-    pagination,
-    setPagination,
-    sorting,
-    setSorting,
-    filtering,
-    setFiltering,
-    totalCount,
-    refetch,
-  } = usePagedData<Customer, PaginationParams, SortingParams, CustomerFilteringParams>({
-    fetchData: customerService.getCustomersPaged,
-    initialPagination: { pageNumber: 1, pageSize: 10 },
-    initialSorting: { orderBy: 'companyName', descending: false },
-    initialFiltering: { searchTerm: '', isActive: undefined },
-  });
+  const { data: customers, loading, error, pagination, setPagination, sorting, setSorting, filtering, setFiltering, totalCount, refetch } =
+    usePagedData<Customer, PaginationParams, SortingParams, CustomerFilteringParams>({
+      fetchData: customerService.getCustomersPaged,
+      initialPagination: { pageNumber: 1, pageSize: 10 },
+      initialSorting: { orderBy: 'companyName', descending: false },
+      initialFiltering: { searchTerm: '', isActive: undefined },
+    });
 
-  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | undefined>();
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteOpened, { open: openDelete, close: closeDelete }] = useDisclosure(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | undefined>();
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const handleAddCustomer = () => {
-    setSelectedCustomer(undefined);
-    setShowCustomerModal(true);
-  };
+  const handleAdd = () => { setSelectedCustomer(undefined); openModal(); };
+  const handleEdit = (c: Customer) => { setSelectedCustomer(c); openModal(); };
+  const handleDelete = (c: Customer) => { setCustomerToDelete(c); openDelete(); };
 
-  const handleEditCustomer = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setShowCustomerModal(true);
-  };
-
-
-  const handleSaveCustomer = async (customerData: CreateCustomerDto | UpdateCustomerDto) => {
+  const handleSave = async (dto: CreateCustomerDto | UpdateCustomerDto) => {
     try {
-      if (selectedCustomer) {
-        await customerService.updateCustomer(selectedCustomer.id, customerData as UpdateCustomerDto);
-      } else {
-        await customerService.createCustomer(customerData as CreateCustomerDto);
-      }
+      if (selectedCustomer) await customerService.updateCustomer(selectedCustomer.id, dto as UpdateCustomerDto);
+      else await customerService.createCustomer(dto as CreateCustomerDto);
+      closeModal();
       refetch();
-      setShowCustomerModal(false);
+      showNotification({ title: 'Success', message: `Customer ${selectedCustomer ? 'updated' : 'created'} successfully`, color: 'green' });
     } catch (err) {
-      console.error('Error saving customer:', err);
+      showNotification({ title: 'Error', message: 'Failed to save customer', color: 'red' });
       throw err;
     }
   };
 
-  const handleDeleteCustomer = (customer: Customer) => {
-    setCustomerToDelete(customer);
-    setShowDeleteModal(true);
-  };
-
-
   const handleConfirmDelete = async () => {
     if (!customerToDelete) return;
-
+    setDeleteLoading(true);
     try {
-      setDeleteLoading(true);
       await customerService.deleteCustomer(customerToDelete.id);
-      setShowDeleteModal(false);
+      closeDelete();
       setCustomerToDelete(undefined);
       refetch();
-    } catch (err) {
-      alert('Failed to delete customer');
-      console.error('Error deleting customer:', err);
-    } finally {
-      setDeleteLoading(false);
-    }
+      showNotification({ title: 'Success', message: 'Customer deleted', color: 'green' });
+    } catch { showNotification({ title: 'Error', message: 'Failed to delete', color: 'red' }); }
+    finally { setDeleteLoading(false); }
   };
 
-
-  // Columns for SortableTableHeader
-  const columns: SortableColumn[] = [
-    { key: 'customerCode', label: 'Customer Code', sortable: true },
-    { key: 'companyName', label: 'Company Name', sortable: true },
-    { key: 'contactPersonName', label: 'Contact Person', sortable: true },
-    { key: 'email', label: 'Email', sortable: true },
-    { key: 'phone', label: 'Phone', sortable: true },
-    { key: 'status', label: 'Status', sortable: false },
-    { key: 'actions', label: 'Actions', sortable: false },
-  ];
-
-  // Debounced search handler
-  const handleSearchInput = (value: string) => {
-    setFiltering(f => ({ ...f, searchTerm: value }));
-  };
-
-  // Sorting handler
   const handleSort = (column: string) => {
-    setSorting({
-      orderBy: column,
-      descending: sorting.orderBy === column ? !sorting.descending : false
-    });
+    setSorting(prev => ({ orderBy: column, descending: prev.orderBy === column ? !prev.descending : false }));
   };
 
-  if (loading) return (
-    <div className="d-flex justify-content-center align-items-center" style={{minHeight: '200px'}}>
-      <div className="spinner-border text-primary" role="status">
-        <span className="visually-hidden">Loading customers...</span>
-      </div>
-    </div>
-  );
-  
-  if (error) return (
-    <div className="alert alert-danger" role="alert">
-      <strong>Error:</strong> {error}
-      <button className="btn btn-sm btn-outline-danger ms-2" onClick={refetch}>
-        Try Again
-      </button>
-    </div>
-  );
+  const getSortIndicator = (column: string) => {
+    if (sorting.orderBy !== column) return '';
+    return sorting.descending ? ' ↓' : ' ↑';
+  };
+
+  const totalPages = Math.ceil(totalCount / pagination.pageSize);
 
   return (
-    <div className="container">
-      <div className="row">
-        <div className="col-12">
-          <h1 className="mb-4 text-dark">Customers</h1>
-          
+    <Stack gap="md">
+      <Group justify="space-between">
+        <Title order={3}>Customers</Title>
+        <Button leftSection={<IconPlus size="1rem" />} onClick={handleAdd}>Add Customer</Button>
+      </Group>
 
-          {/* Search and Add Controls */}
-          <div className="row mb-4">
-            <div className="col-md-6">
-              <div className="input-group">
-                <span className="input-group-text">
-                  <i className="bi bi-search"></i>
-                </span>
-                <DebouncedSearchInput
-                  placeholder="Search customers..."
-                  defaultValue={filtering.searchTerm || ''}
-                  onSearch={handleSearchInput}
-                />
-              </div>
-            </div>
-            <div className="col-md-3">
-              <select
-                className="form-select"
-                value={filtering.isActive === undefined ? '' : filtering.isActive ? 'active' : 'inactive'}
-                onChange={e => {
-                  const val = e.target.value;
-                  setFiltering({ ...filtering, isActive: val === '' ? undefined : val === 'active' });
-                }}
-              >
-                <option value="">All Statuses</option>
-                <option value="active">Active Only</option>
-                <option value="inactive">Inactive Only</option>
-              </select>
-            </div>
-            <div className="col-md-3">
-              <button
-                className="btn btn-primary w-100"
-                onClick={handleAddCustomer}
-              >
-                <i className="bi bi-plus-circle me-2"></i>
-                Add New Customer
-              </button>
-            </div>
-          </div>
-
-          <div className="card shadow-sm">
-            <div className="card-body p-0">
-              <div className="table-responsive">
-                <table className="table table-hover mb-0">
-                  <SortableTableHeader
-                    columns={columns}
-                    sorting={{ orderBy: sorting.orderBy || '', descending: sorting.descending ?? false }}
-                    onSort={handleSort}
-                  />
-                  <tbody>
-                    {customers.map((customer) => (
-                      <tr key={customer.id}>
-                        <td className="fw-bold">{customer.customerCode}</td>
-                        <td>{customer.companyName}</td>
-                        <td>{customer.contactPersonName || '-'}</td>
-                        <td>{customer.email || '-'}</td>
-                        <td>{customer.phone || '-'}</td>
-                        <td>
-                          <span className={`badge ${customer.isActive ? 'bg-success' : 'bg-secondary'}`}>
-                            {customer.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="btn-group" role="group">
-                            <button
-                              className="btn btn-sm btn-outline-primary"
-                              onClick={() => handleEditCustomer(customer)}
-                              title="Edit Customer"
-                            >
-                              <i className="bi bi-pencil"></i>
-                            </button>
-                            <button
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() => handleDeleteCustomer(customer)}
-                              title="Delete Customer"
-                            >
-                              <i className="bi bi-trash"></i>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          {/* Results count */}
-          {totalCount > 0 && (
-            <div className="mt-3 text-muted text-center">
-              Showing {(pagination.pageNumber - 1) * pagination.pageSize + 1} to {Math.min(pagination.pageNumber * pagination.pageSize, totalCount)} of {totalCount} customers
-            </div>
-          )}
-
-          {/* Pagination Controls */}
-          <Pagination
-            pageNumber={pagination.pageNumber}
-            pageSize={pagination.pageSize}
-            totalCount={totalCount}
-            onPageChange={(page: number) => setPagination({ ...pagination, pageNumber: page })}
-            ariaLabel="Customer Pagination"
+      <Paper p="sm" withBorder>
+        <Group justify="space-between" mb="md">
+          <TextInput
+            placeholder="Search customers..."
+            leftSection={<IconSearch size="1rem" />}
+            value={filtering.searchTerm || ''}
+            onChange={e => setFiltering(prev => ({ ...prev, searchTerm: e.currentTarget.value }))}
+            style={{ width: 300 }}
           />
+        </Group>
 
-          {customers.length === 0 && !loading && (
-            <div className="text-center py-5">
-              <div className="mb-3">
-                <i className="bi bi-people display-1 text-muted"></i>
-              </div>
-              <h5 className="text-muted">No customers found</h5>
-              <p className="text-muted">Add your first customer to get started.</p>
-              <button
-                className="btn btn-primary"
-                onClick={handleAddCustomer}
-              >
-                <i className="bi bi-plus-circle me-2"></i>
-                Add Customer
-              </button>
-            </div>
+        {loading ? <Stack gap="sm">{Array(5).fill(0).map((_, i) => <Skeleton key={i} height={40} />)}</Stack> :
+          error ? <Alert color="red" variant="light">{error}</Alert> : (
+            <>
+              <Table striped highlightOnHover>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th onClick={() => handleSort('companyName')} style={{ cursor: 'pointer' }}>Company Name{getSortIndicator('companyName')}</Table.Th>
+                    <Table.Th onClick={() => handleSort('contactPersonName')} style={{ cursor: 'pointer' }}>Contact{getSortIndicator('contactPersonName')}</Table.Th>
+                    <Table.Th>Email</Table.Th>
+                    <Table.Th>Phone</Table.Th>
+                    <Table.Th>City</Table.Th>
+                    <Table.Th>Status</Table.Th>
+                    <Table.Th w={60}>Actions</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {customers.map(c => (
+                    <Table.Tr key={c.id}>
+                      <Table.Td fw={500}>{c.companyName}</Table.Td>
+                      <Table.Td>{c.contactPersonName || '-'}</Table.Td>
+                      <Table.Td>{c.email || '-'}</Table.Td>
+                      <Table.Td>{c.phone || '-'}</Table.Td>
+                      <Table.Td>{c.city || '-'}</Table.Td>
+                      <Table.Td><Badge color={c.isActive ? 'green' : 'gray'} variant="light">{c.isActive ? 'Active' : 'Inactive'}</Badge></Table.Td>
+                      <Table.Td>
+                        <Menu shadow="md" width={120}>
+                          <Menu.Target>
+                            <ActionIcon variant="subtle" color="gray"><IconDotsVertical size="1rem" /></ActionIcon>
+                          </Menu.Target>
+                          <Menu.Dropdown>
+                            <Menu.Item leftSection={<IconEdit size="1rem" />} onClick={() => handleEdit(c)}>Edit</Menu.Item>
+                            <Menu.Item color="red" leftSection={<IconTrash size="1rem" />} onClick={() => handleDelete(c)}>Delete</Menu.Item>
+                          </Menu.Dropdown>
+                        </Menu>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+              {totalPages > 1 && (
+                <Group justify="center" mt="md">
+                  <Pagination total={totalPages} value={pagination.pageNumber} onChange={p => setPagination(prev => ({ ...prev, pageNumber: p }))} />
+                </Group>
+              )}
+            </>
           )}
-        </div>
-      </div>
+      </Paper>
 
-      {/* Customer Modal for Add/Edit */}
-      <CustomerModal
-        show={showCustomerModal}
-        onHide={() => setShowCustomerModal(false)}
-        onSave={handleSaveCustomer}
-        customer={selectedCustomer}
-      />
+      <CustomerModal opened={modalOpened} onClose={closeModal} onSave={handleSave} customer={selectedCustomer} />
 
-      {/* Delete Confirmation Modal */}
-      <GenericDeleteConfirmationModal
-        show={showDeleteModal}
-        onHide={() => setShowDeleteModal(false)}
-        onConfirm={handleConfirmDelete}
-        itemName={customerToDelete?.companyName || ''}
-        itemType="customer"
-        loading={deleteLoading}
-        warningMessage="This will soft delete the customer. The customer and their data will be preserved but hidden from normal views."
-      />
-    </div>
+      <Modal opened={deleteOpened} onClose={closeDelete} title="Delete Customer" centered>
+        <Text mb="md">Are you sure you want to delete <strong>{customerToDelete?.companyName}</strong>?</Text>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={closeDelete}>Cancel</Button>
+          <Button color="red" loading={deleteLoading} onClick={handleConfirmDelete}>Delete</Button>
+        </Group>
+      </Modal>
+    </Stack>
   );
 };
 

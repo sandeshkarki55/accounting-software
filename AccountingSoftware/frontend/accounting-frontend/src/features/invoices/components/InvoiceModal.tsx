@@ -1,447 +1,169 @@
-
 import React, { useEffect } from 'react';
 import { Invoice, CreateInvoiceDto, CreateInvoiceItemDto, Customer, CompanyInfo } from '../../../types';
-import BaseModal from '../../../components/shared/BaseModal';
-import { useFormState } from '../../../hooks/useFormState';
-import { useValidation } from '../../../hooks/useValidation';
+import { Modal, TextInput, Textarea, Select, NumberInput, Button, Group, Stack, Table, ActionIcon, Text, Divider, Paper } from '@mantine/core';
+import { DateInput } from '@mantine/dates';
+import { useForm } from '@mantine/form';
+import { IconPlus, IconTrash } from '@tabler/icons-react';
 
-interface InvoiceModalProps {
-  show: boolean;
-  onHide: () => void;
+interface Props {
+  opened: boolean;
+  onClose: () => void;
   onSave: (invoice: CreateInvoiceDto) => Promise<void>;
   invoice?: Invoice;
   customers: Customer[];
   companyInfos: CompanyInfo[];
 }
 
-const InvoiceModal: React.FC<InvoiceModalProps> = ({ show, onHide, onSave, invoice, customers, companyInfos }) => {
-  // Support both paged and non-paged data
-  const customerList: Customer[] = Array.isArray(customers)
-    ? customers
-    : (customers && Array.isArray((customers as any).items))
-      ? (customers as any).items
-      : [];
-  const companyInfoList: CompanyInfo[] = Array.isArray(companyInfos)
-    ? companyInfos
-    : (companyInfos && Array.isArray((companyInfos as any).items))
-      ? (companyInfos as any).items
-      : [];
-  const initialForm = {
-    invoiceDate: new Date().toISOString().split('T')[0],
-    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    customerId: 0,
-    companyInfoId: companyInfoList.find(c => c.isDefault)?.id as number | undefined,
-    description: '',
-    taxRate: 0,
-    discountAmount: 0,
-    notes: '',
-    terms: 'Payment due within 30 days'
-  };
-  const { formData, setFormData, handleChange, resetForm } = useFormState(initialForm);
-  const { errors, setErrors, validate, clearErrors } = useValidation<typeof initialForm & { items?: string }>();
-  const [items, setItems] = React.useState<CreateInvoiceItemDto[]>([{ description: '', quantity: 1, unitPrice: 0, sortOrder: 0 }]);
+const InvoiceModal: React.FC<Props> = ({ opened, onClose, onSave, invoice, customers, companyInfos }) => {
+  const customerList: Customer[] = Array.isArray(customers) ? customers : ((customers as any)?.items || []);
+  const coList: CompanyInfo[] = Array.isArray(companyInfos) ? companyInfos : ((companyInfos as any)?.items || []);
+  const defaultCompany = coList.find((c: CompanyInfo) => c.isDefault);
+  const isEdit = !!invoice;
   const [loading, setLoading] = React.useState(false);
-  const isEditMode = !invoice ? false : true;
+
+  const form = useForm({
+    initialValues: {
+      customerId: '',
+      companyInfoId: defaultCompany?.id ? String(defaultCompany.id) : '',
+      invoiceDate: new Date(),
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      description: '',
+      taxRate: 0,
+      discountAmount: 0,
+      notes: '',
+      terms: 'Payment due within 30 days',
+    },
+    validate: {
+      customerId: (v) => !v ? 'Customer is required' : null,
+      invoiceDate: (v) => !v ? 'Invoice date is required' : null,
+      dueDate: (v) => !v ? 'Due date is required' : null,
+    },
+  });
+
+  const [items, setItems] = React.useState<CreateInvoiceItemDto[]>([{ description: '', quantity: 1, unitPrice: 0, sortOrder: 0 }]);
 
   useEffect(() => {
     if (invoice) {
-      setFormData({
-        invoiceDate: invoice.invoiceDate.split('T')[0],
-        dueDate: invoice.dueDate.split('T')[0],
-        customerId: invoice.customerId,
-        companyInfoId: invoice.companyInfoId,
+      form.setValues({
+        customerId: String(invoice.customerId),
+        companyInfoId: invoice.companyInfoId ? String(invoice.companyInfoId) : '',
+        invoiceDate: new Date(invoice.invoiceDate),
+        dueDate: new Date(invoice.dueDate),
         description: invoice.description || '',
         taxRate: invoice.taxRate,
         discountAmount: invoice.discountAmount,
         notes: invoice.notes || '',
-        terms: invoice.terms || ''
+        terms: invoice.terms || '',
       });
-      setItems(invoice.items.map((item, index) => ({
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        sortOrder: index
-      })));
+      setItems(invoice.items.map((item, i) => ({ description: item.description, quantity: item.quantity, unitPrice: item.unitPrice, sortOrder: i })));
     } else {
-      resetForm();
+      form.reset();
       setItems([{ description: '', quantity: 1, unitPrice: 0, sortOrder: 0 }]);
     }
-    clearErrors();
-  }, [invoice, companyInfos, setFormData, resetForm, clearErrors]);
+  }, [invoice, opened]);
 
-  const validateForm = () =>
-    validate(() => {
-      const newErrors: { [key: string]: string } = {};
-      if (!formData.invoiceDate) {
-        newErrors.invoiceDate = 'Invoice date is required';
-      }
-      if (!formData.dueDate) {
-        newErrors.dueDate = 'Due date is required';
-      }
-      if (formData.customerId === 0) {
-        newErrors.customerId = 'Customer is required';
-      }
-      if (items.length === 0 || items.every(item => !item.description.trim())) {
-        newErrors.items = 'At least one item is required';
-      }
-      return newErrors;
-    });
-
-  const handleItemChange = (index: number, field: keyof CreateInvoiceItemDto, value: string | number) => {
-    const newItems = [...items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    setItems(newItems);
+  const updateItem = (idx: number, field: string, value: any) => {
+    setItems(prev => prev.map((item, i) => i === idx ? { ...item, [field]: value } : item));
   };
+  const addItem = () => setItems([...items, { description: '', quantity: 1, unitPrice: 0, sortOrder: items.length }]);
+  const removeItem = (idx: number) => { if (items.length > 1) setItems(items.filter((_, i) => i !== idx)); };
 
-  const addItem = () => {
-    setItems([...items, { description: '', quantity: 1, unitPrice: 0, sortOrder: items.length }]);
-  };
+  const subTotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  const taxAmount = subTotal * (form.values.taxRate / 100);
+  const total = subTotal + taxAmount - form.values.discountAmount;
 
-  const removeItem = (index: number) => {
-    if (items.length > 1) {
-      const newItems = items.filter((_, i) => i !== index);
-      newItems.forEach((item, i) => item.sortOrder = i);
-      setItems(newItems);
-    }
-  };
-
-  const calculateItemAmount = (quantity: number, unitPrice: number) => quantity * unitPrice;
-  const calculateSubTotal = () => items.reduce((sum, item) => sum + calculateItemAmount(item.quantity, item.unitPrice), 0);
-  const calculateTaxAmount = () => calculateSubTotal() * (formData.taxRate / 100);
-  const calculateTotal = () => calculateSubTotal() + calculateTaxAmount() - formData.discountAmount;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+  const handleSubmit = async (values: typeof form.values) => {
+    const validItems = items.filter(i => i.description.trim());
+    if (validItems.length === 0) return;
     setLoading(true);
     try {
-      const invoiceData: CreateInvoiceDto = {
-        ...formData,
-        items: items.filter(item => item.description.trim())
-      };
-      await onSave(invoiceData);
-      onHide();
-    } catch (error) {
-      console.error('Error saving invoice:', error);
-    } finally {
-      setLoading(false);
-    }
+      await onSave({
+        customerId: Number(values.customerId),
+        companyInfoId: values.companyInfoId ? Number(values.companyInfoId) : undefined,
+        invoiceDate: values.invoiceDate.toISOString(),
+        dueDate: values.dueDate.toISOString(),
+        description: values.description,
+        taxRate: values.taxRate,
+        discountAmount: values.discountAmount,
+        notes: values.notes,
+        terms: values.terms,
+        items: validItems.map((item, i) => ({ ...item, sortOrder: i })),
+      });
+    } finally { setLoading(false); }
   };
 
-  const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
-
-  if (!show) return null;
-
-  const modalTitle = (
-    <>
-      <i className="bi bi-receipt me-2"></i>
-      {isEditMode ? (invoice ? `Invoice ${invoice.invoiceNumber}` : 'Edit Invoice') : 'Create New Invoice'}
-    </>
-  );
-
-  const modalFooter = (
-    <>
-      <button type="button" className="btn btn-secondary" onClick={onHide}>
-        <i className="bi bi-x-circle me-2"></i>
-        {isEditMode ? 'Close' : 'Cancel'}
-      </button>
-      {!isEditMode && (
-        <button type="submit" className="btn btn-primary save-btn" disabled={loading}>
-          {loading ? (
-            <>
-              <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-              Creating Invoice...
-            </>
-          ) : (
-            <>
-              <i className="bi bi-receipt me-2"></i>
-              Create Invoice
-            </>
-          )}
-        </button>
-      )}
-    </>
-  );
-
   return (
-    <BaseModal
-      show={show}
-      onHide={onHide}
-      title={modalTitle}
-      footer={null}
-      size="xl"
-      className="invoice-modal"
-      ariaLabel={isEditMode ? 'Edit Invoice Modal' : 'Add Invoice Modal'}
-    >
-      <form onSubmit={handleSubmit}>
-        <div className="modal-body">
-          {isEditMode && invoice && (
-            <div className="alert alert-info mb-3">
-              <i className="bi bi-info-circle me-2"></i>
-              Invoice Number: <strong>{invoice.invoiceNumber}</strong>
-            </div>
-          )}
-          {/* Customer Selection */}
-          <div className="row mb-3">
-            <div className="col-md-6">
-              <label htmlFor="customerId" className="form-label">Customer *</label>
-              <select
-                className={`form-select ${errors.customerId ? 'is-invalid' : ''}`}
-                id="customerId"
-                name="customerId"
-                value={formData.customerId}
-                onChange={handleChange}
-                disabled={isEditMode}
-              >
-                <option value={0}>Select a customer...</option>
-                {customerList.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.companyName} ({customer.customerCode})
-                  </option>
-                ))}
-              </select>
-              {errors.customerId && <div className="invalid-feedback">{errors.customerId}</div>}
-            </div>
-          </div>
+    <Modal opened={opened} onClose={onClose} title={isEdit ? 'Invoice Details' : 'Create Invoice'} size="xl" centered>
+      <form onSubmit={form.onSubmit(handleSubmit)}>
+        <Stack gap="sm">
+          <Group grow>
+            <Select label="Customer" withAsterisk data={customerList.map(c => ({ value: String(c.id), label: c.companyName }))} searchable {...form.getInputProps('customerId')} />
+            <Select label="Company" data={coList.map(c => ({ value: String(c.id), label: c.companyName }))} searchable clearable {...form.getInputProps('companyInfoId')} />
+          </Group>
+          <Group grow>
+            <DateInput label="Invoice Date" withAsterisk {...form.getInputProps('invoiceDate')} />
+            <DateInput label="Due Date" withAsterisk {...form.getInputProps('dueDate')} />
+          </Group>
+          <TextInput label="Description" {...form.getInputProps('description')} />
 
-          {/* Invoice Dates and Company */}
-          <div className="row mb-3">
-            <div className="col-md-4">
-              <label htmlFor="invoiceDate" className="form-label">Invoice Date *</label>
-              <input
-                type="date"
-                className={`form-control ${errors.invoiceDate ? 'is-invalid' : ''}`}
-                id="invoiceDate"
-                name="invoiceDate"
-                value={formData.invoiceDate}
-                onChange={handleChange}
-                disabled={isEditMode}
-              />
-              {errors.invoiceDate && <div className="invalid-feedback">{errors.invoiceDate}</div>}
-            </div>
-            <div className="col-md-4">
-              <label htmlFor="dueDate" className="form-label">Due Date *</label>
-              <input
-                type="date"
-                className={`form-control ${errors.dueDate ? 'is-invalid' : ''}`}
-                id="dueDate"
-                name="dueDate"
-                value={formData.dueDate}
-                onChange={handleChange}
-                disabled={isEditMode}
-              />
-              {errors.dueDate && <div className="invalid-feedback">{errors.dueDate}</div>}
-            </div>
-            <div className="col-md-4">
-              <label htmlFor="companyInfoId" className="form-label">Company</label>
-              <select
-                className="form-select"
-                id="companyInfoId"
-                name="companyInfoId"
-                value={formData.companyInfoId || ''}
-                onChange={handleChange}
-                disabled={isEditMode}
-              >
-                <option value="">Use default company...</option>
-                {companyInfoList.map((company) => (
-                  <option key={company.id} value={company.id}>
-                    {company.companyName}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <Divider label="Line Items" labelPosition="center" />
+          <Table>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Description</Table.Th>
+                <Table.Th w={80}>Qty</Table.Th>
+                <Table.Th w={120}>Unit Price</Table.Th>
+                <Table.Th w={120}>Amount</Table.Th>
+                <Table.Th w={40}></Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {items.map((item, idx) => (
+                <Table.Tr key={idx}>
+                  <Table.Td><TextInput size="sm" value={item.description} onChange={e => updateItem(idx, 'description', e.currentTarget.value)} placeholder="Item description" /></Table.Td>
+                  <Table.Td><NumberInput size="sm" min={0} value={item.quantity} onChange={v => updateItem(idx, 'quantity', v || 0)} /></Table.Td>
+                  <Table.Td><NumberInput size="sm" min={0} decimalScale={2} value={item.unitPrice} onChange={v => updateItem(idx, 'unitPrice', v || 0)} /></Table.Td>
+                  <Table.Td><Text size="sm">{formatCurrency(item.quantity * item.unitPrice)}</Text></Table.Td>
+                  <Table.Td>{items.length > 1 && <ActionIcon color="red" variant="subtle" onClick={() => removeItem(idx)}><IconTrash size="1rem" /></ActionIcon>}</Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+          <Button variant="light" size="xs" leftSection={<IconPlus size="1rem" />} onClick={addItem} style={{ alignSelf: 'flex-start' }}>Add Line</Button>
 
-          {/* Description */}
-          <div className="mb-3">
-            <label htmlFor="description" className="form-label">Description</label>
-            <input
-              type="text"
-              className="form-control"
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Brief description of the invoice"
-              disabled={isEditMode}
-            />
-          </div>
+          <Group grow>
+            <NumberInput label="Tax Rate (%)" min={0} max={100} {...form.getInputProps('taxRate')} />
+            <NumberInput label="Discount ($)" min={0} decimalScale={2} {...form.getInputProps('discountAmount')} />
+          </Group>
+          <Textarea label="Notes" {...form.getInputProps('notes')} />
+          <TextInput label="Terms" {...form.getInputProps('terms')} />
 
-          {/* Invoice Items */}
-          <div className="mb-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h6 className="mb-0">Invoice Items</h6>
-              {!isEditMode && (
-                <button type="button" className="btn btn-sm btn-outline-primary" onClick={addItem}>
-                  <i className="bi bi-plus-circle me-1"></i>
-                  Add Item
-                </button>
-              )}
-            </div>
-            {errors.items && <div className="alert alert-danger">{errors.items}</div>}
-            <div className="table-responsive">
-              <table className="table table-sm">
-                <thead>
-                  <tr>
-                    <th>Description</th>
-                    <th style={{width: '100px'}}>Quantity</th>
-                    <th style={{width: '120px'}}>Unit Price</th>
-                    <th style={{width: '120px'}}>Amount</th>
-                    {!isEditMode && <th style={{width: '50px'}}>Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, index) => (
-                    <tr key={index}>
-                      <td>
-                        <input
-                          type="text"
-                          className="form-control form-control-sm"
-                          value={item.description}
-                          onChange={e => handleItemChange(index, 'description', e.target.value)}
-                          placeholder="Item description"
-                          disabled={isEditMode}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="form-control form-control-sm"
-                          value={item.quantity}
-                          onChange={e => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
-                          min="1"
-                          disabled={isEditMode}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="form-control form-control-sm"
-                          value={item.unitPrice}
-                          onChange={e => handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                          min="0"
-                          step="0.01"
-                          disabled={isEditMode}
-                        />
-                      </td>
-                      <td>
-                        <span className="fw-bold">
-                          {formatCurrency(calculateItemAmount(item.quantity, item.unitPrice))}
-                        </span>
-                      </td>
-                      {!isEditMode && (
-                        <td>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-danger"
-                            onClick={() => removeItem(index)}
-                            disabled={items.length === 1}
-                          >
-                            <i className="bi bi-trash"></i>
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Paper p="sm" withBorder bg="gray.0">
+            <Group justify="space-between">
+              <Text size="sm">Subtotal:</Text><Text size="sm">{formatCurrency(subTotal)}</Text>
+            </Group>
+            <Group justify="space-between">
+              <Text size="sm">Tax:</Text><Text size="sm">{formatCurrency(taxAmount)}</Text>
+            </Group>
+            <Group justify="space-between">
+              <Text size="sm">Discount:</Text><Text size="sm">-{formatCurrency(form.values.discountAmount)}</Text>
+            </Group>
+            <Divider my="xs" />
+            <Group justify="space-between">
+              <Text fw={700}>Total:</Text><Text fw={700}>{formatCurrency(total)}</Text>
+            </Group>
+          </Paper>
 
-          {/* Invoice Totals */}
-          <div className="row mb-4">
-            <div className="col-md-8">
-              <div className="row">
-                <div className="col-md-6">
-                  <label htmlFor="taxRate" className="form-label">Tax Rate (%)</label>
-                  <input
-                    type="number"
-                    className="form-control"
-                    id="taxRate"
-                    name="taxRate"
-                    value={formData.taxRate}
-                    onChange={handleChange}
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    disabled={isEditMode}
-                  />
-                </div>
-                <div className="col-md-6">
-                  <label htmlFor="discountAmount" className="form-label">Discount Amount</label>
-                  <input
-                    type="number"
-                    className="form-control"
-                    id="discountAmount"
-                    name="discountAmount"
-                    value={formData.discountAmount}
-                    onChange={handleChange}
-                    min="0"
-                    step="0.01"
-                    disabled={isEditMode}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="card bg-light">
-                <div className="card-body">
-                  <div className="d-flex justify-content-between">
-                    <span>Subtotal:</span>
-                    <span>{formatCurrency(calculateSubTotal())}</span>
-                  </div>
-                  <div className="d-flex justify-content-between">
-                    <span>Tax ({formData.taxRate}%):</span>
-                    <span>{formatCurrency(calculateTaxAmount())}</span>
-                  </div>
-                  <div className="d-flex justify-content-between">
-                    <span>Discount:</span>
-                    <span>-{formatCurrency(formData.discountAmount)}</span>
-                  </div>
-                  <hr />
-                  <div className="d-flex justify-content-between fw-bold">
-                    <span>Total:</span>
-                    <span>{formatCurrency(calculateTotal())}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Notes and Terms */}
-          <div className="row mb-4">
-            <div className="col-md-6">
-              <label htmlFor="notes" className="form-label">Notes</label>
-              <textarea
-                className="form-control"
-                id="notes"
-                name="notes"
-                rows={3}
-                value={formData.notes}
-                onChange={handleChange}
-                placeholder="Additional notes for the invoice"
-                disabled={isEditMode}
-              />
-            </div>
-            <div className="col-md-6">
-              <label htmlFor="terms" className="form-label">Terms & Conditions</label>
-              <textarea
-                className="form-control"
-                id="terms"
-                name="terms"
-                rows={3}
-                value={formData.terms}
-                onChange={handleChange}
-                placeholder="Payment terms and conditions"
-                disabled={isEditMode}
-              />
-            </div>
-          </div>
-        </div>
-        <div className="modal-footer">{modalFooter}</div>
+          <Group justify="flex-end" mt="md">
+            <Button variant="default" onClick={onClose}>Cancel</Button>
+            <Button type="submit" loading={loading}>{isEdit ? 'Save' : 'Create'}</Button>
+          </Group>
+        </Stack>
       </form>
-    </BaseModal>
+    </Modal>
   );
 };
+
+const formatCurrency = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 
 export default InvoiceModal;

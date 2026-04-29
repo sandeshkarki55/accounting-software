@@ -1,436 +1,215 @@
 import React, { useState, useEffect } from 'react';
-import Pagination from '../../components/common/Pagination';
-import DebouncedSearchInput from '../../components/common/DebouncedSearchInput';
-import SortableTableHeader from '../../components/common/SortableTableHeader';
-import { JournalEntry, JournalEntryLine, CreateJournalEntryDto, UpdateJournalEntryDto, Account, PaginationParams, SortingParams, JournalEntryFilteringParams } from '../../types/index';
+import { JournalEntry, JournalEntryLine, Account, PaginationParams, SortingParams, JournalEntryFilteringParams } from '../../types/index';
 import { journalEntryService, accountService } from '../../services/api';
 import { usePageTitle } from '../../hooks/usePageTitle';
-import usePagedData from '../../hooks/usePagedData'; // Import the reusable hook
+import usePagedData from '../../hooks/usePagedData';
 import JournalEntryModal from './components/JournalEntryModal';
 import PostJournalEntryModal from './components/PostJournalEntryModal';
-import GenericDeleteConfirmationModal from '../../components/shared/GenericDeleteConfirmationModal';
+import { Table, Button, Group, Text, TextInput, Select, Badge, ActionIcon, Pagination, Center, Loader, Alert, Paper, Stack, Modal } from '@mantine/core';
+import { IconEye, IconPencil, IconCheck, IconTrash, IconPlus, IconSearch, IconChevronDown, IconChevronRight, IconNotebook } from '@tabler/icons-react';
+import { useDebouncedValue } from '@mantine/hooks';
+
+const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
 
 const JournalEntriesPage: React.FC = () => {
   usePageTitle('Journal Entries');
 
-  // Use the usePagedData hook
-  const { 
-    data: journalEntries, 
-    loading, 
-    error, 
-    pagination, 
-    setPagination, 
-    sorting, 
-    setSorting, 
-    filtering, 
-    setFiltering, 
-    totalCount,
-    refetch,
-  } = usePagedData<JournalEntry, PaginationParams, SortingParams, JournalEntryFilteringParams>({
+  const { data: journalEntries, loading, error, pagination, setPagination, sorting, setSorting, filtering, setFiltering, totalCount, refetch } = usePagedData<JournalEntry, PaginationParams, SortingParams, JournalEntryFilteringParams>({
     fetchData: journalEntryService.getJournalEntries,
     initialPagination: { pageNumber: 1, pageSize: 10 },
     initialSorting: { orderBy: 'transactionDate', descending: true },
     initialFiltering: { searchTerm: '', statusFilter: 'all' },
   });
 
-  // Keep accounts state separate as it's not paged
   const [accounts, setAccounts] = useState<Account[]>([]);
-  // Keep expandedRows state separate as it's UI state
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
-
-
-  // Fetch accounts data on initial load
-  useEffect(() => {
-    const loadAccounts = async () => {
-      try {
-        const accountsData = await accountService.getAccounts();
-        setAccounts(accountsData);
-      } catch (err) {
-        console.error('Error loading accounts:', err);
-        // Optionally set an error state specifically for accounts if needed
-      }
-    };
-    loadAccounts();
-  }, []);
-
-  // Modal states
-  const [showJournalEntryModal, setShowJournalEntryModal] = useState(false);
-  const [selectedJournalEntry, setSelectedJournalEntry] = useState<JournalEntry | undefined>();
+  const [showModal, setShowModal] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<JournalEntry | undefined>();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [journalEntryToDelete, setJournalEntryToDelete] = useState<JournalEntry | undefined>();
+  const [entryToDelete, setEntryToDelete] = useState<JournalEntry | undefined>();
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showPostModal, setShowPostModal] = useState(false);
-  const [journalEntryToPost, setJournalEntryToPost] = useState<JournalEntry | undefined>();
+  const [entryToPost, setEntryToPost] = useState<JournalEntry | undefined>();
   const [postLoading, setPostLoading] = useState(false);
+  const [searchValue, setSearchValue] = useState(filtering.searchTerm || '');
+  const [debouncedSearch] = useDebouncedValue(searchValue, 300);
 
-  const toggleRowExpansion = (id: number) => {
-    const newExpandedRows = new Set(expandedRows);
-    if (newExpandedRows.has(id)) {
-      newExpandedRows.delete(id);
-    } else {
-      newExpandedRows.add(id);
-    }
-    setExpandedRows(newExpandedRows);
+  useEffect(() => { setFiltering(f => ({ ...f, searchTerm: debouncedSearch })); }, [debouncedSearch]);
+
+  useEffect(() => {
+    accountService.getAccounts().then(setAccounts).catch(console.error);
+  }, []);
+
+  const toggleRow = (id: number) => {
+    const next = new Set(expandedRows);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setExpandedRows(next);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
-      currency: 'USD' 
-    }).format(amount);
+  const handleSave = async (data: any, isUpdate?: boolean, entryId?: number) => {
+    if (isUpdate && entryId) await journalEntryService.updateJournalEntry(entryId, data);
+    else await journalEntryService.createJournalEntry(data);
+    refetch();
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+  const handleDelete = async () => {
+    if (!entryToDelete) return;
+    setDeleteLoading(true);
+    try { await journalEntryService.deleteJournalEntry(entryToDelete.id); refetch(); setShowDeleteModal(false); setEntryToDelete(undefined); }
+    catch (e) { console.error(e); }
+    finally { setDeleteLoading(false); }
   };
 
-  const getStatusBadgeClass = (isPosted: boolean) => {
-    return isPosted ? 'bg-success' : 'bg-warning text-dark';
+  const handlePost = async () => {
+    if (!entryToPost) return;
+    setPostLoading(true);
+    try { await journalEntryService.postJournalEntry(entryToPost.id); refetch(); setShowPostModal(false); setEntryToPost(undefined); }
+    catch (e) { console.error(e); }
+    finally { setPostLoading(false); }
   };
 
-  // CRUD handlers
-  const handleAddJournalEntry = () => {
-    setSelectedJournalEntry(undefined);
-    setShowJournalEntryModal(true);
-  };
+  const totalPages = Math.ceil(totalCount / pagination.pageSize);
 
-  const handleEditJournalEntry = (entry: JournalEntry) => {
-    if (!entry.isPosted) {
-      setSelectedJournalEntry(entry);
-      setShowJournalEntryModal(true);
-    }
-  };
-
-  const handleDeleteJournalEntry = (entry: JournalEntry) => {
-    setJournalEntryToDelete(entry);
-    setShowDeleteModal(true);
-  };
-
-  const handleSaveJournalEntry = async (journalEntryData: CreateJournalEntryDto | UpdateJournalEntryDto, isUpdate: boolean = false, entryId?: number) => {
-    try {
-      if (isUpdate && entryId) {
-        await journalEntryService.updateJournalEntry(entryId, journalEntryData as UpdateJournalEntryDto);
-      } else {
-        await journalEntryService.createJournalEntry(journalEntryData as CreateJournalEntryDto);
-      }
-      refetch();
-    } catch (error) {
-      console.error('Error saving journal entry:', error);
-      throw error;
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!journalEntryToDelete) return;
-
-    try {
-      setDeleteLoading(true);
-      await journalEntryService.deleteJournalEntry(journalEntryToDelete.id);
-      refetch();
-      setShowDeleteModal(false);
-      setJournalEntryToDelete(undefined);
-    } catch (error) {
-      console.error('Error deleting journal entry:', error);
-    } finally {
-      setDeleteLoading(false);
-    }
-  };
-
-  const handlePostJournalEntry = (entry: JournalEntry) => {
-    setJournalEntryToPost(entry);
-    setShowPostModal(true);
-  };
-
-  const handleConfirmPost = async () => {
-    if (!journalEntryToPost) return;
-
-    try {
-      setPostLoading(true);
-      await journalEntryService.postJournalEntry(journalEntryToPost.id);
-      refetch();
-      setShowPostModal(false);
-      setJournalEntryToPost(undefined);
-    } catch (error) {
-      console.error('Error posting journal entry:', error);
-    } finally {
-      setPostLoading(false);
-    }
-  };
-
-  if (loading) return (
-    <div className="d-flex justify-content-center align-items-center" style={{minHeight: '200px'}}>
-      <div className="spinner-border text-primary" role="status">
-        <span className="visually-hidden">Loading journal entries...</span>
-      </div>
-    </div>
-  );
-  
-  if (error) return (
-    <div className="alert alert-danger" role="alert">
-      <strong>Error:</strong> {error}
-      {/* The hook manages loading, so clicking Try Again should just trigger a reload via state change */}
-      <button className="btn btn-sm btn-outline-danger ms-2" onClick={refetch}>
-        Try Again
-      </button>
-    </div>
-  );
+  if (loading) return <Center h={400}><Loader size="lg" /></Center>;
+  if (error) return <Alert color="red" title="Error">{error} <Button variant="light" color="red" size="xs" ml="md" onClick={refetch}>Retry</Button></Alert>;
 
   return (
-    <div className="container">
-      <div className="row">
-        <div className="col-12">
-          <h1 className="mb-4 text-dark">Journal Entries</h1>
-          
-          {/* Search and Filter Controls */}
-          <div className="row mb-4">
-            <div className="col-md-6">
-              <div className="input-group">
-                <span className="input-group-text">
-                  <i className="bi bi-search"></i>
-                </span>
-                <DebouncedSearchInput
-                  placeholder="Search entries, descriptions, or references..."
-                  defaultValue={filtering.searchTerm || ''}
-                  onSearch={value => setFiltering(f => ({ ...f, searchTerm: value }))}
-                />
-              </div>
-            </div>
-            <div className="col-md-3">
-              <select
-                className="form-select"
-                value={filtering.statusFilter}
-                onChange={(e) => setFiltering({ ...filtering, statusFilter: e.target.value as 'all' | 'posted' | 'unposted' })}
-              >
-                <option value="all">All Entries</option>
-                <option value="posted">Posted Only</option>
-                <option value="unposted">Unposted Only</option>
-              </select>
-            </div>
-            <div className="col-md-3">
-              <button 
-                className="btn btn-primary w-100" 
-                onClick={() => handleAddJournalEntry()}
-              >
-                <i className="bi bi-plus-circle me-2"></i>
-                Create Entry
-              </button>
-            </div>
-          </div>
+    <Stack gap="md">
+      <Text component="h1" size="xl" fw={700}>Journal Entries</Text>
 
-          <div className="card shadow-sm">
-            <div className="card-body p-0">
-              <div className="table-responsive">
-                <table className="table table-hover mb-0">
-                  <SortableTableHeader
-                    columns={[
-                      { key: 'expander', label: '', sortable: false, style: { width: '50px' } },
-                      { key: 'entryNumber', label: 'Entry #', sortable: true },
-                      { key: 'transactionDate', label: 'Date', sortable: true },
-                      { key: 'description', label: 'Description', sortable: true },
-                      { key: 'reference', label: 'Reference', sortable: true },
-                      { key: 'totalAmount', label: 'Total', sortable: true },
-                      { key: 'status', label: 'Status', sortable: false },
-                      { key: 'actions', label: 'Actions', sortable: false },
-                    ]}
-                    sorting={{ orderBy: sorting.orderBy || '', descending: sorting.descending ?? false }}
-                    onSort={(column) => setSorting({ orderBy: column, descending: sorting.orderBy === column ? !sorting.descending : false })}
-                  />
-                  <tbody>
-                    {journalEntries.map((entry) => (
-                      <React.Fragment key={entry.id}>
-                        {/* Main row */}
-                        <tr>
-                          <td>
-                            <button
-                              className="btn btn-sm btn-link p-0"
-                              onClick={() => toggleRowExpansion(entry.id)}
-                              title={expandedRows.has(entry.id) ? "Collapse details" : "Expand details"}
-                            >
-                              <i className={`bi ${expandedRows.has(entry.id) ? 'bi-chevron-down' : 'bi-chevron-right'}`}></i>
-                            </button>
-                          </td>
-                          <td className="fw-bold">{entry.entryNumber}</td>
-                          <td>{formatDate(entry.transactionDate)}</td>
-                          <td>{entry.description}</td>
-                          <td>{entry.reference}</td>
-                          <td className="fw-bold">{formatCurrency(entry.totalAmount)}</td>
-                          <td>
-                            <span className={`badge ${getStatusBadgeClass(entry.isPosted)}`}>
-                              {entry.isPosted ? 'Posted' : 'Draft'}
-                            </span>
-                          </td>
-                          <td>
-                            <div className="btn-group" role="group">
-                              <button
-                                className="btn btn-sm btn-outline-primary"
-                                onClick={() => toggleRowExpansion(entry.id)}
-                                title="View Details"
-                              >
-                                <i className="bi bi-eye"></i>
-                              </button>
-                              {!entry.isPosted && (
-                                <>
-                                  <button
-                                    className="btn btn-sm btn-outline-secondary"
-                                    onClick={() => handleEditJournalEntry(entry)}
-                                    title="Edit Entry"
-                                  >
-                                    <i className="bi bi-pencil"></i>
-                                  </button>
-                                  <button
-                                    className="btn btn-sm btn-outline-success"
-                                    onClick={() => handlePostJournalEntry(entry)}
-                                    title="Post Entry"
-                                  >
-                                    <i className="bi bi-check-circle"></i>
-                                  </button>
-                                  <button
-                                    className="btn btn-sm btn-outline-danger"
-                                    onClick={() => handleDeleteJournalEntry(entry)}
-                                    title="Delete Entry"
-                                  >
-                                    <i className="bi bi-trash"></i>
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                        
-                        {/* Expanded row with journal entry lines */}
-                        {expandedRows.has(entry.id) && (
-                          <tr>
-                            <td colSpan={8} className="p-0">
-                              <div className="bg-light border-top">
-                                <div className="p-3">
-                                  <h6 className="mb-3 text-muted">
-                                    <i className="bi bi-list-ul me-2"></i>
-                                    Journal Entry Lines
-                                  </h6>
-                                  <div className="table-responsive">
-                                    <table className="table table-sm mb-0">
-                                      <thead>
-                                        <tr>
-                                          <th>Account Code</th>
-                                          <th>Account Name</th>
-                                          <th>Description</th>
-                                          <th className="text-end">Debit</th>
-                                          <th className="text-end">Credit</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {entry.lines.map((line: JournalEntryLine) => (
-                                          <tr key={line.id}>
-                                            <td className="fw-bold">{line.accountCode}</td>
-                                            <td>{line.accountName}</td>
-                                            <td>{line.description}</td>
-                                            <td className="text-end">
-                                              {line.debitAmount > 0 ? formatCurrency(line.debitAmount) : '-'}
-                                            </td>
-                                            <td className="text-end">
-                                              {line.creditAmount > 0 ? formatCurrency(line.creditAmount) : '-'}
-                                            </td>
-                                          </tr>
-                                        ))}
-                                      </tbody>
-                                      <tfoot>
-                                        <tr className="table-secondary">
-                                          <td colSpan={3} className="fw-bold">Totals:</td>
-                                          <td className="text-end fw-bold">
-                                            {formatCurrency(entry.lines.reduce((sum: number, line: JournalEntryLine) => sum + line.debitAmount, 0))}
-                                          </td>
-                                          <td className="text-end fw-bold">
-                                            {formatCurrency(entry.lines.reduce((sum: number, line: JournalEntryLine) => sum + line.creditAmount, 0))}
-                                          </td>
-                                        </tr>
-                                      </tfoot>
-                                    </table>
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
+      <Group grow>
+        <TextInput leftSection={<IconSearch size={16} />} placeholder="Search entries, descriptions, or references..." value={searchValue} onChange={e => setSearchValue(e.currentTarget.value)} />
+        <Select data={[
+          { value: 'all', label: 'All Entries' },
+          { value: 'posted', label: 'Posted Only' },
+          { value: 'unposted', label: 'Unposted Only' },
+        ]} value={filtering.statusFilter} onChange={v => setFiltering({ ...filtering, statusFilter: v as 'all' | 'posted' | 'unposted' })} />
+        <Button leftSection={<IconPlus size={18} />} onClick={() => { setSelectedEntry(undefined); setShowModal(true); }}>Create Entry</Button>
+      </Group>
+
+      <Paper withBorder>
+        <Table striped highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th w={50}></Table.Th>
+              <Table.Th>Entry #</Table.Th>
+              <Table.Th>Date</Table.Th>
+              <Table.Th>Description</Table.Th>
+              <Table.Th>Reference</Table.Th>
+              <Table.Th ta="right">Total</Table.Th>
+              <Table.Th>Status</Table.Th>
+              <Table.Th>Actions</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {journalEntries.length === 0 ? (
+              <Table.Tr><Table.Td colSpan={8}>
+                <Center py="xl">
+                  <Stack align="center" gap="sm">
+                    <IconNotebook size={48} color="var(--mantine-color-gray-5)" />
+                    <Text c="dimmed" size="lg">
+                      {filtering.searchTerm || filtering.statusFilter !== 'all' ? 'No entries match your criteria' : 'No journal entries found'}
+                    </Text>
+                    {!filtering.searchTerm && filtering.statusFilter === 'all' && (
+                      <Button leftSection={<IconPlus size={18} />} onClick={() => { setSelectedEntry(undefined); setShowModal(true); }}>Create Entry</Button>
+                    )}
+                  </Stack>
+                </Center>
+              </Table.Td></Table.Tr>
+            ) : (
+              journalEntries.map(entry => (
+                <React.Fragment key={entry.id}>
+                  <Table.Tr>
+                    <Table.Td>
+                      <ActionIcon variant="subtle" size="sm" onClick={() => toggleRow(entry.id)}>
+                        {expandedRows.has(entry.id) ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+                      </ActionIcon>
+                    </Table.Td>
+                    <Table.Td fw={500}>{entry.entryNumber}</Table.Td>
+                    <Table.Td>{formatDate(entry.transactionDate)}</Table.Td>
+                    <Table.Td>{entry.description}</Table.Td>
+                    <Table.Td>{entry.reference}</Table.Td>
+                    <Table.Td ta="right" fw={500}>{formatCurrency(entry.totalAmount)}</Table.Td>
+                    <Table.Td><Badge color={entry.isPosted ? 'green' : 'yellow'} variant="light">{entry.isPosted ? 'Posted' : 'Draft'}</Badge></Table.Td>
+                    <Table.Td>
+                      <Group gap="xs" wrap="nowrap">
+                        <ActionIcon variant="light" size="sm" onClick={() => toggleRow(entry.id)}><IconEye size={14} /></ActionIcon>
+                        {!entry.isPosted && (
+                          <>
+                            <ActionIcon variant="light" color="blue" size="sm" onClick={() => { setSelectedEntry(entry); setShowModal(true); }}><IconPencil size={14} /></ActionIcon>
+                            <ActionIcon variant="light" color="green" size="sm" onClick={() => { setEntryToPost(entry); setShowPostModal(true); }}><IconCheck size={14} /></ActionIcon>
+                            <ActionIcon variant="light" color="red" size="sm" onClick={() => { setEntryToDelete(entry); setShowDeleteModal(true); }}><IconTrash size={14} /></ActionIcon>
+                          </>
                         )}
-                      </React.Fragment>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                  {expandedRows.has(entry.id) && (
+                    <Table.Tr key={`expanded-${entry.id}`}>
+                      <Table.Td colSpan={8} p={0}>
+                        <Paper p="md" bg="gray.0" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
+                          <Text fw={600} size="sm" mb="sm">Journal Entry Lines</Text>
+                          <Table>
+                            <Table.Thead>
+                              <Table.Tr>
+                                <Table.Th>Account Code</Table.Th>
+                                <Table.Th>Account Name</Table.Th>
+                                <Table.Th>Description</Table.Th>
+                                <Table.Th ta="right">Debit</Table.Th>
+                                <Table.Th ta="right">Credit</Table.Th>
+                              </Table.Tr>
+                            </Table.Thead>
+                            <Table.Tbody>
+                              {entry.lines.map((line: JournalEntryLine) => (
+                                <Table.Tr key={line.id}>
+                                  <Table.Td fw={500}>{line.accountCode}</Table.Td>
+                                  <Table.Td>{line.accountName}</Table.Td>
+                                  <Table.Td>{line.description}</Table.Td>
+                                  <Table.Td ta="right">{line.debitAmount > 0 ? formatCurrency(line.debitAmount) : '-'}</Table.Td>
+                                  <Table.Td ta="right">{line.creditAmount > 0 ? formatCurrency(line.creditAmount) : '-'}</Table.Td>
+                                </Table.Tr>
+                              ))}
+                            </Table.Tbody>
+                            <Table.Tfoot>
+                              <Table.Tr>
+                                <Table.Td colSpan={3} fw={700}>Totals:</Table.Td>
+                                <Table.Td ta="right" fw={700}>{formatCurrency(entry.lines.reduce((s, l) => s + l.debitAmount, 0))}</Table.Td>
+                                <Table.Td ta="right" fw={700}>{formatCurrency(entry.lines.reduce((s, l) => s + l.creditAmount, 0))}</Table.Td>
+                              </Table.Tr>
+                            </Table.Tfoot>
+                          </Table>
+                        </Paper>
+                      </Table.Td>
+                    </Table.Tr>
+                  )}
+                </React.Fragment>
+              ))
+            )}
+          </Table.Tbody>
+        </Table>
+      </Paper>
 
-          {journalEntries.length === 0 && !loading && (
-            <div className="text-center py-5">
-              <div className="mb-3">
-                <i className="bi bi-journal-text display-1 text-muted"></i>
-              </div>
-              <h5 className="text-muted">
-                {filtering.searchTerm || filtering.statusFilter !== 'all' ? 'No entries match your criteria' : 'No journal entries found'}
-              </h5>
-              <p className="text-muted">
-                {filtering.searchTerm || filtering.statusFilter !== 'all'
-                  ? 'Try adjusting your search or filter settings.'
-                  : 'Journal entries are automatically created when invoices are generated or paid.'}
-              </p>
-              {(!filtering.searchTerm && filtering.statusFilter === 'all') && (
-                <button 
-                  className="btn btn-primary" 
-                  onClick={() => handleAddJournalEntry()}
-                >
-                  <i className="bi bi-plus-circle me-2"></i>
-                  Create Entry
-                </button>
-              )}
-            </div>
-          )}
+      {totalCount > 0 && (
+        <Group justify="space-between">
+          <Text size="sm" c="dimmed">Showing {((pagination.pageNumber - 1) * pagination.pageSize) + 1} to {Math.min(pagination.pageNumber * pagination.pageSize, totalCount)} of {totalCount} entries</Text>
+          <Pagination total={totalPages} value={pagination.pageNumber} onChange={page => setPagination({ ...pagination, pageNumber: page })} />
+        </Group>
+      )}
 
-          {/* Results count */}
-          {totalCount > 0 && (
-            <div className="mt-3 text-muted text-center">
-              Showing {(pagination.pageNumber - 1) * pagination.pageSize + 1} to {Math.min(pagination.pageNumber * pagination.pageSize, totalCount)} of {totalCount} journal entries
-            </div>
-          )}
+      <JournalEntryModal show={showModal} onHide={() => setShowModal(false)} onSave={handleSave} journalEntry={selectedEntry} accounts={accounts} />
+      <PostJournalEntryModal show={showPostModal} onHide={() => setShowPostModal(false)} onConfirm={handlePost} journalEntry={entryToPost || null} loading={postLoading} />
 
-          {/* Pagination Controls */}
-          <Pagination
-            pageNumber={pagination.pageNumber}
-            pageSize={pagination.pageSize}
-            totalCount={totalCount}
-            onPageChange={(page: number) => setPagination({ ...pagination, pageNumber: page })}
-            ariaLabel="Journal Entry Pagination"
-          />
-
-          {/* Journal Entry Modal */}
-          <JournalEntryModal
-            show={showJournalEntryModal}
-            onHide={() => setShowJournalEntryModal(false)}
-            onSave={handleSaveJournalEntry}
-            journalEntry={selectedJournalEntry}
-            accounts={accounts}
-          />
-
-          {/* Delete Confirmation Modal */}
-          <GenericDeleteConfirmationModal
-            show={showDeleteModal}
-            onHide={() => setShowDeleteModal(false)}
-            onConfirm={handleConfirmDelete}
-            loading={deleteLoading}
-            itemName={journalEntryToDelete?.entryNumber || ''}
-            itemType="journal entry"
-            warningMessage="This will permanently delete the journal entry and all its lines."
-          />
-
-          {/* Post Journal Entry Modal */}
-          <PostJournalEntryModal
-            show={showPostModal}
-            onHide={() => setShowPostModal(false)}
-            onConfirm={handleConfirmPost}
-            loading={postLoading}
-            journalEntry={journalEntryToPost || null}
-          />
-        </div>
-      </div>
-    </div>
+      <Modal opened={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Confirm Delete" size="sm">
+        <Stack gap="md">
+          <Text>Are you sure you want to delete journal entry <strong>{entryToDelete?.entryNumber}</strong>? This will permanently delete the journal entry and all its lines.</Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
+            <Button color="red" loading={deleteLoading} onClick={handleDelete}>Delete Entry</Button>
+          </Group>
+        </Stack>
+      </Modal>
+    </Stack>
   );
 };
 

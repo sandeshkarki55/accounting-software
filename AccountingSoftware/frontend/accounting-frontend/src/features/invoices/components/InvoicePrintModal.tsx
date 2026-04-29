@@ -1,119 +1,88 @@
 import React from 'react';
-import { Invoice, CompanyInfo, Customer } from '../../../types';
-import InvoicePrintView from './InvoicePrintView';
+import { Invoice } from '../../../types';
+import { Modal, Button, Group, Table, Text, Paper, Stack, Divider } from '@mantine/core';
+import { IconPrinter } from '@tabler/icons-react';
 
-interface InvoicePrintModalProps {
-  show: boolean;
-  onHide: () => void;
-  invoice?: Invoice;
-  companyInfo?: CompanyInfo;
-  customer?: Customer;
+interface Props {
+  opened: boolean;
+  onClose: () => void;
+  invoice: Invoice;
 }
 
-const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({
-  show,
-  onHide,
-  invoice,
-  companyInfo,
-  customer
-}) => {
-  const handlePrint = () => {
-    window.print();
-  };
+const formatCurrency = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+const formatDate = (d: string) => new Date(d).toLocaleDateString();
 
-  const getInvoiceStyles = () => {
-    // Get the CSS from the InvoicePrintView.css file
-    const styleSheets = Array.from(document.styleSheets);
-    let invoiceStyles = '';
-    
-    styleSheets.forEach(sheet => {
-      try {
-        const rules = Array.from(sheet.cssRules || sheet.rules || []);
-        rules.forEach(rule => {
-          if (rule.cssText && (
-            rule.cssText.includes('.invoice-print-view') ||
-            rule.cssText.includes('@media print')
-          )) {
-            invoiceStyles += rule.cssText + '\n';
-          }
-        });
-      } catch (e) {
-        // Handle CORS issues with external stylesheets
-        console.warn('Could not access stylesheet:', e);
-      }
-    });
-
-    // Fallback basic styles if we can't extract them
-    if (!invoiceStyles) {
-      invoiceStyles = `
-        .invoice-print-view {
-          max-width: 8.5in;
-          margin: 0 auto;
-          padding: 20px;
-          font-family: Arial, sans-serif;
-          background: white;
-          color: #333;
-          line-height: 1.4;
-        }
-        @media print {
-          .invoice-print-view {
-            max-width: none;
-            margin: 0;
-            padding: 0.5in;
-          }
-          .no-print { display: none !important; }
-        }
-      `;
-    }
-
-    return invoiceStyles;
-  };
-
-  if (!show || !invoice) return null;
+const InvoicePrintModal: React.FC<Props> = ({ opened, onClose, invoice }) => {
+  const handlePrint = () => window.print();
 
   return (
-    <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="modal-dialog modal-fullscreen">
-        <div className="modal-content">
-          <div className="modal-header no-print">
-            <h5 className="modal-title">
-              <i className="bi bi-printer me-2"></i>
-              Print Invoice - {invoice.invoiceNumber}
-            </h5>
-            <button type="button" className="btn-close" onClick={onHide}></button>
-          </div>
-          
-          <div className="modal-body p-0">
-            <div className="d-flex justify-content-center gap-2 p-3 bg-light border-bottom no-print">
-              <button 
-                className="btn btn-primary"
-                onClick={handlePrint}
-                title="Print Invoice"
-              >
-                <i className="bi bi-printer me-2"></i>
-                Print
-              </button>
-              <button 
-                className="btn btn-outline-secondary"
-                onClick={onHide}
-                title="Close Preview"
-              >
-                <i className="bi bi-x-circle me-2"></i>
-                Close
-              </button>
-            </div>
-            
-            <div className="overflow-auto" style={{ height: 'calc(100vh - 150px)' }}>
-              <InvoicePrintView 
-                invoice={invoice}
-                companyInfo={companyInfo}
-                customer={customer}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <Modal opened={opened} onClose={onClose} title={`Invoice #${invoice.invoiceNumber}`} size="lg" centered>
+      <Stack gap="md">
+        <Paper p="md" withBorder>
+          <Group justify="space-between" mb="md">
+            <Stack gap={0}>
+              <Text fw={700} size="lg">INVOICE</Text>
+              <Text size="sm" c="dimmed">#{invoice.invoiceNumber}</Text>
+            </Stack>
+            <Stack gap={0} align="flex-end">
+              <Text size="sm"><strong>Date:</strong> {formatDate(invoice.invoiceDate)}</Text>
+              <Text size="sm"><strong>Due:</strong> {formatDate(invoice.dueDate)}</Text>
+            </Stack>
+          </Group>
+
+          <Divider mb="md" />
+
+          <Group justify="space-between" mb="md">
+            <Stack gap={2}>
+              <Text size="xs" c="dimmed">BILL TO:</Text>
+              <Text size="sm" fw={500}>{invoice.customerName}</Text>
+            </Stack>
+            <Stack gap={2} align="flex-end">
+              <Text size="xs" c="dimmed">FROM:</Text>
+              <Text size="sm" fw={500}>{invoice.companyName || 'Company'}</Text>
+            </Stack>
+          </Group>
+
+          <Table>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Description</Table.Th>
+                <Table.Th>Qty</Table.Th>
+                <Table.Th>Unit Price</Table.Th>
+                <Table.Th>Amount</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {invoice.items?.map((item, i) => (
+                <Table.Tr key={i}>
+                  <Table.Td>{item.description}</Table.Td>
+                  <Table.Td>{item.quantity}</Table.Td>
+                  <Table.Td>{formatCurrency(item.unitPrice)}</Table.Td>
+                  <Table.Td>{formatCurrency(item.quantity * item.unitPrice)}</Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+
+          <Divider my="sm" />
+          <Group justify="flex-end">
+            <Stack gap={2} align="flex-end">
+              <Text size="sm">Subtotal: {formatCurrency((invoice as any).subtotal || invoice.totalAmount)}</Text>
+              {(invoice as any).taxAmount > 0 && <Text size="sm">Tax: {formatCurrency((invoice as any).taxAmount)}</Text>}
+              {(invoice as any).discountAmount > 0 && <Text size="sm">Discount: -{formatCurrency((invoice as any).discountAmount)}</Text>}
+              <Text fw={700} size="md">Total: {formatCurrency(invoice.totalAmount)}</Text>
+            </Stack>
+          </Group>
+
+          {invoice.notes && <Text size="xs" c="dimmed" mt="sm">Notes: {invoice.notes}</Text>}
+        </Paper>
+
+        <Group justify="flex-end">
+          <Button variant="default" onClick={onClose}>Close</Button>
+          <Button leftSection={<IconPrinter size="1rem" />} onClick={handlePrint}>Print</Button>
+        </Group>
+      </Stack>
+    </Modal>
   );
 };
 

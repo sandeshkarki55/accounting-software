@@ -1,33 +1,19 @@
 import React, { useState } from 'react';
-import Pagination from '../../components/common/Pagination';
-import SortableTableHeader, { SortableColumn } from '../../components/common/SortableTableHeader';
-import DebouncedSearchInput from '../../components/common/DebouncedSearchInput';
-import { CompanyInfo, PaginationParams, SortingParams, CompanyInfoFilteringParams } from '../../types';
+import { CompanyInfo, PaginationParams, SortingParams } from '../../types';
 import { companyInfoService } from '../../services/companyInfoService';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import usePagedData from '../../hooks/usePagedData';
 import AddCompanyModal from './components/AddCompanyModal';
-import GenericDeleteConfirmationModal from '../../components/shared/GenericDeleteConfirmationModal';
-import './CompaniesPage.scss';
-
+import { Table, Button, Group, Text, TextInput, Badge, ActionIcon, Pagination, Center, Loader, Alert, Paper, Stack, Modal } from '@mantine/core';
+import { IconPencil, IconStar, IconTrash, IconPlus, IconSearch, IconBuilding } from '@tabler/icons-react';
+import { useDebouncedValue } from '@mantine/hooks';
 
 const CompaniesPage: React.FC = () => {
   usePageTitle('Companies');
 
-  // Paged companies
-  const {
-    data: companies,
-    loading,
-    error,
-    pagination,
-    setPagination,
-    sorting,
-    setSorting,
-    filtering,
-    setFiltering,
-    totalCount,
-    refetch,
-  } = usePagedData<CompanyInfo, PaginationParams, SortingParams, CompanyInfoFilteringParams>({
+  interface CompanyFilteringParams { searchTerm: string; }
+
+  const { data: companies, loading, error, pagination, setPagination, sorting, setSorting, filtering, setFiltering, totalCount, refetch } = usePagedData<CompanyInfo, PaginationParams, SortingParams, CompanyFilteringParams>({
     fetchData: companyInfoService.getCompanyInfos,
     initialPagination: { pageNumber: 1, pageSize: 10 },
     initialSorting: { orderBy: 'companyName', descending: false },
@@ -39,29 +25,17 @@ const CompaniesPage: React.FC = () => {
   const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<CompanyInfo | undefined>();
+  const [searchValue, setSearchValue] = useState(filtering.searchTerm || '');
+  const [debouncedSearch] = useDebouncedValue(searchValue, 300);
 
+  React.useEffect(() => { setFiltering(f => ({ ...f, searchTerm: debouncedSearch })); }, [debouncedSearch]);
 
-  const handleAddCompany = () => {
-    setSelectedCompany(undefined);
-    setShowModal(true);
-  };
+  const handleAdd = () => { setSelectedCompany(undefined); setShowModal(true); };
+  const handleEdit = (c: CompanyInfo) => { setSelectedCompany(c); setShowModal(true); };
 
-  const handleEditCompany = (company: CompanyInfo) => {
-    setSelectedCompany(company);
-    setShowModal(true);
-  };
+  const handleSaved = () => { setShowModal(false); refetch(); };
 
-  // After add/edit, just reload the current page
-  const handleCompanySaved = () => {
-    setShowModal(false);
-    refetch();
-  };
-
-
-  const handleDeleteCompany = (company: CompanyInfo) => {
-    setCompanyToDelete(company);
-    setShowDeleteModal(true);
-  };
+  const handleDelete = (c: CompanyInfo) => { setCompanyToDelete(c); setShowDeleteModal(true); };
 
   const handleConfirmDelete = async () => {
     if (!companyToDelete) return;
@@ -73,225 +47,99 @@ const CompaniesPage: React.FC = () => {
       refetch();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to delete company');
-      console.error('Error deleting company:', err);
-    } finally {
-      setDeleteLoading(null);
-    }
+    } finally { setDeleteLoading(null); }
   };
-
 
   const handleSetDefault = async (companyId: number) => {
-    try {
-      await companyInfoService.setDefaultCompany(companyId);
-      refetch();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to set default company');
-      console.error('Error setting default company:', err);
-    }
+    try { await companyInfoService.setDefaultCompany(companyId); refetch(); }
+    catch (err: any) { alert(err.response?.data?.message || 'Failed to set default company'); }
   };
 
+  const totalPages = Math.ceil(totalCount / pagination.pageSize);
 
-  // Columns for SortableTableHeader
-  const columns: SortableColumn[] = [
-    { key: 'companyName', label: 'Company Name', sortable: true },
-    { key: 'legalName', label: 'Legal Name', sortable: true },
-    { key: 'email', label: 'Email', sortable: true },
-    { key: 'phone', label: 'Phone', sortable: true },
-    { key: 'currency', label: 'Currency', sortable: true },
-    { key: 'status', label: 'Status', sortable: false },
-    { key: 'actions', label: 'Actions', sortable: false },
-  ];
-
-  // Sorting handler
-  const handleSort = (column: string) => {
-    setSorting({
-      orderBy: column,
-      descending: sorting.orderBy === column ? !sorting.descending : false
-    });
-  };
-
-
-  if (loading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center" style={{minHeight: '200px'}}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading companies...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="alert alert-danger" role="alert">
-        <i className="bi bi-exclamation-circle me-2"></i>
-        {error}
-        <button className="btn btn-sm btn-outline-danger ms-2" onClick={() => setPagination({ ...pagination })}>
-          <i className="bi bi-arrow-clockwise me-1"></i>
-          Retry
-        </button>
-      </div>
-    );
-  }
+  if (loading) return <Center h={400}><Loader size="lg" /></Center>;
+  if (error) return <Alert color="red" title="Error">{error} <Button variant="light" color="red" size="xs" ml="md" onClick={() => setPagination({ ...pagination })}>Retry</Button></Alert>;
 
   return (
-    <div className="container">
-      <div className="row">
-        <div className="col-12">
-          <h1 className="mb-4 text-dark">Companies</h1>
+    <Stack gap="md">
+      <Text component="h1" size="xl" fw={700}>Companies</Text>
 
-          {/* Search and Add Controls */}
-          <div className="row mb-4">
-            <div className="col-md-6">
-              <div className="input-group">
-                <span className="input-group-text">
-                  <i className="bi bi-search"></i>
-                </span>
-                <DebouncedSearchInput
-                  placeholder="Search companies..."
-                  defaultValue={filtering.searchTerm || ''}
-                  onSearch={value => setFiltering(f => ({ ...f, searchTerm: value }))}
-                />
-              </div>
-            </div>
-            <div className="col-md-3"></div>
-            <div className="col-md-3">
-              <button
-                className="btn btn-primary w-100"
-                onClick={handleAddCompany}
-              >
-                <i className="bi bi-plus-circle me-2"></i>
-                Add Company
-              </button>
-            </div>
-          </div>
+      <Group grow>
+        <TextInput leftSection={<IconSearch size={16} />} placeholder="Search companies..." value={searchValue} onChange={e => setSearchValue(e.currentTarget.value)} />
+        <div></div>
+        <Button leftSection={<IconPlus size={18} />} onClick={handleAdd}>Add Company</Button>
+      </Group>
 
-          <div className="card shadow-sm">
-            <div className="card-body p-0">
-              <div className="table-responsive">
-                <table className="table table-hover mb-0">
-                  <SortableTableHeader
-                    columns={columns}
-                    sorting={{ orderBy: sorting.orderBy || '', descending: sorting.descending ?? false }}
-                    onSort={handleSort}
-                  />
-                  <tbody>
-                    {companies.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="text-center py-4">
-                          <div className="empty-state">
-                            <div className="empty-state-icon">
-                              <i className="bi bi-building"></i>
-                            </div>
-                            <h3>No Companies Found</h3>
-                            <p>Get started by adding your first company for invoicing.</p>
-                            <button
-                              className="btn btn-primary"
-                              onClick={handleAddCompany}
-                            >
-                              <i className="bi bi-plus-circle me-2"></i>
-                              Add Your First Company
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      companies.map(company => (
-                        <tr key={company.id}>
-                          <td className="fw-bold">
-                            {company.companyName}
-                            {company.isDefault && (
-                              <span className="badge bg-warning text-dark ms-2">
-                                <i className="bi bi-star-fill me-1"></i>
-                                Default
-                              </span>
-                            )}
-                          </td>
-                          <td>{company.legalName || '-'}</td>
-                          <td>{company.email || '-'}</td>
-                          <td>{company.phone || '-'}</td>
-                          <td>{company.currency}</td>
-                          <td>
-                            <span className="badge bg-success">Active</span>
-                          </td>
-                          <td>
-                            <div className="btn-group" role="group">
-                              <button
-                                className="btn btn-sm btn-outline-primary"
-                                onClick={() => handleEditCompany(company)}
-                                title="Edit Company"
-                              >
-                                <i className="bi bi-pencil"></i>
-                              </button>
-                              {!company.isDefault && (
-                                <button
-                                  className="btn btn-sm btn-outline-warning"
-                                  onClick={() => handleSetDefault(company.id)}
-                                  title="Set as Default"
-                                >
-                                  <i className="bi bi-star"></i>
-                                </button>
-                              )}
-                              <button
-                                className="btn btn-sm btn-outline-danger"
-                                onClick={() => handleDeleteCompany(company)}
-                                disabled={deleteLoading === company.id || company.isDefault}
-                                title={company.isDefault ? "Cannot delete default company" : "Delete Company"}
-                              >
-                                {deleteLoading === company.id ? (
-                                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                ) : (
-                                  <i className="bi bi-trash"></i>
-                                )}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+      <Paper withBorder>
+        <Table striped highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Company Name</Table.Th>
+              <Table.Th>Legal Name</Table.Th>
+              <Table.Th>Email</Table.Th>
+              <Table.Th>Phone</Table.Th>
+              <Table.Th>Currency</Table.Th>
+              <Table.Th>Status</Table.Th>
+              <Table.Th>Actions</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {companies.length === 0 ? (
+              <Table.Tr><Table.Td colSpan={7}>
+                <Center py="xl">
+                  <Stack align="center" gap="sm">
+                    <IconBuilding size={48} color="var(--mantine-color-gray-5)" />
+                    <Text c="dimmed" size="lg">No Companies Found</Text>
+                    <Text c="dimmed" size="sm">Get started by adding your first company for invoicing.</Text>
+                    <Button leftSection={<IconPlus size={18} />} onClick={handleAdd}>Add Your First Company</Button>
+                  </Stack>
+                </Center>
+              </Table.Td></Table.Tr>
+            ) : (
+              companies.map(company => (
+                <Table.Tr key={company.id}>
+                  <Table.Td fw={500}>
+                    {company.companyName}
+                    {company.isDefault && <Badge color="yellow" ml="xs" size="sm">Default</Badge>}
+                  </Table.Td>
+                  <Table.Td>{company.legalName || '-'}</Table.Td>
+                  <Table.Td>{company.email || '-'}</Table.Td>
+                  <Table.Td>{company.phone || '-'}</Table.Td>
+                  <Table.Td>{company.currency}</Table.Td>
+                  <Table.Td><Badge color="green" variant="light">Active</Badge></Table.Td>
+                  <Table.Td>
+                    <Group gap="xs" wrap="nowrap">
+                      <ActionIcon variant="light" size="sm" onClick={() => handleEdit(company)}><IconPencil size={14} /></ActionIcon>
+                      {!company.isDefault && <ActionIcon variant="light" color="yellow" size="sm" onClick={() => handleSetDefault(company.id)}><IconStar size={14} /></ActionIcon>}
+                      <ActionIcon variant="light" color="red" size="sm" onClick={() => handleDelete(company)} loading={deleteLoading === company.id} disabled={company.isDefault}><IconTrash size={14} /></ActionIcon>
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              ))
+            )}
+          </Table.Tbody>
+        </Table>
+      </Paper>
 
-          {/* Results count */}
-          {totalCount > 0 && (
-            <div className="mt-3 text-muted text-center">
-              Showing {(pagination.pageNumber - 1) * pagination.pageSize + 1} to {Math.min(pagination.pageNumber * pagination.pageSize, totalCount)} of {totalCount} companies
-            </div>
-          )}
+      {totalCount > 0 && (
+        <Group justify="space-between">
+          <Text size="sm" c="dimmed">Showing {((pagination.pageNumber - 1) * pagination.pageSize) + 1} to {Math.min(pagination.pageNumber * pagination.pageSize, totalCount)} of {totalCount} companies</Text>
+          <Pagination total={totalPages} value={pagination.pageNumber} onChange={page => setPagination({ ...pagination, pageNumber: page })} />
+        </Group>
+      )}
 
-          {/* Pagination Controls */}
-          <Pagination
-            pageNumber={pagination.pageNumber}
-            pageSize={pagination.pageSize}
-            totalCount={totalCount}
-            onPageChange={(page: number) => setPagination({ ...pagination, pageNumber: page })}
-            ariaLabel="Company Pagination"
-          />
+      <AddCompanyModal show={showModal} onHide={() => setShowModal(false)} onCompanySaved={handleSaved} company={selectedCompany} />
 
-          {/* Company Modal */}
-          <AddCompanyModal
-            show={showModal}
-            onHide={() => setShowModal(false)}
-            onCompanySaved={handleCompanySaved}
-            company={selectedCompany}
-          />
-
-          {/* Delete Confirmation Modal */}
-          <GenericDeleteConfirmationModal
-            show={showDeleteModal}
-            onHide={() => setShowDeleteModal(false)}
-            onConfirm={handleConfirmDelete}
-            itemName={companyToDelete?.companyName || ''}
-            itemType="company"
-            loading={deleteLoading !== null}
-            warningMessage="This will soft delete the company. The company and its data will be preserved but hidden from normal views."
-          />
-        </div>
-      </div>
-    </div>
+      <Modal opened={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Confirm Delete" size="sm">
+        <Stack gap="md">
+          <Text>Are you sure you want to delete <strong>{companyToDelete?.companyName}</strong>? This will soft delete the company. The data will be preserved but hidden from normal views.</Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
+            <Button color="red" loading={deleteLoading !== null} onClick={handleConfirmDelete}>Delete Company</Button>
+          </Group>
+        </Stack>
+      </Modal>
+    </Stack>
   );
 };
 
