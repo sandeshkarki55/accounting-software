@@ -4,9 +4,10 @@ using AccountingApi.Models;
 namespace AccountingApi.Mappings;
 
 /// <summary>
-/// Mapper for JournalEntry entity and related DTOs
+/// Mapper for JournalEntry entity and related DTOs.
+/// Journal entries are immutable once created, so this only implements IEntityMapper (no update support).
 /// </summary>
-public class JournalEntryMapper(JournalEntryLineMapper lineMapper) : IEntityMapper<JournalEntry, JournalEntryDto, CreateJournalEntryDto, object>
+public class JournalEntryMapper(JournalEntryLineMapper lineMapper) : IEntityMapper<JournalEntry, JournalEntryDto, CreateJournalEntryDto>
 {
     /// <summary>
     /// Maps a JournalEntry entity to JournalEntryDto
@@ -57,22 +58,13 @@ public class JournalEntryMapper(JournalEntryLineMapper lineMapper) : IEntityMapp
             UpdatedAt = DateTime.UtcNow
         };
 
-        // Map the lines
-        entry.Lines = createDto.Lines?.Select(lineDto => lineMapper.ToEntity(lineDto, entry.Id)).ToList() ?? [];
+        // Map the lines — JournalEntryId will be set by EF Core's relationship fixup after SaveChanges.
+        entry.Lines = createDto.Lines?.Select(lineDto => lineMapper.ToEntity(lineDto, 0)).ToList() ?? [];
 
         // Calculate total amount
         entry.TotalAmount = entry.Lines.Sum(l => l.DebitAmount);
 
         return entry;
-    }
-
-    /// <summary>
-    /// Journal entries typically don't support updates, but this is required by the interface
-    /// </summary>
-    public void UpdateEntity(JournalEntry entity, object updateDto)
-    {
-        // Journal entries are typically immutable once created
-        throw new NotSupportedException("Journal entries cannot be updated once created.");
     }
 }
 

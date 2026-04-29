@@ -26,6 +26,7 @@ const CustomersPage: React.FC = () => {
     filtering,
     setFiltering,
     totalCount,
+    refetch,
   } = usePagedData<Customer, PaginationParams, SortingParams, CustomerFilteringParams>({
     fetchData: customerService.getCustomersPaged,
     initialPagination: { pageNumber: 1, pageSize: 10 },
@@ -57,7 +58,7 @@ const CustomersPage: React.FC = () => {
       } else {
         await customerService.createCustomer(customerData as CreateCustomerDto);
       }
-      setPagination({ ...pagination }); // reload
+      refetch();
       setShowCustomerModal(false);
     } catch (err) {
       console.error('Error saving customer:', err);
@@ -79,7 +80,7 @@ const CustomersPage: React.FC = () => {
       await customerService.deleteCustomer(customerToDelete.id);
       setShowDeleteModal(false);
       setCustomerToDelete(undefined);
-      setPagination({ ...pagination }); // reload
+      refetch();
     } catch (err) {
       alert('Failed to delete customer');
       console.error('Error deleting customer:', err);
@@ -124,7 +125,7 @@ const CustomersPage: React.FC = () => {
   if (error) return (
     <div className="alert alert-danger" role="alert">
       <strong>Error:</strong> {error}
-      <button className="btn btn-sm btn-outline-danger ms-2" onClick={() => setPagination({ ...pagination })}>
+      <button className="btn btn-sm btn-outline-danger ms-2" onClick={refetch}>
         Try Again
       </button>
     </div>

@@ -20,9 +20,19 @@ namespace AccountingApi.Infrastructure.Extensions
                 return query;
             }
 
-            // This is a basic implementation and can be extended for more complex sorting
+            // Validate the property exists on the type
+            var propertyInfo = typeof(T).GetProperty(sorting.OrderBy,
+                System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+
+            if (propertyInfo == null)
+            {
+                throw new ArgumentException(
+                    $"Sort property '{sorting.OrderBy}' does not exist on type '{typeof(T).Name}'. " +
+                    $"Allowed properties: {string.Join(", ", typeof(T).GetProperties().Select(p => p.Name))}");
+            }
+
             var parameter = Expression.Parameter(typeof(T), "x");
-            var property = Expression.Property(parameter, sorting.OrderBy);
+            var property = Expression.Property(parameter, propertyInfo);
             var lambda = Expression.Lambda(property, parameter);
 
             var methodName = sorting.Descending ? "OrderByDescending" : "OrderBy";
@@ -30,7 +40,7 @@ namespace AccountingApi.Infrastructure.Extensions
             var resultExpression = Expression.Call(
                 typeof(Queryable),
                 methodName,
-                new Type[] { typeof(T), property.Type },
+                new Type[] { typeof(T), propertyInfo.PropertyType },
                 query.Expression,
                 Expression.Quote(lambda));
 

@@ -24,8 +24,8 @@ const JournalEntriesPage: React.FC = () => {
     setSorting, 
     filtering, 
     setFiltering, 
-    totalCount, 
-    // loadData // loadData is now managed by the hook's useEffect
+    totalCount,
+    refetch,
   } = usePagedData<JournalEntry, PaginationParams, SortingParams, JournalEntryFilteringParams>({
     fetchData: journalEntryService.getJournalEntries,
     initialPagination: { pageNumber: 1, pageSize: 10 },
@@ -113,8 +113,7 @@ const JournalEntriesPage: React.FC = () => {
       } else {
         await journalEntryService.createJournalEntry(journalEntryData as CreateJournalEntryDto);
       }
-      // Changing state will trigger the hook to reload data
-      setPagination({ ...pagination }); // Trigger reload by updating pagination state
+      refetch();
     } catch (error) {
       console.error('Error saving journal entry:', error);
       throw error;
@@ -127,8 +126,7 @@ const JournalEntriesPage: React.FC = () => {
     try {
       setDeleteLoading(true);
       await journalEntryService.deleteJournalEntry(journalEntryToDelete.id);
-      // Changing state will trigger the hook to reload data
-      setPagination({ ...pagination }); // Trigger reload by updating pagination state
+      refetch();
       setShowDeleteModal(false);
       setJournalEntryToDelete(undefined);
     } catch (error) {
@@ -149,8 +147,7 @@ const JournalEntriesPage: React.FC = () => {
     try {
       setPostLoading(true);
       await journalEntryService.postJournalEntry(journalEntryToPost.id);
-      // Changing state will trigger the hook to reload data
-      setPagination({ ...pagination }); // Trigger reload by updating pagination state
+      refetch();
       setShowPostModal(false);
       setJournalEntryToPost(undefined);
     } catch (error) {
@@ -172,7 +169,7 @@ const JournalEntriesPage: React.FC = () => {
     <div className="alert alert-danger" role="alert">
       <strong>Error:</strong> {error}
       {/* The hook manages loading, so clicking Try Again should just trigger a reload via state change */}
-      <button className="btn btn-sm btn-outline-danger ms-2" onClick={() => setPagination({ ...pagination })}>
+      <button className="btn btn-sm btn-outline-danger ms-2" onClick={refetch}>
         Try Again
       </button>
     </div>

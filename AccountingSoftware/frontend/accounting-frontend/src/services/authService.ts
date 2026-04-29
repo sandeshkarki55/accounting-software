@@ -1,4 +1,3 @@
-import axios, { AxiosResponse } from 'axios';
 import {
   LoginRequest,
   RegisterRequest,
@@ -10,35 +9,12 @@ import {
   UpdateUserProfileRequest
 } from '../types/auth';
 import { TokenService } from './tokenService';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://localhost:7120/api';
-
-// Create axios instance
-const authApi = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Request interceptor to add auth token
-authApi.interceptors.request.use(
-  (config) => {
-    const token = TokenService.getAccessToken();
-    if (token && !TokenService.isTokenExpired(token)) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+import apiClient from './apiClient';
 
 export const authService = {
   async login(credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> {
     try {
-      const response: AxiosResponse<ApiResponse<LoginResponse>> = await authApi.post('/auth/login', credentials);
+      const response = await apiClient.post<ApiResponse<LoginResponse>>('/auth/login', credentials);
       
       if (response.data.success && response.data.data) {
         const { accessToken, refreshToken, user } = response.data.data;
@@ -57,7 +33,7 @@ export const authService = {
 
   async register(userData: RegisterRequest): Promise<ApiResponse<User>> {
     try {
-      const response: AxiosResponse<ApiResponse<User>> = await authApi.post('/auth/register', userData);
+      const response = await apiClient.post<ApiResponse<User>>('/auth/register', userData);
       return response.data;
     } catch (error: any) {
       return {
@@ -70,7 +46,7 @@ export const authService = {
 
   async getCurrentUser(): Promise<ApiResponse<User>> {
     try {
-      const response: AxiosResponse<ApiResponse<User>> = await authApi.get('/auth/me');
+      const response = await apiClient.get<ApiResponse<User>>('/auth/me');
       return response.data;
     } catch (error: any) {
       return {
@@ -83,7 +59,7 @@ export const authService = {
 
   async refreshToken(request: RefreshTokenRequest): Promise<ApiResponse<LoginResponse>> {
     try {
-      const response: AxiosResponse<ApiResponse<LoginResponse>> = await authApi.post('/auth/refresh-token', request);
+      const response = await apiClient.post<ApiResponse<LoginResponse>>('/auth/refresh-token', request);
       
       if (response.data.success && response.data.data) {
         const { accessToken, refreshToken, user } = response.data.data;
@@ -102,7 +78,7 @@ export const authService = {
 
   async changePassword(request: ChangePasswordRequest): Promise<ApiResponse<string>> {
     try {
-      const response: AxiosResponse<ApiResponse<string>> = await authApi.post('/auth/change-password', request);
+      const response = await apiClient.post<ApiResponse<string>>('/auth/change-password', request);
       return response.data;
     } catch (error: any) {
       return {
@@ -115,7 +91,7 @@ export const authService = {
 
   async updateProfile(request: UpdateUserProfileRequest): Promise<ApiResponse<User>> {
     try {
-      const response: AxiosResponse<ApiResponse<User>> = await authApi.put('/auth/profile', request);
+      const response = await apiClient.put<ApiResponse<User>>('/auth/profile', request);
       
       if (response.data.success && response.data.data) {
         // Update stored user data
@@ -134,7 +110,7 @@ export const authService = {
 
   async logout(): Promise<ApiResponse<string>> {
     try {
-      const response: AxiosResponse<ApiResponse<string>> = await authApi.post('/auth/logout');
+      const response = await apiClient.post<ApiResponse<string>>('/auth/logout');
       
       // Clear local storage regardless of response
       TokenService.clearAuthData();

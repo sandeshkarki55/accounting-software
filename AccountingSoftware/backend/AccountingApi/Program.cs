@@ -69,7 +69,13 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
         // Register JwtSettings with IOptions pattern
         builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
         var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["SecretKey"] ?? "YourSecretKeyHere123456789MustBe32CharactersOrMore!";
+        var secretKey = jwtSettings["SecretKey"];
+        if (string.IsNullOrEmpty(secretKey) || secretKey == "YourSecretKeyHere123456789MustBe32CharactersOrMore!")
+        {
+            throw new InvalidOperationException(
+                "JWT SecretKey is not configured or is using an insecure default. " +
+                "Set a strong, unique JwtSettings:SecretKey in your configuration (environment variables, user secrets, or appsettings).");
+        }
 
 builder.Services.AddAuthentication(options =>
 {

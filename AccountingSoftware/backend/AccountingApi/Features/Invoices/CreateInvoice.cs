@@ -6,6 +6,7 @@ using AccountingApi.Services.CurrentUserService;
 using AccountingApi.Services.NumberGenerationService;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 using MyMediator;
 
@@ -19,7 +20,8 @@ public class CreateInvoiceCommandHandler(
     AccountingDbContext context,
     INumberGenerationService numberGenerationService,
     IAutomaticJournalEntryService automaticJournalEntryService,
-    ICurrentUserService currentUserService) : IRequestHandler<CreateInvoiceCommand, InvoiceDto>
+    ICurrentUserService currentUserService,
+    ILogger<CreateInvoiceCommandHandler> logger) : IRequestHandler<CreateInvoiceCommand, InvoiceDto>
 {
     public async Task<InvoiceDto> Handle(CreateInvoiceCommand request, CancellationToken cancellationToken)
     {
@@ -83,8 +85,7 @@ public class CreateInvoiceCommandHandler(
         catch (Exception ex)
         {
             // Log the error but don't fail the invoice creation
-            // In a production system, you might want to use a proper logging framework
-            Console.WriteLine($"Warning: Failed to create automatic journal entry for invoice {invoice.InvoiceNumber}: {ex.Message}");
+            logger.LogWarning(ex, "Failed to create automatic journal entry for invoice {InvoiceNumber}", invoice.InvoiceNumber);
         }
 
         // Load the created invoice with related data

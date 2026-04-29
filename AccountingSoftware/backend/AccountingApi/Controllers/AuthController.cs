@@ -1,5 +1,3 @@
-using System.Security.Claims;
-
 using AccountingApi.DTOs.Authentication;
 using AccountingApi.Features.Authentication;
 
@@ -12,7 +10,7 @@ using MyMediator;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController : BaseController
 {
     private readonly IMediator _mediator;
 
@@ -21,7 +19,10 @@ public class AuthController : ControllerBase
         _mediator = mediator;
     }
 
+    /// <summary>
+    /// Authenticate user and return JWT tokens.
     /// </summary>
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<ActionResult<ApiResponseDto<LoginResponseDto>>> Login([FromBody] LoginRequestDto request)
     {
@@ -36,8 +37,9 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Register a new user
+    /// Register a new user.
     /// </summary>
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<ActionResult<ApiResponseDto<UserInfoDto>>> Register([FromBody] RegisterRequestDto request)
     {
@@ -52,8 +54,9 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Refresh access token using refresh token
+    /// Refresh access token using refresh token.
     /// </summary>
+    [AllowAnonymous]
     [HttpPost("refresh-token")]
     public async Task<ActionResult<ApiResponseDto<LoginResponseDto>>> RefreshToken([FromBody] RefreshTokenRequestDto request)
     {
@@ -68,22 +71,14 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Change user password
+    /// Change user password.
     /// </summary>
     [HttpPost("change-password")]
     [Authorize]
     public async Task<ActionResult<ApiResponseDto<string>>> ChangePassword([FromBody] ChangePasswordRequestDto request)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            return Unauthorized(new ApiResponseDto<string>
-            {
-                Success = false,
-                Message = "User not authenticated.",
-                Errors = ["Invalid token"]
-            });
-        }
+        if (!TryGetUserId(out var userId))
+            return Unauthorized(new ApiResponseDto<string> { Success = false, Message = "User not authenticated.", Errors = ["Invalid token"] });
 
         var result = await _mediator.Send(new ChangePasswordCommand(userId, request));
 
@@ -96,22 +91,14 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Logout user and invalidate refresh token
+    /// Logout user and invalidate refresh token.
     /// </summary>
     [HttpPost("logout")]
     [Authorize]
     public async Task<ActionResult<ApiResponseDto<string>>> Logout()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            return Unauthorized(new ApiResponseDto<string>
-            {
-                Success = false,
-                Message = "User not authenticated.",
-                Errors = ["Invalid token"]
-            });
-        }
+        if (!TryGetUserId(out var userId))
+            return Unauthorized(new ApiResponseDto<string> { Success = false, Message = "User not authenticated.", Errors = ["Invalid token"] });
 
         var result = await _mediator.Send(new LogoutCommand(userId));
 
@@ -124,22 +111,14 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Get current user information
+    /// Get current user information.
     /// </summary>
     [HttpGet("me")]
     [Authorize]
     public async Task<ActionResult<ApiResponseDto<UserInfoDto>>> GetCurrentUser()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            return Unauthorized(new ApiResponseDto<UserInfoDto>
-            {
-                Success = false,
-                Message = "User not authenticated.",
-                Errors = ["Invalid token"]
-            });
-        }
+        if (!TryGetUserId(out var userId))
+            return Unauthorized(new ApiResponseDto<UserInfoDto> { Success = false, Message = "User not authenticated.", Errors = ["Invalid token"] });
 
         var result = await _mediator.Send(new GetCurrentUserQuery(userId));
 
@@ -152,22 +131,14 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Update user profile information
+    /// Update user profile information.
     /// </summary>
     [HttpPut("profile")]
     [Authorize]
     public async Task<ActionResult<ApiResponseDto<UserInfoDto>>> UpdateProfile([FromBody] UpdateUserProfileDto request)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            return Unauthorized(new ApiResponseDto<UserInfoDto>
-            {
-                Success = false,
-                Message = "User not authenticated.",
-                Errors = ["Invalid token"]
-            });
-        }
+        if (!TryGetUserId(out var userId))
+            return Unauthorized(new ApiResponseDto<UserInfoDto> { Success = false, Message = "User not authenticated.", Errors = ["Invalid token"] });
 
         var result = await _mediator.Send(new UpdateUserProfileCommand(userId, request));
 

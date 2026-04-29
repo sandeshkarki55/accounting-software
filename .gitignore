@@ -497,3 +497,5 @@ terraform.tfvars.json
 # Pulumi files (if used for Azure infrastructure)
 Pulumi.*.yaml
 !Pulumi.yaml
+
+*.lscache

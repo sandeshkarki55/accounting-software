@@ -25,9 +25,14 @@ public class CreateAccountCommandHandler(AccountingDbContext context, AccountMap
             throw new InvalidOperationException($"Account with code '{request.Account.AccountCode}' already exists.");
         }
 
-        // Validate parent account exists if specified
+        // Validate parent account exists and is not a self-reference if specified
         if (request.Account.ParentAccountId.HasValue)
         {
+            if (request.Account.ParentAccountId.Value == 0)
+            {
+                throw new InvalidOperationException("Parent account ID cannot be 0.");
+            }
+
             var parentExists = await context.Accounts
                 .AnyAsync(a => a.Id == request.Account.ParentAccountId.Value, cancellationToken);
 

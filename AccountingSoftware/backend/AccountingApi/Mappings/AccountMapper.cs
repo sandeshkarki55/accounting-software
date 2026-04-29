@@ -6,7 +6,7 @@ namespace AccountingApi.Mappings;
 /// <summary>
 /// Mapper for Account entity and related DTOs
 /// </summary>
-public class AccountMapper : IEntityMapper<Account, AccountDto, CreateAccountDto, UpdateAccountDto>
+public class AccountMapper : IMutableEntityMapper<Account, AccountDto, CreateAccountDto, UpdateAccountDto>
 {
     /// <summary>
     /// Maps an Account entity to AccountDto

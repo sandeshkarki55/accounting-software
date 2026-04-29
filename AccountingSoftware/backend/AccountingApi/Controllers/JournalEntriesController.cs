@@ -1,6 +1,8 @@
+using AccountingApi.Constants;
 using AccountingApi.DTOs;
 using AccountingApi.Features.JournalEntries;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using MyMediator;
@@ -20,14 +22,22 @@ public class JournalEntriesController(IMediator mediator) : BaseController
         return Ok(pagedJournalEntries);
     }
 
+    /// <summary>
+    /// Create a new journal entry. Requires Admin, Manager, or Accountant role.
+    /// </summary>
     [HttpPost]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.Manager},{Roles.Accountant}")]
     public async Task<ActionResult<JournalEntryDto>> CreateJournalEntry(CreateJournalEntryDto createJournalEntryDto)
     {
         var journalEntry = await mediator.Send(new CreateJournalEntryCommand(createJournalEntryDto));
         return CreatedAtAction(nameof(GetJournalEntries), new { id = journalEntry.Id }, journalEntry);
     }
 
+    /// <summary>
+    /// Delete a journal entry. Requires Admin, Manager, or Accountant role.
+    /// </summary>
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.Manager},{Roles.Accountant}")]
     public async Task<IActionResult> DeleteJournalEntry(int id)
     {
         var result = await mediator.Send(new DeleteJournalEntryCommand(id));
@@ -37,7 +47,11 @@ public class JournalEntriesController(IMediator mediator) : BaseController
         return NoContent();
     }
 
+    /// <summary>
+    /// Delete a journal entry line. Requires Admin, Manager, or Accountant role.
+    /// </summary>
     [HttpDelete("lines/{id:int}")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.Manager},{Roles.Accountant}")]
     public async Task<IActionResult> DeleteJournalEntryLine(int id)
     {
         var result = await mediator.Send(new DeleteJournalEntryLineCommand(id));
@@ -47,14 +61,22 @@ public class JournalEntriesController(IMediator mediator) : BaseController
         return NoContent();
     }
 
+    /// <summary>
+    /// Update a journal entry. Requires Admin, Manager, or Accountant role.
+    /// </summary>
     [HttpPut("{id:int}")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.Manager},{Roles.Accountant}")]
     public async Task<ActionResult<JournalEntryDto>> UpdateJournalEntry(int id, UpdateJournalEntryDto updateJournalEntryDto)
     {
         var journalEntry = await mediator.Send(new UpdateJournalEntryCommand(id, updateJournalEntryDto));
         return Ok(journalEntry);
     }
 
+    /// <summary>
+    /// Post a journal entry. Requires Admin, Manager, or Accountant role.
+    /// </summary>
     [HttpPost("{id:int}/post")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.Manager},{Roles.Accountant}")]
     public async Task<IActionResult> PostJournalEntry(int id)
     {
         var result = await mediator.Send(new PostJournalEntryCommand(id));

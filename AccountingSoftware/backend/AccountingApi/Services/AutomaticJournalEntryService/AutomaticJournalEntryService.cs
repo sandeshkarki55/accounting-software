@@ -250,7 +250,7 @@ public class AutomaticJournalEntryService(
     #region Private Helper Methods
 
     /// <summary>
-    /// Gets or creates an account by code
+    /// Gets an account by code. Throws if the account is not found — accounts must be set up manually.
     /// </summary>
     private async Task<Account> GetAccountByCodeAsync(string accountCode, string accountName, AccountType accountType, CancellationToken cancellationToken)
     {
@@ -259,23 +259,9 @@ public class AutomaticJournalEntryService(
 
         if (account == null)
         {
-            // Create the account if it doesn't exist
-            account = new Account
-            {
-                AccountCode = accountCode,
-                AccountName = accountName,
-                AccountType = accountType,
-                Balance = 0,
-                IsActive = true,
-                Description = $"Auto-created for automatic journal entries",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                CreatedBy = "System",
-                UpdatedBy = "System"
-            };
-
-            context.Accounts.Add(account);
-            await context.SaveChangesAsync(cancellationToken);
+            throw new InvalidOperationException(
+                $"Required account '{accountName}' (code: {accountCode}) does not exist. " +
+                $"Please create this account before processing transactions.");
         }
 
         return account;

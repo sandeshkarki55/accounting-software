@@ -6,7 +6,7 @@ namespace AccountingApi.Mappings;
 /// <summary>
 /// Mapper for Invoice entity and related DTOs
 /// </summary>
-public class InvoiceMapper(InvoiceItemMapper itemMapper) : IEntityMapper<Invoice, InvoiceDto, CreateInvoiceDto, UpdateInvoiceDto>
+public class InvoiceMapper(InvoiceItemMapper itemMapper) : IMutableEntityMapper<Invoice, InvoiceDto, CreateInvoiceDto, UpdateInvoiceDto>
 {
     /// <summary>
     /// Maps an Invoice entity to InvoiceDto
@@ -75,8 +75,9 @@ public class InvoiceMapper(InvoiceItemMapper itemMapper) : IEntityMapper<Invoice
             UpdatedAt = DateTime.UtcNow
         };
 
-        // Map the items
-        invoice.Items = createDto.Items?.Select(itemDto => itemMapper.ToEntity(itemDto, invoice.Id)).ToList() ?? [];
+        // Map the items — InvoiceId will be set by EF Core's relationship fixup after SaveChanges.
+        // The id parameter is set to 0 here as a sentinel; EF Core will assign the correct FK.
+        invoice.Items = createDto.Items?.Select(itemDto => itemMapper.ToEntity(itemDto, 0)).ToList() ?? [];
 
         // Calculate amounts
         CalculateInvoiceAmounts(invoice);

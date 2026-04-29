@@ -21,24 +21,9 @@ public class CreateJournalEntryCommandHandler(
 {
     public async Task<JournalEntryDto> Handle(CreateJournalEntryCommand request, CancellationToken cancellationToken)
     {
-        // Validate that debits equal credits
-        var totalDebits = request.JournalEntry.Lines.Sum(l => l.DebitAmount);
-        var totalCredits = request.JournalEntry.Lines.Sum(l => l.CreditAmount);
-
-        if (Math.Abs(totalDebits - totalCredits) > 0.01m) // Allow for small rounding differences
-        {
-            throw new InvalidOperationException($"Journal entry is not balanced. Debits: {totalDebits:C}, Credits: {totalCredits:C}");
-        }
-
-        // Validate that all lines have either debit or credit (not both, not neither)
-        foreach (var line in request.JournalEntry.Lines)
-        {
-            if ((line.DebitAmount > 0 && line.CreditAmount > 0) ||
-                (line.DebitAmount == 0 && line.CreditAmount == 0))
-            {
-                throw new InvalidOperationException("Each journal entry line must have either a debit amount or credit amount (but not both or neither).");
-            }
-        }
+        // Validate that debits equal credits and each line has a single entry
+        JournalEntryValidationHelper.ValidateBalanced(request.JournalEntry.Lines);
+        JournalEntryValidationHelper.ValidateSingleEntryPerLine(request.JournalEntry.Lines);
 
         // Validate that all referenced accounts exist
         var accountIds = request.JournalEntry.Lines.Select(l => l.AccountId).Distinct().ToList();

@@ -27,6 +27,7 @@ const InvoicesPage: React.FC = () => {
     filtering,
     setFiltering,
     totalCount,
+    refetch,
   } = usePagedData<Invoice, PaginationParams, SortingParams, InvoiceFilteringParams>({
     fetchData: invoiceService.getInvoices,
     initialPagination: { pageNumber: 1, pageSize: 10 },
@@ -76,7 +77,7 @@ const InvoicesPage: React.FC = () => {
   const handleSaveInvoice = async (invoiceData: CreateInvoiceDto) => {
     try {
       await invoiceService.createInvoice(invoiceData);
-      setPagination({ ...pagination }); // Trigger reload
+      refetch();
       setShowInvoiceModal(false);
     } catch (err) {
       console.error('Error saving invoice:', err);
@@ -97,7 +98,7 @@ const InvoicesPage: React.FC = () => {
   const handleConfirmMarkAsPaid = async (invoiceData: MarkInvoiceAsPaidDto) => {
     try {
       await invoiceService.markInvoiceAsPaid(selectedInvoiceForPayment!.id, invoiceData);
-      setPagination({ ...pagination }); // Trigger reload
+      refetch();
       setShowMarkAsPaidModal(false);
     } catch (err) {
       console.error('Error marking invoice as paid:', err);
@@ -116,7 +117,7 @@ const InvoicesPage: React.FC = () => {
     try {
       setDeleteLoading(true);
       await invoiceService.deleteInvoice(invoiceToDelete.id);
-      setPagination({ ...pagination }); // Trigger reload
+      refetch();
       setShowDeleteModal(false);
       setInvoiceToDelete(undefined);
     } catch (err) {
@@ -182,7 +183,7 @@ const InvoicesPage: React.FC = () => {
   if (error) return (
     <div className="alert alert-danger" role="alert">
       <strong>Error:</strong> {error}
-      <button className="btn btn-sm btn-outline-danger ms-2" onClick={() => setPagination({ ...pagination })}>
+      <button className="btn btn-sm btn-outline-danger ms-2" onClick={refetch}>
         Try Again
       </button>
     </div>

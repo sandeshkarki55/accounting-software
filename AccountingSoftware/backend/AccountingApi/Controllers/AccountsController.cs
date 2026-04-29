@@ -42,9 +42,10 @@ public class AccountsController(IMediator mediator) : BaseController
     }
 
     /// <summary>
-    /// Create a new account. Only users with Admin, Manager, or Accountant roles can create accounts.
+    /// Create a new account. Only users with Admin or Manager roles can create accounts.
     /// </summary>
     [HttpPost]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.Manager}")]
     public async Task<ActionResult<AccountDto>> CreateAccount(CreateAccountDto createAccountDto)
     {
         var account = await mediator.Send(new CreateAccountCommand(createAccountDto));
@@ -68,7 +69,11 @@ public class AccountsController(IMediator mediator) : BaseController
         return NoContent();
     }
 
+    /// <summary>
+    /// Delete an account. Only users with Admin or Manager roles can delete accounts.
+    /// </summary>
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.Manager}")]
     public async Task<IActionResult> DeleteAccount(int id)
     {
         var success = await mediator.Send(new DeleteAccountCommand(id));

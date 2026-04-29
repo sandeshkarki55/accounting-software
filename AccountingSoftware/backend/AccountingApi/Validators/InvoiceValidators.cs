@@ -20,7 +20,10 @@ public class CreateInvoiceDtoValidator : AbstractValidator<CreateInvoiceDto>
     public CreateInvoiceDtoValidator()
     {
         RuleFor(x => x.InvoiceDate).NotEmpty();
-        RuleFor(x => x.DueDate).NotEmpty();
+        RuleFor(x => x.DueDate)
+            .NotEmpty()
+            .GreaterThanOrEqualTo(x => x.InvoiceDate)
+            .WithMessage("Due date must be on or after the invoice date.");
         RuleFor(x => x.CustomerId).NotEmpty();
         RuleFor(x => x.TaxRate).InclusiveBetween(0, 100);
         RuleFor(x => x.DiscountAmount).GreaterThanOrEqualTo(0);

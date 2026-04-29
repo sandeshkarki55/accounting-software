@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { PaginationParams, SortingParams, FilteringParams, PagedResult } from '../types/index';
 
 interface UsePagedDataOptions<T, P, S, F> {
@@ -20,6 +20,18 @@ const usePagedData = <T, P extends PaginationParams, S extends SortingParams, F 
   const [sorting, setSorting] = useState<S>(initialSorting || { orderBy: undefined, descending: false } as S);
   const [filtering, setFiltering] = useState<F>(initialFiltering || {} as F);
   const [totalCount, setTotalCount] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Track if filter changed so we can reset pagination
+  const prevFilteringRef = useRef<F>(filtering);
+
+  useEffect(() => {
+    // Reset to page 1 when filtering changes (but not on initial mount)
+    if (prevFilteringRef.current !== filtering) {
+      setPagination(prev => ({ ...prev, pageNumber: 1 } as P));
+    }
+    prevFilteringRef.current = filtering;
+  }, [filtering]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -38,7 +50,12 @@ const usePagedData = <T, P extends PaginationParams, S extends SortingParams, F 
     };
 
     loadData();
-  }, [pagination, sorting, filtering, fetchData]);
+  }, [pagination, sorting, filtering, refreshKey, fetchData]);
+
+  // Explicit refetch function that callers can use after mutations (create/update/delete)
+  const refetch = useCallback(() => {
+    setRefreshKey(k => k + 1);
+  }, []);
 
   return {
     data,
@@ -51,6 +68,7 @@ const usePagedData = <T, P extends PaginationParams, S extends SortingParams, F 
     filtering,
     setFiltering,
     totalCount,
+    refetch,
   };
 };
 

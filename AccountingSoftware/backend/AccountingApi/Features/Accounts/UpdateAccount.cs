@@ -23,6 +23,9 @@ public class UpdateAccountCommandHandler(AccountingDbContext context, AccountMap
         if (account == null)
             return false;
 
+        // Note: UpdateAccountDto does not include ParentAccountId, so parent changes
+        // must be done via a separate operation. This prevents accidental hierarchy changes.
+
         // Update account using mapper
         accountMapper.UpdateEntity(account, request.Account);
 

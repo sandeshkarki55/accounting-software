@@ -26,6 +26,7 @@ const CompaniesPage: React.FC = () => {
     filtering,
     setFiltering,
     totalCount,
+    refetch,
   } = usePagedData<CompanyInfo, PaginationParams, SortingParams, CompanyInfoFilteringParams>({
     fetchData: companyInfoService.getCompanyInfos,
     initialPagination: { pageNumber: 1, pageSize: 10 },
@@ -53,7 +54,7 @@ const CompaniesPage: React.FC = () => {
   // After add/edit, just reload the current page
   const handleCompanySaved = () => {
     setShowModal(false);
-    setPagination({ ...pagination });
+    refetch();
   };
 
 
@@ -69,7 +70,7 @@ const CompaniesPage: React.FC = () => {
       await companyInfoService.deleteCompanyInfo(companyToDelete.id);
       setShowDeleteModal(false);
       setCompanyToDelete(undefined);
-      setPagination({ ...pagination }); // reload
+      refetch();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to delete company');
       console.error('Error deleting company:', err);
@@ -82,7 +83,7 @@ const CompaniesPage: React.FC = () => {
   const handleSetDefault = async (companyId: number) => {
     try {
       await companyInfoService.setDefaultCompany(companyId);
-      setPagination({ ...pagination }); // reload
+      refetch();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to set default company');
       console.error('Error setting default company:', err);

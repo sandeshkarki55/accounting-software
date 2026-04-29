@@ -1,6 +1,8 @@
+using AccountingApi.Constants;
 using AccountingApi.DTOs;
 using AccountingApi.Features.Customers;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using MyMediator;
@@ -30,14 +32,22 @@ public class CustomersController(IMediator mediator) : BaseController
         return Ok(customer);
     }
 
+    /// <summary>
+    /// Create a new customer. Requires Admin or Manager role.
+    /// </summary>
     [HttpPost]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.Manager}")]
     public async Task<ActionResult<CustomerDto>> CreateCustomer(CreateCustomerDto createCustomerDto)
     {
         var customer = await mediator.Send(new CreateCustomerCommand(createCustomerDto));
         return CreatedAtAction(nameof(GetCustomer), new { id = customer.Id }, customer);
     }
 
+    /// <summary>
+    /// Update a customer. Requires Admin or Manager role.
+    /// </summary>
     [HttpPut("{id}")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.Manager}")]
     public async Task<IActionResult> UpdateCustomer(int id, UpdateCustomerDto updateCustomerDto)
     {
         var customer = await mediator.Send(new UpdateCustomerCommand(id, updateCustomerDto));
@@ -48,7 +58,11 @@ public class CustomersController(IMediator mediator) : BaseController
         return Ok(customer);
     }
 
+    /// <summary>
+    /// Delete a customer. Requires Admin or Manager role.
+    /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.Manager}")]
     public async Task<IActionResult> DeleteCustomer(int id)
     {
         var success = await mediator.Send(new DeleteCustomerCommand(id));

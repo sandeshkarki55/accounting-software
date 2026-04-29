@@ -6,7 +6,7 @@ namespace AccountingApi.Mappings;
 /// <summary>
 /// Mapper for Customer entity and related DTOs
 /// </summary>
-public class CustomerMapper : IEntityMapper<Customer, CustomerDto, CreateCustomerDto, UpdateCustomerDto>
+public class CustomerMapper : IMutableEntityMapper<Customer, CustomerDto, CreateCustomerDto, UpdateCustomerDto>
 {
     /// <summary>
     /// Maps a Customer entity to CustomerDto

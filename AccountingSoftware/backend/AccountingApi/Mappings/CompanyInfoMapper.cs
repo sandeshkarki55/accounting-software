@@ -6,7 +6,7 @@ namespace AccountingApi.Mappings;
 /// <summary>
 /// Mapper for CompanyInfo entity and related DTOs
 /// </summary>
-public class CompanyInfoMapper : IEntityMapper<CompanyInfo, CompanyInfoDto, CreateCompanyInfoDto, CreateCompanyInfoDto>
+public class CompanyInfoMapper : IMutableEntityMapper<CompanyInfo, CompanyInfoDto, CreateCompanyInfoDto, CreateCompanyInfoDto>
 {
     /// <summary>
     /// Maps a CompanyInfo entity to CompanyInfoDto

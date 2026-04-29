@@ -43,19 +43,15 @@ public class MarkInvoiceAsPaidCommandHandler(
         invoice.UpdatedAt = DateTime.UtcNow;
         invoice.UpdatedBy = currentUserService.GetCurrentUserForAudit();
 
+        // Use a transaction to ensure atomicity: invoice status + journal entry
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+
         await context.SaveChangesAsync(cancellationToken);
 
         // Create automatic journal entry for the payment
-        try
-        {
-            await automaticJournalEntryService.CreatePaymentJournalEntryAsync(invoice, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            // Log the error but don't fail the payment
-            // In a production system, you might want to use a proper logging framework
-            Console.WriteLine($"Warning: Failed to create automatic journal entry for payment of invoice {invoice.InvoiceNumber}: {ex.Message}");
-        }
+        await automaticJournalEntryService.CreatePaymentJournalEntryAsync(invoice, cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
 
         // Return updated invoice DTO
         return new InvoiceDto

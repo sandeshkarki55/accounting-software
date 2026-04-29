@@ -28,4 +28,13 @@ public abstract class BaseController : ControllerBase
     /// Gets the current user's email from the JWT token claims.
     /// </summary>
     protected string? UserEmail => User.FindFirst(ClaimTypes.Email)?.Value;
+
+    /// <summary>
+    /// Tries to get the current user's ID. Returns true and sets <paramref name="userId"/> if authenticated.
+    /// </summary>
+    protected bool TryGetUserId(out string userId)
+    {
+        userId = UserId ?? string.Empty;
+        return !string.IsNullOrEmpty(userId);
+    }
 }

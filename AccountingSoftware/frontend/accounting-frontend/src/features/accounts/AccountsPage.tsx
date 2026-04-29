@@ -26,6 +26,7 @@ const AccountsPage: React.FC = () => {
     filtering,
     setFiltering,
     totalCount,
+    refetch,
   } = usePagedData<Account, PaginationParams, SortingParams, AccountFilteringParams>({
     fetchData: accountService.getAccountsPaged,
     initialPagination: { pageNumber: 1, pageSize: 10 },
@@ -84,7 +85,7 @@ const AccountsPage: React.FC = () => {
       } else {
         await accountService.createAccount(accountData as CreateAccountDto);
       }
-      setPagination({ ...pagination }); // reload list view
+      refetch();
       setShowAccountModal(false);
     } catch (error) {
       console.error('Error saving account:', error);
@@ -100,7 +101,7 @@ const AccountsPage: React.FC = () => {
       await accountService.deleteAccount(accountToDelete.id);
       setShowDeleteModal(false);
       setAccountToDelete(undefined);
-      setPagination({ ...pagination }); // reload list view
+      refetch();
     } catch (error) {
       alert('Failed to delete account');
       console.error('Error deleting account:', error);
