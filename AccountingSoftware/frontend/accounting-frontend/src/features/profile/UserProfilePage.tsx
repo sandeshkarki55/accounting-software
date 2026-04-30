@@ -3,6 +3,23 @@ import { useAuth } from '../auth/AuthContext';
 import { authService } from '../../services/authService';
 import { ChangePasswordRequest, UpdateUserProfileRequest } from '../../types/auth';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import {
+  Paper,
+  Text,
+  Title,
+  Stack,
+  Group,
+  Avatar,
+  Badge,
+  Tabs,
+  TextInput,
+  Button,
+  Alert,
+  Loader,
+  Center,
+  Box,
+} from '@mantine/core';
+import { IconUserCircle, IconLock, IconCheck, IconX } from '@tabler/icons-react';
 
 interface Message {
   type: 'success' | 'error';
@@ -13,39 +30,21 @@ interface Message {
 const UserProfilePage: React.FC = () => {
   usePageTitle('Profile');
   const { user, updateUser } = useAuth();
-  
-  // Profile form state
-  const [profileForm, setProfileForm] = useState({
-    firstName: '',
-    lastName: '',
-    email: ''
-  });
-  
-  // Password form state
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmNewPassword: ''
-  });
-  
-  // UI state
-  const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
+
+  const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', email: '' });
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
   const [profileLoading, setProfileLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
+  const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
 
-  // Initialize form data when user is loaded
   useEffect(() => {
     if (user) {
-      setProfileForm({
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email
-      });
+      setProfileForm({ firstName: user.firstName, lastName: user.lastName, email: user.email });
     }
   }, [user]);
 
-  // Clear messages after 5 seconds
   useEffect(() => {
     if (message) {
       const timer = setTimeout(() => setMessage(null), 5000);
@@ -53,48 +52,44 @@ const UserProfilePage: React.FC = () => {
     }
   }, [message]);
 
-  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setProfileForm(prev => ({ ...prev, [name]: value }));
+  const validateProfile = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!profileForm.firstName.trim()) errors.firstName = 'First name is required';
+    if (!profileForm.lastName.trim()) errors.lastName = 'Last name is required';
+    if (!profileForm.email.trim()) errors.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileForm.email)) errors.email = 'Invalid email format';
+    setProfileErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setPasswordForm(prev => ({ ...prev, [name]: value }));
+  const validatePassword = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!passwordForm.currentPassword) errors.currentPassword = 'Current password is required';
+    if (!passwordForm.newPassword) errors.newPassword = 'New password is required';
+    else if (passwordForm.newPassword.length < 8) errors.newPassword = 'At least 8 characters required';
+    else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/.test(passwordForm.newPassword))
+      errors.newPassword = 'Must contain uppercase, lowercase, digit, and special character';
+    if (!passwordForm.confirmNewPassword) errors.confirmNewPassword = 'Please confirm your new password';
+    else if (passwordForm.newPassword !== passwordForm.confirmNewPassword) errors.confirmNewPassword = 'Passwords do not match';
+    setPasswordErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
-
-    // Basic validation
-    if (!profileForm.firstName.trim() || !profileForm.lastName.trim() || !profileForm.email.trim()) {
-      setMessage({ type: 'error', text: 'All fields are required' });
-      return;
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(profileForm.email)) {
-      setMessage({ type: 'error', text: 'Please enter a valid email address' });
-      return;
-    }
+    if (!validateProfile()) return;
 
     try {
       setProfileLoading(true);
       const response = await authService.updateProfile(profileForm as UpdateUserProfileRequest);
-      
       if (response.success && response.data) {
         updateUser(response.data);
         setMessage({ type: 'success', text: 'Profile updated successfully!' });
       } else {
-        setMessage({ 
-          type: 'error', 
-          text: response.message || 'Failed to update profile',
-          errors: response.errors 
-        });
+        setMessage({ type: 'error', text: response.message || 'Failed to update profile', errors: response.errors });
       }
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'An unexpected error occurred' });
     } finally {
       setProfileLoading(false);
@@ -104,38 +99,19 @@ const UserProfilePage: React.FC = () => {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
-
-    // Basic validation
-    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmNewPassword) {
-      setMessage({ type: 'error', text: 'All password fields are required' });
-      return;
-    }
-
-    if (passwordForm.newPassword !== passwordForm.confirmNewPassword) {
-      setMessage({ type: 'error', text: 'New passwords do not match' });
-      return;
-    }
-
-    if (passwordForm.newPassword.length < 8) {
-      setMessage({ type: 'error', text: 'Password must be at least 8 characters long' });
-      return;
-    }
+    if (!validatePassword()) return;
 
     try {
       setPasswordLoading(true);
       const response = await authService.changePassword(passwordForm as ChangePasswordRequest);
-      
       if (response.success) {
         setMessage({ type: 'success', text: 'Password changed successfully!' });
         setPasswordForm({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
+        setPasswordErrors({});
       } else {
-        setMessage({ 
-          type: 'error', 
-          text: response.message || 'Failed to change password',
-          errors: response.errors 
-        });
+        setMessage({ type: 'error', text: response.message || 'Failed to change password', errors: response.errors });
       }
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'An unexpected error occurred' });
     } finally {
       setPasswordLoading(false);
@@ -144,281 +120,193 @@ const UserProfilePage: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-      </div>
+      <Center h={400}>
+        <Loader size="lg" color="navy" />
+      </Center>
     );
   }
 
+  const initials = `${user.firstName?.charAt(0) ?? ''}${user.lastName?.charAt(0) ?? ''}`.toUpperCase();
+
   return (
-    <div className="user-profile-page">
-      <div className="container py-4">
-        {/* Page Header */}
-        <div className="text-center mb-4">
-          <h1 className="h2 fw-bold text-dark mb-2">
-            <i className="bi bi-person-circle text-primary me-2"></i>
-            User Profile
-          </h1>
-          <p className="text-muted fs-5 mb-0">
-            Manage your account settings and personal information
-          </p>
-        </div>
+    <Stack gap="lg">
+      {/* Page Header */}
+      <Stack gap={4}>
+        <Title order={3}>User Profile</Title>
+        <Text c="dimmed" size="sm">Manage your account settings and personal information</Text>
+      </Stack>
 
-        {/* Profile Card */}
-        <div className="card shadow-sm border-0">
-          {/* Profile Header */}
-          <div className="profile-header text-white text-center p-4">
-            <div className="user-avatar-large mb-3">
-              <i className="bi bi-person-circle"></i>
-            </div>
-            <div className="user-info">
-              <h3 className="h4 fw-semibold mb-1">{user?.fullName || 'User'}</h3>
-              <p className="mb-3 opacity-75">{user?.email || ''}</p>
-              <div className="user-roles">
-                {user?.roles?.map((role, index) => (
-                  <span key={index} className="badge bg-light bg-opacity-25 border border-light border-opacity-50 me-1">
-                    {role}
-                  </span>
+      {/* Profile Header Card */}
+      <Paper p="xl" radius="md" withBorder>
+        <Group wrap="nowrap">
+          <Avatar color="navy" radius="xl" size="xl" fw={700}>
+            {initials || 'U'}
+          </Avatar>
+          <Stack gap={4}>
+            <Text size="lg" fw={600}>{user.fullName || 'User'}</Text>
+            <Text size="sm" c="dimmed">{user.email}</Text>
+            <Group gap="xs" mt={2}>
+              {user.roles?.map((role) => (
+                <Badge key={role} variant="light" color="navy" size="sm">{role}</Badge>
+              ))}
+            </Group>
+          </Stack>
+        </Group>
+      </Paper>
+
+      {/* Message Alert */}
+      {message && (
+        <Alert
+          color={message.type === 'success' ? 'teal' : 'red'}
+          icon={message.type === 'success' ? <IconCheck size="1rem" /> : <IconX size="1rem" />}
+          withCloseButton
+          onClose={() => setMessage(null)}
+          title={message.type === 'success' ? 'Success' : 'Error'}
+        >
+          <Stack gap={4}>
+            <Text size="sm">{message.text}</Text>
+            {message.errors && message.errors.length > 0 && (
+              <Stack gap={0} component="ul" ml="md">
+                {message.errors.map((err, i) => (
+                  <Text key={i} size="sm" component="li">{err}</Text>
                 ))}
-              </div>
-            </div>
-          </div>
+              </Stack>
+            )}
+          </Stack>
+        </Alert>
+      )}
 
-          {/* Navigation Tabs */}
-          <div className="bg-light border-bottom">
-            <ul className="nav nav-tabs border-0 px-3">
-              <li className="nav-item">
-                <button
-                  className={`nav-link border-0 fw-medium px-3 py-3 ${activeTab === 'profile' ? 'active text-primary' : 'text-muted'}`}
-                  onClick={() => setActiveTab('profile')}
+      {/* Tabs */}
+      <Paper p="md" radius="md" withBorder>
+        <Tabs defaultValue="profile">
+          <Tabs.List mb="lg">
+            <Tabs.Tab value="profile" leftSection={<IconUserCircle size="1rem" />}>
+              Profile Information
+            </Tabs.Tab>
+            <Tabs.Tab value="password" leftSection={<IconLock size="1rem" />}>
+              Change Password
+            </Tabs.Tab>
+          </Tabs.List>
+
+          {/* Profile Tab */}
+          <Tabs.Panel value="profile">
+            <Box maw={600}>
+              <Text size="sm" c="dimmed" mb="lg">
+                Update your personal details and contact information.
+              </Text>
+
+              <form onSubmit={handleProfileSubmit}>
+                <Group grow mb="md">
+                  <TextInput
+                    label="First Name"
+                    required
+                    placeholder="First name"
+                    value={profileForm.firstName}
+                    onChange={(e) => setProfileForm(p => ({ ...p, firstName: e.target.value }))}
+                    error={profileErrors.firstName}
+                    disabled={profileLoading}
+                    radius="md"
+                  />
+                  <TextInput
+                    label="Last Name"
+                    required
+                    placeholder="Last name"
+                    value={profileForm.lastName}
+                    onChange={(e) => setProfileForm(p => ({ ...p, lastName: e.target.value }))}
+                    error={profileErrors.lastName}
+                    disabled={profileLoading}
+                    radius="md"
+                  />
+                </Group>
+
+                <TextInput
+                  label="Email Address"
+                  required
+                  type="email"
+                  placeholder="you@example.com"
+                  value={profileForm.email}
+                  onChange={(e) => setProfileForm(p => ({ ...p, email: e.target.value }))}
+                  error={profileErrors.email}
+                  description="This email will be used for login and notifications."
+                  disabled={profileLoading}
+                  radius="md"
+                  mb="lg"
+                />
+
+                <Button
+                  type="submit"
+                  color="navy"
+                  loading={profileLoading}
+                  leftSection={<IconCheck size="1rem" />}
                 >
-                  <i className="bi bi-person me-2"></i>
-                  Profile Information
-                </button>
-              </li>
-              <li className="nav-item">
-                <button
-                  className={`nav-link border-0 fw-medium px-3 py-3 ${activeTab === 'password' ? 'active text-primary' : 'text-muted'}`}
-                  onClick={() => setActiveTab('password')}
+                  Update Profile
+                </Button>
+              </form>
+            </Box>
+          </Tabs.Panel>
+
+          {/* Password Tab */}
+          <Tabs.Panel value="password">
+            <Box maw={600}>
+              <Text size="sm" c="dimmed" mb="lg">
+                Ensure your account stays secure by using a strong password.
+              </Text>
+
+              <form onSubmit={handlePasswordSubmit}>
+                <TextInput
+                  type="password"
+                  label="Current Password"
+                  required
+                  placeholder="Enter current password"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm(p => ({ ...p, currentPassword: e.target.value }))}
+                  error={passwordErrors.currentPassword}
+                  disabled={passwordLoading}
+                  radius="md"
+                  mb="md"
+                />
+
+                <TextInput
+                  type="password"
+                  label="New Password"
+                  required
+                  placeholder="Enter new password"
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm(p => ({ ...p, newPassword: e.target.value }))}
+                  error={passwordErrors.newPassword}
+                  description="Password should be at least 8 characters long."
+                  disabled={passwordLoading}
+                  radius="md"
+                  mb="md"
+                />
+
+                <TextInput
+                  type="password"
+                  label="Confirm New Password"
+                  required
+                  placeholder="Confirm new password"
+                  value={passwordForm.confirmNewPassword}
+                  onChange={(e) => setPasswordForm(p => ({ ...p, confirmNewPassword: e.target.value }))}
+                  error={passwordErrors.confirmNewPassword}
+                  disabled={passwordLoading}
+                  radius="md"
+                  mb="lg"
+                />
+
+                <Button
+                  type="submit"
+                  color="navy"
+                  loading={passwordLoading}
+                  leftSection={<IconLock size="1rem" />}
                 >
-                  <i className="bi bi-lock me-2"></i>
                   Change Password
-                </button>
-              </li>
-            </ul>
-          </div>
-
-          {/* Tab Content */}
-          <div className="card-body p-4">
-            {message && (
-              <div className={`alert ${message.type === 'success' ? 'alert-success' : 'alert-danger'} d-flex align-items-center`} role="alert">
-                <i className={`bi ${message.type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle'} me-2`}></i>
-                <div className="flex-grow-1">
-                  {message.text}
-                  {message.errors && message.errors.length > 0 && (
-                    <ul className="mb-0 mt-2">
-                      {message.errors.map((error, index) => (
-                        <li key={index}>{error}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className="btn-close ms-auto"
-                  onClick={() => setMessage(null)}
-                  aria-label="Close"
-                ></button>
-              </div>
-            )}
-
-            {/* Profile Tab */}
-            {activeTab === 'profile' && (
-              <div className="tab-pane">
-                <div className="row">
-                  <div className="col-lg-8">
-                    <div className="form-section">
-                      <h4 className="h5 fw-semibold text-dark mb-2">
-                        <i className="bi bi-info-circle text-primary me-2"></i>
-                        Personal Information
-                      </h4>
-                      <p className="text-muted mb-4">
-                        Update your personal details and contact information.
-                      </p>
-
-                      <form onSubmit={handleProfileSubmit}>
-                        <div className="row">
-                          <div className="col-md-6 mb-3">
-                            <label htmlFor="firstName" className="form-label fw-medium">
-                              First Name <span className="text-danger">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              id="firstName"
-                              name="firstName"
-                              value={profileForm.firstName}
-                              onChange={handleProfileChange}
-                              required
-                              disabled={profileLoading}
-                            />
-                          </div>
-                          <div className="col-md-6 mb-3">
-                            <label htmlFor="lastName" className="form-label fw-medium">
-                              Last Name <span className="text-danger">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              id="lastName"
-                              name="lastName"
-                              value={profileForm.lastName}
-                              onChange={handleProfileChange}
-                              required
-                              disabled={profileLoading}
-                            />
-                          </div>
-                        </div>
-                        <div className="mb-3">
-                          <label htmlFor="email" className="form-label fw-medium">
-                            Email Address <span className="text-danger">*</span>
-                          </label>
-                          <input
-                            type="email"
-                            className="form-control"
-                            id="email"
-                            name="email"
-                            value={profileForm.email}
-                            onChange={handleProfileChange}
-                            required
-                            disabled={profileLoading}
-                          />
-                          <div className="form-text">
-                            This email will be used for login and notifications.
-                          </div>
-                        </div>
-
-                        <div className="border-top pt-3 mt-4">
-                          <button
-                            type="submit"
-                            className="btn btn-primary px-4"
-                            disabled={profileLoading}
-                          >
-                            {profileLoading ? (
-                              <>
-                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                Updating...
-                              </>
-                            ) : (
-                              <>
-                                <i className="bi bi-check-lg me-2"></i>
-                                Update Profile
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Password Tab */}
-            {activeTab === 'password' && (
-              <div className="tab-pane">
-                <div className="row">
-                  <div className="col-lg-8">
-                    <div className="form-section">
-                      <h4 className="h5 fw-semibold text-dark mb-2">
-                        <i className="bi bi-shield-lock text-primary me-2"></i>
-                        Change Password
-                      </h4>
-                      <p className="text-muted mb-4">
-                        Ensure your account stays secure by using a strong password.
-                      </p>
-
-                      <form onSubmit={handlePasswordSubmit}>
-                        <div className="mb-3">
-                          <label htmlFor="currentPassword" className="form-label fw-medium">
-                            Current Password <span className="text-danger">*</span>
-                          </label>
-                          <input
-                            type="password"
-                            className="form-control"
-                            id="currentPassword"
-                            name="currentPassword"
-                            value={passwordForm.currentPassword}
-                            onChange={handlePasswordChange}
-                            required
-                            disabled={passwordLoading}
-                          />
-                        </div>
-                        <div className="mb-3">
-                          <label htmlFor="newPassword" className="form-label fw-medium">
-                            New Password <span className="text-danger">*</span>
-                          </label>
-                          <input
-                            type="password"
-                            className="form-control"
-                            id="newPassword"
-                            name="newPassword"
-                            value={passwordForm.newPassword}
-                            onChange={handlePasswordChange}
-                            required
-                            disabled={passwordLoading}
-                          />
-                          <div className="form-text">
-                            Password should be at least 8 characters long.
-                          </div>
-                        </div>
-                        <div className="mb-3">
-                          <label htmlFor="confirmNewPassword" className="form-label fw-medium">
-                            Confirm New Password <span className="text-danger">*</span>
-                          </label>
-                          <input
-                            type="password"
-                            className="form-control"
-                            id="confirmNewPassword"
-                            name="confirmNewPassword"
-                            value={passwordForm.confirmNewPassword}
-                            onChange={handlePasswordChange}
-                            required
-                            disabled={passwordLoading}
-                          />
-                        </div>
-
-                        <div className="border-top pt-3 mt-4">
-                          <button
-                            type="submit"
-                            className="btn btn-primary px-4"
-                            disabled={passwordLoading}
-                          >
-                            {passwordLoading ? (
-                              <>
-                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                Changing...
-                              </>
-                            ) : (
-                              <>
-                                <i className="bi bi-key me-2"></i>
-                                Change Password
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+                </Button>
+              </form>
+            </Box>
+          </Tabs.Panel>
+        </Tabs>
+      </Paper>
+    </Stack>
   );
 };
 

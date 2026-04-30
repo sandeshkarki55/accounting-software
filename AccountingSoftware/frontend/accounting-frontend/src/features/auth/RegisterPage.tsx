@@ -45,7 +45,9 @@ const RegisterPage: React.FC = () => {
   const validateForm = (): boolean => {
     const newErrors: string[] = [];
     if (!formData.firstName.trim()) newErrors.push('First name is required.');
+    else if (formData.firstName.length > 50) newErrors.push('First name cannot exceed 50 characters.');
     if (!formData.lastName.trim()) newErrors.push('Last name is required.');
+    else if (formData.lastName.length > 50) newErrors.push('Last name cannot exceed 50 characters.');
     if (!formData.email.trim()) newErrors.push('Email is required.');
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.push('Email format is invalid.');
     if (!formData.password) newErrors.push('Password is required.');

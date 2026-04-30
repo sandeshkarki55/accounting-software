@@ -36,11 +36,18 @@ const InvoiceModal: React.FC<Props> = ({ opened, onClose, onSave, invoice, custo
     validate: {
       customerId: (v) => !v ? 'Customer is required' : null,
       invoiceDate: (v) => !v ? 'Invoice date is required' : null,
-      dueDate: (v) => !v ? 'Due date is required' : null,
+      dueDate: (v, values) => {
+        if (!v) return 'Due date is required';
+        if (values.invoiceDate && v < values.invoiceDate) return 'Due date must be on or after invoice date';
+        return null;
+      },
+      taxRate: (v) => (v < 0 || v > 100) ? 'Rate must be between 0 and 100' : null,
+      discountAmount: (v) => v < 0 ? 'Discount cannot be negative' : null,
     },
   });
 
   const [items, setItems] = React.useState<CreateInvoiceItemDto[]>([{ description: '', quantity: 1, unitPrice: 0, sortOrder: 0 }]);
+  const [itemErrors, setItemErrors] = React.useState<Record<number, Record<string, string>>>({});
 
   useEffect(() => {
     if (invoice) {
@@ -59,11 +66,13 @@ const InvoiceModal: React.FC<Props> = ({ opened, onClose, onSave, invoice, custo
     } else {
       form.reset();
       setItems([{ description: '', quantity: 1, unitPrice: 0, sortOrder: 0 }]);
+      setItemErrors({});
     }
   }, [invoice, opened]);
 
   const updateItem = (idx: number, field: string, value: any) => {
     setItems(prev => prev.map((item, i) => i === idx ? { ...item, [field]: value } : item));
+    if (itemErrors[idx]) setItemErrors(prev => { const n = { ...prev }; delete n[idx]; return n; });
   };
   const addItem = () => setItems([...items, { description: '', quantity: 1, unitPrice: 0, sortOrder: items.length }]);
   const removeItem = (idx: number) => { if (items.length > 1) setItems(items.filter((_, i) => i !== idx)); };
@@ -74,7 +83,23 @@ const InvoiceModal: React.FC<Props> = ({ opened, onClose, onSave, invoice, custo
 
   const handleSubmit = async (values: typeof form.values) => {
     const validItems = items.filter(i => i.description.trim());
-    if (validItems.length === 0) return;
+    // Line-item validation matching backend: CreateInvoiceItemDtoValidator
+    if (validItems.length === 0) {
+      setItemErrors({ 0: { description: 'At least one item is required' } });
+      return;
+    }
+    const lineErrors: Record<number, Record<string, string>> = {};
+    let hasLineErrors = false;
+    validItems.forEach((item, i) => {
+      const errs: Record<string, string> = {};
+      if (item.quantity <= 0) { errs.quantity = 'Quantity must be greater than 0'; hasLineErrors = true; }
+      if (item.unitPrice <= 0) { errs.unitPrice = 'Unit price must be greater than 0'; hasLineErrors = true; }
+      if (item.description.length > 500) { errs.description = 'Max 500 characters'; hasLineErrors = true; }
+      if (Object.keys(errs).length > 0) lineErrors[i] = errs;
+    });
+    setItemErrors(lineErrors);
+    if (hasLineErrors) return;
+
     setLoading(true);
     try {
       await onSave({
@@ -120,9 +145,11 @@ const InvoiceModal: React.FC<Props> = ({ opened, onClose, onSave, invoice, custo
             <Table.Tbody>
               {items.map((item, idx) => (
                 <Table.Tr key={idx}>
-                  <Table.Td><TextInput size="sm" value={item.description} onChange={e => updateItem(idx, 'description', e.currentTarget.value)} placeholder="Item description" /></Table.Td>
-                  <Table.Td><NumberInput size="sm" min={0} value={item.quantity} onChange={v => updateItem(idx, 'quantity', v || 0)} /></Table.Td>
-                  <Table.Td><NumberInput size="sm" min={0} decimalScale={2} value={item.unitPrice} onChange={v => updateItem(idx, 'unitPrice', v || 0)} /></Table.Td>
+                  <Table.Td>
+                    <TextInput size="sm" value={item.description} onChange={e => updateItem(idx, 'description', e.currentTarget.value)} placeholder="Item description" error={itemErrors[idx]?.description} />
+                  </Table.Td>
+                  <Table.Td><NumberInput size="sm" min={0} value={item.quantity} onChange={v => updateItem(idx, 'quantity', v || 0)} error={itemErrors[idx]?.quantity} /></Table.Td>
+                  <Table.Td><NumberInput size="sm" min={0} decimalScale={2} value={item.unitPrice} onChange={v => updateItem(idx, 'unitPrice', v || 0)} error={itemErrors[idx]?.unitPrice} /></Table.Td>
                   <Table.Td><Text size="sm">{formatCurrency(item.quantity * item.unitPrice)}</Text></Table.Td>
                   <Table.Td>{items.length > 1 && <ActionIcon color="red" variant="subtle" onClick={() => removeItem(idx)}><IconTrash size="1rem" /></ActionIcon>}</Table.Td>
                 </Table.Tr>

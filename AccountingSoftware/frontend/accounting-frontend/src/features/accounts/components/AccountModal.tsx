@@ -35,14 +35,15 @@ const AccountModal: React.FC<AccountModalProps> = ({ opened, onClose, onSave, ac
     validate: {
       accountCode: (v, values) => {
         if (!v.trim()) return 'Account code is required';
-        if (v.length < 3) return 'Must be at least 3 characters';
+        if (v.length > 20) return 'Max 20 characters';
+        if (!/^[A-Z0-9-]+$/.test(v)) return 'Only uppercase letters, numbers, and hyphens';
         if (!isEdit || (isEdit && v !== account?.accountCode)) {
           if (accounts.some(a => a.accountCode === v)) return 'Account code already exists';
         }
         return null;
       },
-      accountName: (v) => !v.trim() ? 'Account name is required' : null,
-      description: (v) => !v.trim() ? 'Description is required' : null,
+      accountName: (v) => !v.trim() ? 'Account name is required' : (v.length > 200 ? 'Max 200 characters' : null),
+      description: (v) => v && v.length > 500 ? 'Max 500 characters' : null,
     },
   });
 
@@ -90,7 +91,7 @@ const AccountModal: React.FC<AccountModalProps> = ({ opened, onClose, onSave, ac
           <TextInput label="Account Code" withAsterisk disabled={isEdit} {...form.getInputProps('accountCode')} />
           <TextInput label="Account Name" withAsterisk {...form.getInputProps('accountName')} />
           <Select label="Account Type" withAsterisk disabled={isEdit} data={typeOptions} {...form.getInputProps('accountType')} />
-          <Textarea label="Description" withAsterisk {...form.getInputProps('description')} />
+          <Textarea label="Description" {...form.getInputProps('description')} />
           <Select label="Parent Account" data={parentOptions} searchable clearable {...form.getInputProps('parentAccountId')} />
           <Switch label="Active" {...form.getInputProps('isActive', { type: 'checkbox' })} />
           <Group justify="flex-end" mt="md">

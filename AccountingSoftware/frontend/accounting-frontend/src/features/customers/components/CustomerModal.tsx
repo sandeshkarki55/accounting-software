@@ -29,8 +29,15 @@ const CustomerModal: React.FC<CustomerModalProps> = ({ opened, onClose, onSave, 
       notes: '',
     },
     validate: {
-      companyName: (v) => !v.trim() ? 'Company name is required' : null,
-      email: (v) => v && !/\S+@\S+\.\S+/.test(v) ? 'Invalid email format' : null,
+      companyName: (v) => !v.trim() ? 'Company name is required' : (v.length > 255 ? 'Max 255 characters' : null),
+      email: (v) => !v.trim() ? 'Email is required' : !/\S+@\S+\.\S+/.test(v) ? 'Invalid email format' : (v.length > 255 ? 'Max 255 characters' : null),
+      contactPersonName: (v) => v && v.length > 255 ? 'Max 255 characters' : null,
+      phone: (v) => v && v.length > 50 ? 'Max 50 characters' : null,
+      address: (v) => v && v.length > 500 ? 'Max 500 characters' : null,
+      city: (v) => v && v.length > 100 ? 'Max 100 characters' : null,
+      state: (v) => v && v.length > 100 ? 'Max 100 characters' : null,
+      postalCode: (v) => v && v.length > 20 ? 'Max 20 characters' : null,
+      country: (v) => v && v.length > 100 ? 'Max 100 characters' : null,
     },
   });
 
@@ -98,7 +105,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({ opened, onClose, onSave, 
         <Stack gap="sm">
           <TextInput label="Company Name" withAsterisk {...form.getInputProps('companyName')} />
           <TextInput label="Contact Person" {...form.getInputProps('contactPersonName')} />
-          <TextInput label="Email" {...form.getInputProps('email')} />
+          <TextInput label="Email" withAsterisk {...form.getInputProps('email')} />
           <TextInput label="Phone" {...form.getInputProps('phone')} />
           <TextInput label="Address" {...form.getInputProps('address')} />
           <Group grow>

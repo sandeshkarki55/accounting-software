@@ -12,7 +12,6 @@ import {
   Avatar,
   ActionIcon,
   Stack,
-  Center,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
@@ -54,12 +53,12 @@ interface NavItemData {
 
 const navItems: NavItemData[] = [
   { to: '/', label: 'Dashboard', icon: <IconLayoutDashboard size="1.25rem" /> },
+  { to: '/companies', label: 'Companies', icon: <IconBuilding size="1.25rem" /> },
   { to: '/accounts', label: 'Chart of Accounts', icon: <IconList size="1.25rem" /> },
   { to: '/invoices', label: 'Invoices', icon: <IconReceipt size="1.25rem" /> },
   { to: '/customers', label: 'Customers', icon: <IconUsers size="1.25rem" /> },
   { to: '/journal', label: 'Journal Entries', icon: <IconFileText size="1.25rem" /> },
   { to: '/reports', label: 'Reports', icon: <IconChartBar size="1.25rem" /> },
-  { to: '/companies', label: 'Companies', icon: <IconBuilding size="1.25rem" /> },
 ];
 
 // ─── Color Scheme Toggle ────────────────────────────────────────────────────

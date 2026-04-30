@@ -60,9 +60,14 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({ show, onHide, onCompa
     validate(() => {
       const newErrors: Record<string, string> = {};
       if (!formData.companyName.trim()) newErrors.companyName = 'Company name is required';
+      else if (formData.companyName.length > 255) newErrors.companyName = 'Max 255 characters';
       if (!formData.currency) newErrors.currency = 'Currency is required';
-      if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Valid email is required';
+      if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Valid email format is required';
+      else if (formData.email && formData.email.length > 255) newErrors.email = 'Max 255 characters';
       if (formData.website && !/^https?:\/\/.+/.test(formData.website) && !/^www\..+/.test(formData.website) && !/\..+/.test(formData.website)) newErrors.website = 'Valid URL is required';
+      if (formData.phone && formData.phone.length > 50) newErrors.phone = 'Max 50 characters';
+      if (formData.taxNumber && formData.taxNumber.length > 50) newErrors.taxNumber = 'Max 50 characters';
+      if (formData.address && formData.address.length > 500) newErrors.address = 'Max 500 characters';
       return newErrors;
     });
 

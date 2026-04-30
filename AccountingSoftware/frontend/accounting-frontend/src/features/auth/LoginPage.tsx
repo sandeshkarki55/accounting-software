@@ -86,6 +86,7 @@ const LoginPage: React.FC = () => {
               onChange={e => { setPassword(e.currentTarget.value); setErrors([]); }}
               required
               autoComplete="current-password"
+              description="Minimum 6 characters"
               mb="md"
             />
 
