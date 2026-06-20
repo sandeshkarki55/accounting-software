@@ -4,10 +4,7 @@ import { DateInput } from '@mantine/dates';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { reportService, TrialBalance, IncomeStatement, BalanceSheet, GeneralLedger, AgedReceivables } from '../../services/reportService';
 import { accountService } from '../../services/api';
-
-const formatCurrency = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
-const formatDate = (d: string) => new Date(d).toLocaleDateString();
-const toISODate = (d: Date | null) => d ? d.toISOString().split('T')[0] : undefined;
+import { formatCurrency, formatDate, toISODate } from '../../utils';
 
 const ReportsPage: React.FC = () => {
   usePageTitle('Reports');

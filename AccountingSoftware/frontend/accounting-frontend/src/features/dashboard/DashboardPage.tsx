@@ -35,9 +35,7 @@ import {
   IconExclamationCircle,
   IconPercentage,
 } from '@tabler/icons-react';
-
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+import { formatCurrency } from '../../utils';
 
 const valueFormatter = (value: number) => {
   if (Math.abs(value) >= 1000) {
