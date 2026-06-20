@@ -4,9 +4,11 @@ import { customerService } from '../../services/customerService';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import usePagedData from '../../hooks/usePagedData';
 import CustomerModal from './components/CustomerModal';
-import { Table, Pagination, TextInput, Group, Button, ActionIcon, Badge, Menu, Modal, Skeleton, Alert, Title, Paper, Stack, Text } from '@mantine/core';
+import { PageHeader, DeleteConfirmModal, ActionMenu, SortableTh, TableSkeleton, PaginationRow } from '../../components/common';
+import { activeStatusColor } from '../../utils';
+import { Table, TextInput, Group, Badge, Alert, Paper, Stack } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconPlus, IconEdit, IconTrash, IconSearch, IconDotsVertical } from '@tabler/icons-react';
+import { IconSearch } from '@tabler/icons-react';
 import { showNotification } from '@mantine/notifications';
 
 const CustomersPage: React.FC = () => {
@@ -52,27 +54,21 @@ const CustomersPage: React.FC = () => {
       setCustomerToDelete(undefined);
       refetch();
       showNotification({ title: 'Success', message: 'Customer deleted', color: 'green' });
-    } catch { showNotification({ title: 'Error', message: 'Failed to delete', color: 'red' }); }
-    finally { setDeleteLoading(false); }
+    } catch {
+      showNotification({ title: 'Error', message: 'Failed to delete', color: 'red' });
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
-  const handleSort = (column: string) => {
+  const handleSort = (column: string) =>
     setSorting(prev => ({ orderBy: column, descending: prev.orderBy === column ? !prev.descending : false }));
-  };
-
-  const getSortIndicator = (column: string) => {
-    if (sorting.orderBy !== column) return '';
-    return sorting.descending ? ' ↓' : ' ↑';
-  };
 
   const totalPages = Math.ceil(totalCount / pagination.pageSize);
 
   return (
     <Stack gap="md">
-      <Group justify="space-between">
-        <Title order={3}>Customers</Title>
-        <Button leftSection={<IconPlus size="1rem" />} onClick={handleAdd}>Add Customer</Button>
-      </Group>
+      <PageHeader title="Customers" actionLabel="Add Customer" onAction={handleAdd} />
 
       <Paper p="sm" withBorder>
         <Group justify="space-between" mb="md">
@@ -85,14 +81,14 @@ const CustomersPage: React.FC = () => {
           />
         </Group>
 
-        {loading ? <Stack gap="sm">{Array(5).fill(0).map((_, i) => <Skeleton key={i} height={40} />)}</Stack> :
+        {loading ? <TableSkeleton /> :
           error ? <Alert color="red" variant="light">{error}</Alert> : (
             <>
               <Table striped highlightOnHover>
                 <Table.Thead>
                   <Table.Tr>
-                    <Table.Th onClick={() => handleSort('companyName')} style={{ cursor: 'pointer' }}>Company Name{getSortIndicator('companyName')}</Table.Th>
-                    <Table.Th onClick={() => handleSort('contactPersonName')} style={{ cursor: 'pointer' }}>Contact{getSortIndicator('contactPersonName')}</Table.Th>
+                    <SortableTh column="companyName" currentSortBy={sorting.orderBy} descending={sorting.descending} onSort={handleSort}>Company Name</SortableTh>
+                    <SortableTh column="contactPersonName" currentSortBy={sorting.orderBy} descending={sorting.descending} onSort={handleSort}>Contact</SortableTh>
                     <Table.Th>Email</Table.Th>
                     <Table.Th>Phone</Table.Th>
                     <Table.Th>City</Table.Th>
@@ -108,40 +104,35 @@ const CustomersPage: React.FC = () => {
                       <Table.Td>{c.email || '-'}</Table.Td>
                       <Table.Td>{c.phone || '-'}</Table.Td>
                       <Table.Td>{c.city || '-'}</Table.Td>
-                      <Table.Td><Badge color={c.isActive ? 'green' : 'gray'} variant="light">{c.isActive ? 'Active' : 'Inactive'}</Badge></Table.Td>
+                      <Table.Td><Badge color={activeStatusColor(c.isActive)} variant="light">{c.isActive ? 'Active' : 'Inactive'}</Badge></Table.Td>
                       <Table.Td>
-                        <Menu shadow="md" width={120}>
-                          <Menu.Target>
-                            <ActionIcon variant="subtle" color="gray"><IconDotsVertical size="1rem" /></ActionIcon>
-                          </Menu.Target>
-                          <Menu.Dropdown>
-                            <Menu.Item leftSection={<IconEdit size="1rem" />} onClick={() => handleEdit(c)}>Edit</Menu.Item>
-                            <Menu.Item color="red" leftSection={<IconTrash size="1rem" />} onClick={() => handleDelete(c)}>Delete</Menu.Item>
-                          </Menu.Dropdown>
-                        </Menu>
+                        <ActionMenu onEdit={() => handleEdit(c)} onDelete={() => handleDelete(c)} />
                       </Table.Td>
                     </Table.Tr>
                   ))}
                 </Table.Tbody>
               </Table>
-              {totalPages > 1 && (
-                <Group justify="center" mt="md">
-                  <Pagination total={totalPages} value={pagination.pageNumber} onChange={p => setPagination(prev => ({ ...prev, pageNumber: p }))} />
-                </Group>
-              )}
+              <PaginationRow
+                page={pagination.pageNumber}
+                totalPages={totalPages}
+                totalCount={totalCount}
+                pageSize={pagination.pageSize}
+                onPageChange={p => setPagination(prev => ({ ...prev, pageNumber: p }))}
+              />
             </>
           )}
       </Paper>
 
       <CustomerModal opened={modalOpened} onClose={closeModal} onSave={handleSave} customer={selectedCustomer} />
 
-      <Modal opened={deleteOpened} onClose={closeDelete} title="Delete Customer" centered>
-        <Text mb="md">Are you sure you want to delete <strong>{customerToDelete?.companyName}</strong>?</Text>
-        <Group justify="flex-end">
-          <Button variant="default" onClick={closeDelete}>Cancel</Button>
-          <Button color="red" loading={deleteLoading} onClick={handleConfirmDelete}>Delete</Button>
-        </Group>
-      </Modal>
+      <DeleteConfirmModal
+        opened={deleteOpened}
+        onClose={closeDelete}
+        onConfirm={handleConfirmDelete}
+        loading={deleteLoading}
+        title="Delete Customer"
+        message={<>Are you sure you want to delete <strong>{customerToDelete?.companyName}</strong>?</>}
+      />
     </Stack>
   );
 };

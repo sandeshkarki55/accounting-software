@@ -1,66 +1,33 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { AppShell, NavLink } from '@mantine/core';
+import { navItems } from '../../config/navigation';
 
 interface SideNavigationProps {
-  isOpen: boolean;
-  onToggle: () => void;
+  onNavigate?: () => void;
 }
 
-const SideNavigation: React.FC<SideNavigationProps> = ({ isOpen, onToggle }) => {
+const SideNavigation: React.FC<SideNavigationProps> = ({ onNavigate }) => {
   const location = useLocation();
 
-  const navItems = [
-    { path: '/', icon: 'bi-speedometer2', label: 'Dashboard' },
-    { path: '/accounts', icon: 'bi-list-ul', label: 'Chart of Accounts' },
-    { path: '/customers', icon: 'bi-people', label: 'Customers' },
-    { path: '/companies', icon: 'bi-building', label: 'Companies' },
-    { path: '/invoices', icon: 'bi-receipt', label: 'Invoices' },
-    { path: '/journal', icon: 'bi-journal-text', label: 'Journal Entries' },
-    { path: '/reports', icon: 'bi-bar-chart', label: 'Reports' }
-  ];
-
-  const isActiveRoute = (path: string) => {
-    return location.pathname === path;
-  };
-
   return (
-    <>
-      {/* Overlay for mobile */}
-      {isOpen && (
-        <div 
-          className="sidebar-overlay d-lg-none" 
-          onClick={onToggle}
-        />
-      )}
-      
-      {/* Side Navigation */}
-      <nav className={`sidebar ${isOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-        <div className="sidebar-header">
-          <div className="sidebar-brand">
-            <i className="bi bi-calculator text-vibrant-primary me-2"></i>
-            {isOpen && <span className="brand-text">Accounting Software</span>}
-          </div>
-        </div>
-        
-        <div className="sidebar-menu">
-          <ul className="nav flex-column">
-            {navItems.map((item) => (
-              <li key={item.path} className="nav-item">
-                <Link
-                  to={item.path}
-                  className={`nav-link ${isActiveRoute(item.path) ? 'active' : ''}`}
-                  onClick={() => window.innerWidth < 992 && onToggle()}
-                  title={!isOpen ? item.label : undefined}
-                >
-                  <i className={`bi ${item.icon} me-2`}></i>
-                  {isOpen && <span className="nav-text">{item.label}</span>}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </nav>
-    </>
+    <AppShell.Navbar p="xs">
+      <AppShell.Section grow mt="xs">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.to}
+            component={Link}
+            to={item.to}
+            label={item.label}
+            leftSection={<span style={{ display: 'flex', alignItems: 'center' }}>{item.icon}</span>}
+            active={location.pathname === item.to}
+            variant="filled"
+            mb={4}
+            onClick={onNavigate}
+          />
+        ))}
+      </AppShell.Section>
+    </AppShell.Navbar>
   );
 };
 
